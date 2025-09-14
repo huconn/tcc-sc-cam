@@ -1,0 +1,99 @@
+import React, { useState } from 'react';
+import { Monitor, Cpu, Camera, Wifi, Settings } from 'lucide-react';
+import { MainCoreView } from './MainCoreView';
+import { SubCoreView } from './SubCoreView';
+import { ExternalDevicePopup } from './ExternalDevicePopup';
+
+export const OverviewPage: React.FC = () => {
+  const [activeView, setActiveView] = useState<'main' | 'sub'>('main');
+  const [selectedDevices, setSelectedDevices] = useState<{
+    mipi0: string[];
+    mipi1: string[];
+  }>({
+    mipi0: [],
+    mipi1: []
+  });
+  const [showDevicePopup, setShowDevicePopup] = useState<{
+    show: boolean;
+    mipi: 'mipi0' | 'mipi1' | null;
+  }>({ show: false, mipi: null });
+
+  const handleDeviceSelect = (mipi: 'mipi0' | 'mipi1', devices: string[]) => {
+    setSelectedDevices(prev => ({
+      ...prev,
+      [mipi]: devices
+    }));
+  };
+
+  const openDevicePopup = (mipi: 'mipi0' | 'mipi1') => {
+    setShowDevicePopup({ show: true, mipi });
+  };
+
+  const closeDevicePopup = () => {
+    setShowDevicePopup({ show: false, mipi: null });
+  };
+
+  return (
+    <div className="flex flex-col h-full bg-gray-900">
+      {/* Header */}
+      <div className="bg-gray-800 border-b border-gray-700 p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Camera className="w-6 h-6 text-primary-500" />
+            <h1 className="text-xl font-bold text-gray-100">Camera Path Overview</h1>
+            <span className="text-sm text-gray-400">TCC807x (Dolphin5)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setActiveView('main')}
+              className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+                activeView === 'main' 
+                  ? 'bg-primary-600 text-white' 
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            >
+              <Monitor className="w-4 h-4" />
+              Main Core View
+            </button>
+            <button
+              onClick={() => setActiveView('sub')}
+              className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+                activeView === 'sub' 
+                  ? 'bg-primary-600 text-white' 
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            >
+              <Cpu className="w-4 h-4" />
+              Sub Core View
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-auto p-6">
+        {activeView === 'main' ? (
+          <MainCoreView 
+            selectedDevices={selectedDevices}
+            onDeviceClick={openDevicePopup}
+          />
+        ) : (
+          <SubCoreView 
+            selectedDevices={selectedDevices}
+            onDeviceClick={openDevicePopup}
+          />
+        )}
+      </div>
+
+      {/* External Device Popup */}
+      {showDevicePopup.show && showDevicePopup.mipi && (
+        <ExternalDevicePopup
+          mipi={showDevicePopup.mipi}
+          selectedDevices={selectedDevices[showDevicePopup.mipi]}
+          onSelect={handleDeviceSelect}
+          onClose={closeDevicePopup}
+        />
+      )}
+    </div>
+  );
+};
