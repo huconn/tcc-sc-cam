@@ -1,0 +1,64 @@
+# 📄 Product Requirement Document (PRD)
+
+## 1. 개요 (Overview)
+- **프로젝트 이름**: TSC-CAM (Electron 기반)  
+- **목적**: SoC 주변장치(Device)중 카메라 설정을 GUI 기반으로 단순화하고, DTS(Device Tree Source) 및 관련 코드 자동 생성 기능 제공  
+- **대상 플랫폼**: Windows (1차), macOS/Linux (추후 지원)  
+- **범위(Scope)**: 기존 Eclipse 기반 툴은 유지, 신규로 설계하여 차세대 환경 구축  
+
+---
+
+## 2. 목표 (Goals)
+- **1차 마일스톤**: 카메라 인터페이스 설정 UI PoC (Proof of Concept)  
+- **2차 마일스톤**: DTS generation 기능 구현  
+- **장기 목표**: Pinmux, Clock tree, Peripheral 설정까지 확장 가능  
+
+---
+
+## 3. 주요 기능 요구사항 (Functional Requirements)
+1. **UI/UX**  
+   - 카메라 센서 선택 (e.g., OV5640, IMX219)  
+   - 인터페이스 타입 (MIPI CSI-2, Parallel, LVDS)  
+   - Lane 수 / Pixel format / Resolution / Frame rate 선택  
+   - 설정값 요약 뷰(JSON/테이블)  
+
+2. **DTS Generation**  
+   - UI 입력값 기반 DTS snippet 자동 생성  
+   - 출력 형식: `.dts`, `.dtsi`  
+   - 템플릿 기반 확장 가능 (카메라 → eMMC, SPI 등 확장)  
+
+3. **플랫폼 지원**  
+   - Windows 실행 파일 (`.exe`) 배포  
+   - macOS 빌드 옵션 제공 (추후)  
+
+4. **확장성**  
+   - JSON Schema 기반 → 새로운 SoC/디바이스 추가 가능  
+   - 플러그인 형태(내부 모듈 추가 방식) 고려  
+
+---
+
+## 4. 비기능 요구사항 (Non-functional Requirements)
+- **성능**: UI 반응 속도 200ms 이하, DTS 파일 생성 시간 1s 이내  
+- **안정성**: DTS 템플릿 매핑 시 Schema validation 필수  
+- **배포**: electron-builder 기반 패키징, 자동 업데이트 지원 (사내 배포 서버 연동 가능)  
+- **보안**: 네트워크 연결 없는 로컬 앱 (초기 버전)  
+
+---
+
+## 5. 사용자 시나리오 (User Stories)
+- **시나리오 A**: HW 엔지니어가 IMX219 카메라 모듈을 선택 → MIPI CSI-2 / 2lane 설정 → DTS snippet 자동 생성 → 커널 빌드 시 적용  
+- **시나리오 B**: 신규 SoC 팀원이 JSON Schema만 작성 → Configurator에 자동 반영 → 별도 코드 수정 불필요  
+
+---
+
+## 6. 마일스톤 & 일정 (Milestones & Timeline)
+- **M1 (2주)**: Electron + React 기반 PoC (UI만 동작)  
+- **M2 (2주)**: 카메라 인터페이스 DTS generation  
+- **M3 (차후)**: Pinmux/Clock tree 등 확장 기능  
+
+---
+
+## 7. 리스크 & 고려사항
+- 크로스플랫폼 빌드 문제 (윈도우/맥) → 초기에는 윈도우만  
+- 기존 Eclipse 코드와의 중복 기능 → 점진적 전환 고려  
+- 카메라 인터페이스 DTS 호환성 → SoC별 차이 → 템플릿 관리 필요  

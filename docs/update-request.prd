@@ -1,0 +1,371 @@
+# Camera Configuration Tool Update Requirements - TCC807x (Dolphin5)
+
+## Document Version
+- Version: 2.1.4
+- Date: 2025-07-15
+- Platform: TCC807x (Dolphin5)
+
+## 1. Background and Major Changes
+
+### 1.1 Background
+- Existing requirements and release configurations do not match actual device tree configuration scenarios
+- The main/sub core distinction creates many duplicate UI components, making the interface non-intuitive and difficult to use
+
+### 1.2 Major Changes
+- Add Device Tree views (main, sub, unified)
+- Add External Devices section
+- Add Port-centric UI requirements for path activation status
+- Add Endpoint-centric configuration capabilities
+- Add component-specific UI requirements for each Camera subsystem element
+
+## 2. Core View System
+
+### 2.1 DTB View Modes
+The application must support three distinct viewing modes:
+
+#### Unified View
+- Shows both main core and sub-core configurations simultaneously
+- Displays core assignments as labels on components
+- Shows conflicts with warning indicators when resources are shared
+
+#### Main Core View  
+- Shows only main core DTB configuration
+- Allows user to configure main core device tree settings
+- Checkboxes enable/disable components for main core use
+
+#### Sub-Core View
+- Shows only sub-core DTB configuration  
+- Allows user to configure sub-core device tree settings
+- Checkboxes enable/disable components for sub-core use
+
+### 2.2 Resource Conflict Resolution
+When main core and sub-core configurations conflict:
+1. Display warning dialog listing conflicting resources
+2. Highlight conflicting components in warning color
+3. Prevent saving until conflicts are resolved
+4. Provide visual indicators in Unified view for unresolved conflicts
+
+## 3. UI Component Requirements
+
+### 3.1 I2C Combo Box
+- Reads available I2C channels from Device Tree
+- Populates dropdown with usable I2C channels
+- Used for External Devices (Sensor, External ISP, SerDes) configuration
+
+### 3.2 External Devices
+
+#### 3.2.1 Initial View
+- Display available device types: Camera Sensor, Serializer, Deserializer
+- Support drag-and-drop to create connections
+- Visual representation of device chain
+
+#### 3.2.2 Path Configuration
+- Input/Output port configuration with visual connections
+- Drag-and-drop interface for connecting devices
+- Real-time validation of connection compatibility
+
+#### 3.2.3 Component Settings
+- Device-specific property configuration
+- I2C address assignment
+- Power/Reset GPIO configuration
+- Detailed properties accessible via "Details" button
+
+#### 3.2.4 Main UI Packet Display
+- Visual representation of data flow
+- Color-coded paths for different channels
+- Connection status indicators
+
+### 3.3 MIPI Configuration
+
+#### Requirements:
+- Support for MIPI0 and MIPI1
+- Each MIPI supports up to 4 Virtual Channels
+- Main/Sub core assignment via checkboxes
+- Dynamic endpoint activation based on Virtual Channel needs
+- Port-specific configuration dialogs
+
+#### Properties:
+- Number of channels (1-4)
+- Interleave mode settings
+- HS-settle values based on bit rate
+- Data lanes configuration (1-4)
+- Pixel mode settings
+
+### 3.4 ISP (Image Signal Processor)
+
+#### Allocation Rules:
+| MIPI0 Channel | MIPI1 Channel | Available ISP H/W |
+|---------------|---------------|-------------------|
+| MIPI0-CH0     | MIPI1-CH0     | ISP0             |
+| MIPI0-CH1     | MIPI1-CH1     | ISP1             |
+| MIPI0-CH2     | MIPI1-CH2     | ISP2             |
+| MIPI0-CH3     | MIPI1-CH3     | ISP3             |
+
+#### Configuration:
+- CFA (Color Filter Array) settings
+  - 0: RGGB
+  - 1: Not used
+  - 2: Not used  
+  - 3: RGBIR (ISP1, ISP3 only)
+- Memory sharing enable/disable
+- Bypass mode configuration
+
+### 3.5 Camera Mux
+
+#### Features:
+- Visual multiplexing representation
+- Input-to-output channel mapping
+- Color-coded connections for clarity
+- Support for multiple output assignments from single input
+
+#### Configuration:
+- Output port selection interface
+- Input source assignment
+- Automatic cam-ch property mapping to DMA components
+
+### 3.6 SVDW (Spatial Video De-Warp)
+
+#### Components:
+- 4 Grabber units (SVDW 0-3)
+- 1 Blender unit (optional)
+
+#### Compatible Strings:
+| Legacy SDK | Recent SDK |
+|------------|------------|
+| telechips,dewarp | telechips,tcc-svdw-grabber |
+| telechips,tcc-svdw | telechips,tcc-svdw-blender |
+
+#### Blender Requirements:
+- All 4 input ports must be configured for activation
+- Visual status indication based on connection state
+- Warning messages for incomplete configurations
+
+### 3.7 VWDMA/VIN
+
+#### VWDMA Features:
+- IR data support (ir-enable, ir-encoding properties)
+- Dual-color representation (main data + IR data)
+- VWDMA0 ’ IR0, VWDMA1 ’ IR1 mapping
+
+#### VIN Features:
+- Standard video input configuration
+- Memory region mapping
+- Interrupt delay settings
+
+### 3.8 CIED (Camera Image Error Detection)
+
+#### Channel Mapping:
+- CIED0-7: Standard channels 0-7
+- CIED8: Channel 4 IR (ISP1 path)
+- CIED9: Channel 5 IR (ISP3 path)
+
+#### Configuration Parameters:
+- Window configuration (up to 9 windows)
+- Error detection modes (dark, bright, frozen, solid, phase)
+- Input format settings (RGB, YUV444, YUV422)
+- Threshold settings for each detection mode
+
+### 3.9 MDW (Memory Direct Write)
+
+#### Features:
+- Status enable/disable
+- AXI transaction settings (read/write outstanding)
+- Format configuration:
+  - Default color
+  - Fisheye lens mode
+  - Color/IR enable
+  - YUV standard selection (BT.601, BT.709, BT.2020)
+
+## 4. Read Operation
+
+### 4.1 DTB File Loading
+1. Load main core DTB/DTS file
+2. Load sub-core DTB/DTS file (if present)
+3. Parse camera resource configurations
+4. Detect and report resource conflicts
+5. Update UI visualization with loaded configuration
+
+### 4.2 Conflict Detection
+When conflicts occur between main and sub cores:
+1. Display warning dialog with conflicting resources
+2. Mark conflicting components with warning indicators
+3. Disable save functionality until resolved
+4. Provide conflict resolution suggestions
+
+## 5. Configuration Operation
+
+### 5.1 Configuration Workflow
+1. External device selection and connection
+2. MIPI channel assignment
+3. ISP configuration or bypass selection
+4. Camera Mux routing setup
+5. DMA component connection (SVDW, VWDMA, VIN)
+6. CIED error detection setup
+7. MDW configuration (if needed)
+
+### 5.2 Validation Requirements
+- Real-time connection validation
+- Resource availability checking
+- Configuration completeness verification
+- Conflict prevention during setup
+
+## 6. Write Operation
+
+### 6.1 Save Functionality
+- Generate separate DTS files for main and sub cores
+- Maintain proper Device Tree structure
+- Include all configured properties
+- Preserve comments and formatting
+
+### 6.2 Export Features
+- DTS file generation
+- Configuration summary export
+- Visual diagram export
+- Property listing export
+
+## 7. Device Tree Parsing Requirements
+
+### 7.1 Parser Implementation
+Must parse the following driver types with their specific properties:
+
+#### CAMSENSOR Driver
+- status
+- port configuration
+- remote-endpoint connections
+- io-direction settings
+
+#### SER/DES Driver  
+- status
+- ports (input/output)
+- remote-endpoint connections
+- io-direction
+- channel mapping
+
+#### MIPI-CSI/ISP Driver
+- status
+- ports configuration
+- num-channel
+- interleave-mode
+- hs-settle values
+- data-lanes
+- pixel-mode
+- CFA settings
+
+#### VideoInput Driver
+- status
+- memory-region
+- port connections
+- stream-enable
+- cam-mux settings
+- interrupt-delay
+
+#### CIED Driver
+- status
+- rect (image size)
+- window flags and configurations
+- error detection thresholds
+- format settings
+
+#### MDW Driver
+- status
+- memory-region
+- interrupt-delay
+- AXI settings
+- format configurations
+
+## 8. Technical Requirements
+
+### 8.1 Platform Support
+- Windows compatibility
+- Electron framework integration
+- React 19 with TypeScript
+- Device Tree Source (.dts) file handling
+- Device Tree Blob (.dtb) file parsing
+
+### 8.2 Performance Requirements
+- Support for up to 8 camera inputs
+- Real-time UI updates
+- Efficient DTB parsing (<2 seconds)
+- Responsive drag-and-drop interface
+
+### 8.3 Data Validation
+- I2C address conflict detection
+- GPIO pin conflict prevention
+- Virtual channel assignment validation
+- Resource allocation verification
+
+## 9. User Experience Requirements
+
+### 9.1 Visual Design
+- Color-coded data paths
+- Clear component labeling
+- Intuitive drag-and-drop interface
+- Status indicators for all components
+- Warning/error highlighting
+
+### 9.2 Workflow Optimization
+- Guided configuration process
+- Template support for common setups
+- Undo/redo functionality
+- Configuration import/export
+
+### 9.3 Help and Documentation
+- Contextual help for each component
+- Property descriptions on hover
+- Example configurations
+- Troubleshooting guide
+
+## 10. Testing Requirements
+
+### 10.1 Functional Testing
+- All UI component interactions
+- DTB parsing accuracy
+- DTS generation correctness
+- Conflict detection reliability
+
+### 10.2 Integration Testing
+- Main/sub core interaction
+- Resource sharing scenarios
+- Complex configuration handling
+- Import/export functionality
+
+### 10.3 Performance Testing
+- Large configuration handling
+- UI responsiveness
+- Memory usage optimization
+- File I/O efficiency
+
+## 11. Deliverables
+
+### 11.1 Application Components
+- Electron main process
+- React UI application
+- DTB parser module
+- DTS generator module
+- Configuration validator
+
+### 11.2 Documentation
+- User manual
+- API documentation
+- Configuration examples
+- Troubleshooting guide
+
+### 11.3 Support Materials
+- Sample DTB/DTS files
+- Configuration templates
+- Test cases
+- Deployment guide
+
+## 12. Future Enhancements
+
+### 12.1 Planned Features
+- Auto-configuration based on detected hardware
+- Configuration optimization suggestions
+- Performance profiling tools
+- Extended platform support
+
+### 12.2 Potential Improvements
+- Cloud-based configuration sharing
+- Version control integration
+- Collaborative editing features
+- Advanced visualization options
