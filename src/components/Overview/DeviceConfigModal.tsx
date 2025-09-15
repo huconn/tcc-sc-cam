@@ -131,12 +131,35 @@ export const DeviceConfigModal: React.FC<DeviceConfigModalProps> = ({
     dts += `    reg = <${config.reg}>;\n`;
     dts += `    status = "${config.status}";\n`;
 
-    if (config.inEndpoints.length > 0) {
-      dts += `    in-endpoints = <${config.inEndpoints.filter(e => e).join(' ')}>;\n`;
-    }
+    // Generate port/endpoint structure for connections
+    const hasConnections = config.inEndpoints.some(e => e) || config.outEndpoints.some(e => e);
 
-    if (config.outEndpoints.length > 0) {
-      dts += `    out-endpoints = <${config.outEndpoints.filter(e => e).join(' ')}>;\n`;
+    if (hasConnections) {
+      dts += `\n    port {\n`;
+
+      // Output endpoints
+      config.outEndpoints.forEach((endpoint, index) => {
+        if (endpoint) {
+          const epLabel = endpoint.replace('&', ''); // Remove & for label definition
+          dts += `        ${config.nodeName}_out${index}: endpoint@${index} {\n`;
+          dts += `            reg = <${index}>;\n`;
+          dts += `            remote-endpoint = <${endpoint}>;\n`;
+          dts += `        };\n`;
+        }
+      });
+
+      // Input endpoints
+      config.inEndpoints.forEach((endpoint, index) => {
+        if (endpoint) {
+          const epLabel = endpoint.replace('&', ''); // Remove & for label definition
+          dts += `        ${config.nodeName}_in${index}: endpoint@${index + 10} {\n`;
+          dts += `            reg = <${index + 10}>;\n`;
+          dts += `            remote-endpoint = <${endpoint}>;\n`;
+          dts += `        };\n`;
+        }
+      });
+
+      dts += `    };\n`;
     }
 
     config.properties.forEach(prop => {
@@ -251,64 +274,56 @@ export const DeviceConfigModal: React.FC<DeviceConfigModalProps> = ({
                 {/* Input Endpoints */}
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <label className="text-sm font-medium text-gray-300">Input Endpoints</label>
-                    <button
-                      onClick={() => handleAddEndpoint('in')}
-                      className="text-blue-400 hover:text-blue-300"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
+                    <label className="text-sm font-medium text-gray-300">
+                      Input Endpoints
+                      <span className="text-xs text-gray-500 ml-2">(Auto-generated from connections)</span>
+                    </label>
                   </div>
                   <div className="space-y-2">
-                    {config.inEndpoints.map((endpoint, index) => (
-                      <div key={index} className="flex gap-2">
-                        <input
-                          type="text"
-                          value={endpoint}
-                          onChange={(e) => handleUpdateEndpoint('in', index, e.target.value)}
-                          className="flex-1 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-white text-sm"
-                          placeholder="Endpoint ID"
-                        />
-                        <button
-                          onClick={() => handleRemoveEndpoint('in', index)}
-                          className="text-red-400 hover:text-red-300"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
+                    {config.inEndpoints.length > 0 ? (
+                      config.inEndpoints.map((endpoint, index) => (
+                        <div key={index} className="flex gap-2">
+                          <input
+                            type="text"
+                            value={endpoint}
+                            disabled
+                            className="flex-1 bg-gray-900 border border-gray-700 rounded px-2 py-1 text-gray-400 text-sm cursor-not-allowed"
+                            placeholder="Endpoint ID"
+                          />
+                          <span className="text-xs text-gray-500 self-center">Port {index + 1}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-xs text-gray-500 italic">No input connections</p>
+                    )}
                   </div>
                 </div>
 
                 {/* Output Endpoints */}
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <label className="text-sm font-medium text-gray-300">Output Endpoints</label>
-                    <button
-                      onClick={() => handleAddEndpoint('out')}
-                      className="text-blue-400 hover:text-blue-300"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
+                    <label className="text-sm font-medium text-gray-300">
+                      Output Endpoints
+                      <span className="text-xs text-gray-500 ml-2">(Auto-generated from connections)</span>
+                    </label>
                   </div>
                   <div className="space-y-2">
-                    {config.outEndpoints.map((endpoint, index) => (
-                      <div key={index} className="flex gap-2">
-                        <input
-                          type="text"
-                          value={endpoint}
-                          onChange={(e) => handleUpdateEndpoint('out', index, e.target.value)}
-                          className="flex-1 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-white text-sm"
-                          placeholder="Endpoint ID"
-                        />
-                        <button
-                          onClick={() => handleRemoveEndpoint('out', index)}
-                          className="text-red-400 hover:text-red-300"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
+                    {config.outEndpoints.length > 0 ? (
+                      config.outEndpoints.map((endpoint, index) => (
+                        <div key={index} className="flex gap-2">
+                          <input
+                            type="text"
+                            value={endpoint}
+                            disabled
+                            className="flex-1 bg-gray-900 border border-gray-700 rounded px-2 py-1 text-gray-400 text-sm cursor-not-allowed"
+                            placeholder="Endpoint ID"
+                          />
+                          <span className="text-xs text-gray-500 self-center">Port {index + 1}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-xs text-gray-500 italic">No output connections</p>
+                    )}
                   </div>
                 </div>
               </div>

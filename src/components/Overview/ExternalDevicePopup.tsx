@@ -378,8 +378,57 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
   };
 
   const removeDevice = (id: string) => {
+    // Find all connections related to this device
+    const relatedConnections = connections.filter(c => c.from === id || c.to === id);
+
+    // Remove endpoints from connected devices
+    relatedConnections.forEach(connection => {
+      updateDeviceEndpoints(connection, 'remove');
+    });
+
     setDevices(prev => prev.filter(d => d.id !== id));
     setConnections(prev => prev.filter(c => c.from !== id && c.to !== id));
+  };
+
+  const generateEndpointLabel = (fromDevice: Device, toDevice: Device, fromPort: number, toPort: number) => {
+    // Generate phandle-style labels for endpoints
+    const fromLabel = `${fromDevice.config?.nodeName || fromDevice.id}_out${fromPort}`;
+    const toLabel = `${toDevice.config?.nodeName || toDevice.id}_in${toPort}`;
+    return { fromLabel, toLabel };
+  };
+
+  const updateDeviceEndpoints = (connection: Connection, action: 'add' | 'remove') => {
+    const fromDevice = devices.find(d => d.id === connection.from);
+    const toDevice = devices.find(d => d.id === connection.to);
+
+    if (!fromDevice || !toDevice) return;
+
+    const { fromLabel, toLabel } = generateEndpointLabel(fromDevice, toDevice, connection.fromPort, connection.toPort);
+
+    setDevices(prev => prev.map(device => {
+      if (device.id === connection.from && device.config) {
+        const updatedConfig = { ...device.config };
+        if (action === 'add') {
+          const newOutEndpoints = [...updatedConfig.outEndpoints];
+          newOutEndpoints[connection.fromPort] = `&${toLabel}`; // Reference to target endpoint
+          updatedConfig.outEndpoints = newOutEndpoints;
+        } else {
+          updatedConfig.outEndpoints[connection.fromPort] = '';
+        }
+        return { ...device, config: updatedConfig };
+      } else if (device.id === connection.to && device.config) {
+        const updatedConfig = { ...device.config };
+        if (action === 'add') {
+          const newInEndpoints = [...updatedConfig.inEndpoints];
+          newInEndpoints[connection.toPort] = `&${fromLabel}`; // Reference to source endpoint
+          updatedConfig.inEndpoints = newInEndpoints;
+        } else {
+          updatedConfig.inEndpoints[connection.toPort] = '';
+        }
+        return { ...device, config: updatedConfig };
+      }
+      return device;
+    }));
   };
 
   const handlePortClick = (deviceId: string, portIndex: number, isOutput: boolean) => {
@@ -413,9 +462,12 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
             from: connectionStart.deviceId,
             to: deviceId,
             fromPort: connectionStart.port,
-            toPort: portIndex,
+            toPort: portIndex
           };
           setConnections(prev => [...prev, newConnection]);
+
+          // Update device endpoints
+          updateDeviceEndpoints(newConnection, 'add');
         }
       } else if (!connectionStart.isOutput && isOutput) {
         // Connect from input to output (reverse)
@@ -432,9 +484,12 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
             from: deviceId,
             to: connectionStart.deviceId,
             fromPort: portIndex,
-            toPort: connectionStart.port,
+            toPort: connectionStart.port
           };
           setConnections(prev => [...prev, newConnection]);
+
+          // Update device endpoints
+          updateDeviceEndpoints(newConnection, 'add');
         }
       }
 
@@ -443,6 +498,11 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
   };
 
   const removeConnection = (connectionId: string) => {
+    const connection = connections.find(c => c.id === connectionId);
+    if (connection) {
+      // Remove endpoint from both devices
+      updateDeviceEndpoints(connection, 'remove');
+    }
     setConnections(prev => prev.filter(c => c.id !== connectionId));
   };
 
@@ -453,8 +513,14 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
 
   const handleSaveDeviceConfig = (config: DeviceConfig) => {
     if (selectedDevice) {
+      // Get current connections for this device
+      const deviceConnections = connections.filter(c => c.from === selectedDevice.id || c.to === selectedDevice.id);
+
+      // Don't override endpoints as they are managed by connections
+      const mergedConfig = { ...config };
+
       setDevices(prev => prev.map(d =>
-        d.id === selectedDevice.id ? { ...d, config } : d
+        d.id === selectedDevice.id ? { ...d, config: mergedConfig } : d
       ));
     }
   };
