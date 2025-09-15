@@ -51,9 +51,8 @@ const DraggableDevice: React.FC<{
   onRemove: (id: string) => void;
   onMove: (id: string, x: number, y: number) => void;
   onPortClick: (deviceId: string, portIndex: number, isOutput: boolean) => void;
-  isConnecting: boolean;
   connectionStart: { deviceId: string; port: number; isOutput: boolean } | null;
-}> = ({ device, onRemove, onMove, onPortClick, isConnecting, connectionStart }) => {
+}> = ({ device, onRemove, onMove, onPortClick, connectionStart }) => {
   const [{ isDragging }, drag] = useDrag({
     type: 'device',
     item: { id: device.id, type: device.type, width: 150, height: 100 },
@@ -96,7 +95,7 @@ const DraggableDevice: React.FC<{
               connectionStart?.deviceId === device.id && !connectionStart.isOutput && connectionStart.port === i
                 ? 'bg-blue-500 ring-2 ring-blue-300'
                 : ''
-            } ${!isConnecting ? 'cursor-default' : ''}`}
+            }`}
             style={{
               position: 'absolute',
               top: `${getPortYPosition(i, device.inputs)}%`,
@@ -136,7 +135,7 @@ const DraggableDevice: React.FC<{
               connectionStart?.deviceId === device.id && connectionStart.isOutput && connectionStart.port === i
                 ? 'bg-green-500 ring-2 ring-green-300'
                 : ''
-            } ${!isConnecting ? 'cursor-default' : ''}`}
+            }`}
             style={{
               position: 'absolute',
               top: `${getPortYPosition(i, device.outputs)}%`,
@@ -310,7 +309,6 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
   const [connections, setConnections] = useState<Connection[]>([]);
   const [selectedType, setSelectedType] = useState<string>('sensor');
   const [selectedModel, setSelectedModel] = useState<string>('');
-  const [isConnecting, setIsConnecting] = useState(false);
   const [connectionStart, setConnectionStart] = useState<{ deviceId: string; port: number; isOutput: boolean } | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -364,8 +362,6 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
   };
 
   const handlePortClick = (deviceId: string, portIndex: number, isOutput: boolean) => {
-    if (!isConnecting) return;
-
     if (!connectionStart) {
       // First click - select source port
       if (isOutput) {
@@ -533,20 +529,18 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
                           fill="none"
                           markerEnd={`url(#arrowhead-${connection.id})`}
                         />
-                        {!isConnecting && (
-                          <circle
-                            cx={midX}
-                            cy={(fromY + toY) / 2}
-                            r="10"
-                            fill="#EF4444"
-                            stroke="#fff"
-                            strokeWidth="2"
-                            className="cursor-pointer pointer-events-auto opacity-0 hover:opacity-100"
-                            onClick={() => removeConnection(connection.id)}
-                          >
-                            <title>Remove connection</title>
-                          </circle>
-                        )}
+                        <circle
+                          cx={midX}
+                          cy={(fromY + toY) / 2}
+                          r="10"
+                          fill="#EF4444"
+                          stroke="#fff"
+                          strokeWidth="2"
+                          className="cursor-pointer pointer-events-auto opacity-0 hover:opacity-100"
+                          onClick={() => removeConnection(connection.id)}
+                        >
+                          <title>Remove connection</title>
+                        </circle>
                       </g>
                     );
                   })}
@@ -560,7 +554,6 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
                     onRemove={removeDevice}
                     onMove={moveDevice}
                     onPortClick={handlePortClick}
-                    isConnecting={isConnecting}
                     connectionStart={connectionStart}
                   />
                 ))}
@@ -627,32 +620,23 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
                 ))}
               </div>
 
-              {/* Connection Mode Toggle */}
-              <div className="mt-6">
-                <button
-                  onClick={() => {
-                    setIsConnecting(!isConnecting);
-                    setConnectionStart(null);
-                  }}
-                  className={`w-full py-2 px-4 rounded-lg transition-colors ${
-                    isConnecting
-                      ? 'bg-red-600 text-white hover:bg-red-700'
-                      : 'bg-blue-600 text-white hover:bg-blue-700'
-                  }`}
-                >
-                  {isConnecting ? 'Exit Connection Mode' : 'Enter Connection Mode'}
-                </button>
-                {isConnecting && (
-                  <div className="mt-2 p-2 bg-gray-800 rounded text-xs">
-                    {connectionStart ? (
-                      <p className="text-yellow-400">
-                        Now click on {connectionStart.isOutput ? 'an input' : 'an output'} port to complete the connection
-                      </p>
-                    ) : (
-                      <p className="text-gray-400">
-                        Click on any port to start a connection
-                      </p>
-                    )}
+              {/* Connection Help */}
+              <div className="mt-6 p-3 bg-gray-800 rounded">
+                <h4 className="text-sm font-medium text-gray-300 mb-2">How to Connect</h4>
+                <p className="text-xs text-gray-400">
+                  Click on any port to start a connection, then click on another port to complete it.
+                </p>
+                {connectionStart && (
+                  <div className="mt-2">
+                    <p className="text-xs text-yellow-400">
+                      Now click on {connectionStart.isOutput ? 'an input' : 'an output'} port to complete the connection
+                    </p>
+                    <button
+                      onClick={() => setConnectionStart(null)}
+                      className="mt-2 text-xs text-red-400 hover:text-red-300"
+                    >
+                      Cancel connection
+                    </button>
                   </div>
                 )}
               </div>
