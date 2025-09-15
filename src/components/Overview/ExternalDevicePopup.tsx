@@ -50,45 +50,101 @@ const DraggableDevice: React.FC<{
   device: Device;
   onRemove: (id: string) => void;
   onMove: (id: string, x: number, y: number) => void;
-}> = ({ device, onRemove, onMove }) => {
+  onPortClick: (deviceId: string, portIndex: number, isOutput: boolean) => void;
+  isConnecting: boolean;
+  connectionStart: { deviceId: string; port: number; isOutput: boolean } | null;
+}> = ({ device, onRemove, onMove, onPortClick, isConnecting, connectionStart }) => {
   const [{ isDragging }, drag] = useDrag({
     type: 'device',
-    item: { id: device.id, type: device.type, width: 120, height: 100 },
+    item: { id: device.id, type: device.type, width: 150, height: 100 },
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
   });
 
+  const isHighlighted = connectionStart && (
+    (connectionStart.isOutput && device.inputs > 0 && connectionStart.deviceId !== device.id) ||
+    (!connectionStart.isOutput && device.outputs > 0 && connectionStart.deviceId !== device.id)
+  );
+
+  const portSpacing = 20;
+  const getPortYPosition = (index: number, total: number) => {
+    if (total === 1) return 50; // Center if only one port
+    const totalHeight = (total - 1) * portSpacing;
+    const startY = 50 - totalHeight / 2;
+    return startY + index * portSpacing;
+  };
+
   return (
     <div
       ref={drag}
-      className={`absolute ${device.color} text-white p-3 rounded-lg cursor-move min-w-[120px] select-none ${
+      className={`absolute ${device.color} text-white rounded-lg cursor-move min-w-[150px] select-none ${
         isDragging ? 'opacity-50' : ''
-      }`}
-      style={{ left: device.x, top: device.y }}
+      } ${isHighlighted ? 'ring-2 ring-yellow-400' : ''}`}
+      style={{ left: device.x, top: device.y, height: '100px' }}
     >
-      <div className="flex justify-between items-start mb-2">
-        <span className="font-semibold text-sm">{device.name}</span>
-        <button
-          onClick={() => onRemove(device.id)}
-          className="text-white hover:text-red-200 transition-colors"
-        >
-          <X className="w-4 h-4" />
-        </button>
-      </div>
-      <div className="text-xs opacity-90 mb-2">{device.model}</div>
-      
-      {/* Input ports */}
-      <div className="flex gap-1 mb-2">
+      {/* Input ports - left side */}
+      <div className="absolute -left-2 top-0 h-full flex flex-col justify-center">
         {Array.from({ length: device.inputs }, (_, i) => (
-          <div key={`in-${i}`} className="w-3 h-3 bg-white rounded-sm" />
+          <div
+            key={`in-${i}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onPortClick(device.id, i, false);
+            }}
+            className={`w-4 h-4 bg-gray-700 border-2 border-white rounded-full cursor-pointer hover:bg-blue-400 transition-colors ${
+              connectionStart?.deviceId === device.id && !connectionStart.isOutput && connectionStart.port === i
+                ? 'bg-blue-500 ring-2 ring-blue-300'
+                : ''
+            } ${!isConnecting ? 'cursor-default' : ''}`}
+            style={{
+              position: 'absolute',
+              top: `${getPortYPosition(i, device.inputs)}%`,
+              transform: 'translateY(-50%)'
+            }}
+            title={`Input ${i + 1}`}
+          />
         ))}
       </div>
-      
-      {/* Output ports */}
-      <div className="flex gap-1">
+
+      <div className="p-3 h-full flex flex-col justify-center">
+        <div className="flex justify-between items-start mb-2">
+          <span className="font-semibold text-sm">{device.name}</span>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove(device.id);
+            }}
+            className="text-white hover:text-red-200 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="text-xs opacity-90">{device.model}</div>
+      </div>
+
+      {/* Output ports - right side */}
+      <div className="absolute -right-2 top-0 h-full flex flex-col justify-center">
         {Array.from({ length: device.outputs }, (_, i) => (
-          <div key={`out-${i}`} className="w-3 h-3 bg-white rounded-sm" />
+          <div
+            key={`out-${i}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onPortClick(device.id, i, true);
+            }}
+            className={`w-4 h-4 bg-gray-700 border-2 border-white rounded-full cursor-pointer hover:bg-green-400 transition-colors ${
+              connectionStart?.deviceId === device.id && connectionStart.isOutput && connectionStart.port === i
+                ? 'bg-green-500 ring-2 ring-green-300'
+                : ''
+            } ${!isConnecting ? 'cursor-default' : ''}`}
+            style={{
+              position: 'absolute',
+              top: `${getPortYPosition(i, device.outputs)}%`,
+              transform: 'translateY(-50%)',
+              right: '-8px'  // Adjusted to match input port positioning
+            }}
+            title={`Output ${i + 1}`}
+          />
         ))}
       </div>
     </div>
@@ -158,38 +214,88 @@ const DroppableCanvas: React.FC<{
   );
 };
 
-const ConnectionLine: React.FC<{ connection: Connection; devices: Device[] }> = ({ connection, devices }) => {
+const ConnectionLine: React.FC<{
+  connection: Connection;
+  devices: Device[];
+  onRemove?: (id: string) => void;
+}> = ({ connection, devices, onRemove }) => {
   const fromDevice = devices.find(d => d.id === connection.from);
   const toDevice = devices.find(d => d.id === connection.to);
-  
+
   if (!fromDevice || !toDevice) return null;
 
-  const fromX = fromDevice.x + 120 + (connection.fromPort * 20);
-  const fromY = fromDevice.y + 60;
-  const toX = toDevice.x + (connection.toPort * 20);
-  const toY = toDevice.y + 20;
+  const deviceHeight = 100;
+  const portSpacing = 20;
+
+  // Helper function to calculate port Y position
+  const getPortYPosition = (index: number, total: number) => {
+    if (total === 1) return 0.5; // Center if only one port
+    const totalHeight = (total - 1) * portSpacing;
+    const startY = 0.5 - totalHeight / deviceHeight / 2;
+    return startY + (index * portSpacing) / deviceHeight;
+  };
+
+  // Output port position (right side of source device)
+  const fromX = fromDevice.x + 150 + 2; // Device width + offset for port
+  const fromYRatio = getPortYPosition(connection.fromPort, fromDevice.outputs);
+  const fromY = fromDevice.y + deviceHeight * fromYRatio;
+
+  // Input port position (left side of target device)
+  const toX = toDevice.x - 2; // Offset for port
+  const toYRatio = getPortYPosition(connection.toPort, toDevice.inputs);
+  const toY = toDevice.y + deviceHeight * toYRatio;
+
+  // Calculate control points for curved path
+  const midX = (fromX + toX) / 2;
+  const controlOffset = Math.min(Math.abs(toX - fromX) * 0.5, 100);
 
   return (
-    <svg className="absolute inset-0 pointer-events-none" style={{ zIndex: 1 }}>
-      <path
-        d={`M ${fromX} ${fromY} Q ${(fromX + toX) / 2} ${fromY - 20} ${toX} ${toY}`}
-        stroke="#000"
-        strokeWidth="3"
-        fill="none"
-        markerEnd="url(#arrowhead)"
-      />
+    <svg
+      className="absolute inset-0 pointer-events-none"
+      style={{
+        zIndex: 1,
+        width: '100%',
+        height: '100%',
+        overflow: 'visible'
+      }}
+    >
       <defs>
         <marker
-          id="arrowhead"
+          id={`arrowhead-${connection.id}`}
           markerWidth="10"
           markerHeight="7"
           refX="9"
           refY="3.5"
           orient="auto"
         >
-          <polygon points="0 0, 10 3.5, 0 7" fill="#000" />
+          <polygon points="0 0, 10 3.5, 0 7" fill="#60A5FA" />
         </marker>
       </defs>
+      <g>
+        <path
+          d={`M ${fromX} ${fromY} C ${fromX + controlOffset} ${fromY}, ${toX - controlOffset} ${toY}, ${toX} ${toY}`}
+          stroke="#60A5FA"
+          strokeWidth="3"
+          fill="none"
+          markerEnd={`url(#arrowhead-${connection.id})`}
+          strokeDasharray="0"
+          opacity="1"
+        />
+        {onRemove && (
+          <circle
+            cx={midX}
+            cy={(fromY + toY) / 2}
+            r="10"
+            fill="#EF4444"
+            stroke="#fff"
+            strokeWidth="2"
+            className="cursor-pointer pointer-events-auto opacity-0 hover:opacity-100"
+            onClick={() => onRemove(connection.id)}
+          >
+            <title>Remove connection</title>
+          </circle>
+        )}
+      </g>
     </svg>
   );
 };
@@ -205,7 +311,7 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
   const [selectedType, setSelectedType] = useState<string>('sensor');
   const [selectedModel, setSelectedModel] = useState<string>('');
   const [isConnecting, setIsConnecting] = useState(false);
-  const [connectionStart, setConnectionStart] = useState<{ deviceId: string; port: number } | null>(null);
+  const [connectionStart, setConnectionStart] = useState<{ deviceId: string; port: number; isOutput: boolean } | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
 
   const addDevice = (type: string, x?: number, y?: number) => {
@@ -238,10 +344,10 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
 
   const handleCanvasDrop = (x: number, y: number, item: any) => {
     // Adjust position to center the device at the drop point
-    const offsetX = (item.width || 120) / 2;
+    const offsetX = (item.width || 150) / 2;
     const offsetY = (item.height || 50) / 2;
-    const adjustedX = Math.max(0, x - offsetX);
-    const adjustedY = Math.max(0, y - offsetY);
+    const adjustedX = Math.max(10, x - offsetX);
+    const adjustedY = Math.max(10, y - offsetY);
 
     if (item.type && !item.id) {
       // New device from device item (only if it doesn't have an id)
@@ -257,26 +363,70 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
     setConnections(prev => prev.filter(c => c.from !== id && c.to !== id));
   };
 
-  const handleDeviceClick = (deviceId: string, port: number, isOutput: boolean) => {
-    if (!isConnecting) {
+  const handlePortClick = (deviceId: string, portIndex: number, isOutput: boolean) => {
+    if (!isConnecting) return;
+
+    if (!connectionStart) {
+      // First click - select source port
       if (isOutput) {
-        setIsConnecting(true);
-        setConnectionStart({ deviceId, port });
+        setConnectionStart({ deviceId, port: portIndex, isOutput: true });
+      } else {
+        setConnectionStart({ deviceId, port: portIndex, isOutput: false });
       }
     } else {
-      if (!isOutput && connectionStart) {
-        const newConnection: Connection = {
-          id: `conn-${Date.now()}`,
-          from: connectionStart.deviceId,
-          to: deviceId,
-          fromPort: connectionStart.port,
-          toPort: port,
-        };
-        setConnections(prev => [...prev, newConnection]);
+      // Second click - create connection
+      if (connectionStart.deviceId === deviceId) {
+        // Can't connect to same device
+        setConnectionStart(null);
+        return;
       }
-      setIsConnecting(false);
+
+      if (connectionStart.isOutput && !isOutput) {
+        // Connect from output to input
+        const existingConnection = connections.find(
+          c => c.from === connectionStart.deviceId &&
+               c.fromPort === connectionStart.port &&
+               c.to === deviceId &&
+               c.toPort === portIndex
+        );
+
+        if (!existingConnection) {
+          const newConnection: Connection = {
+            id: `conn-${Date.now()}`,
+            from: connectionStart.deviceId,
+            to: deviceId,
+            fromPort: connectionStart.port,
+            toPort: portIndex,
+          };
+          setConnections(prev => [...prev, newConnection]);
+        }
+      } else if (!connectionStart.isOutput && isOutput) {
+        // Connect from input to output (reverse)
+        const existingConnection = connections.find(
+          c => c.from === deviceId &&
+               c.fromPort === portIndex &&
+               c.to === connectionStart.deviceId &&
+               c.toPort === connectionStart.port
+        );
+
+        if (!existingConnection) {
+          const newConnection: Connection = {
+            id: `conn-${Date.now()}`,
+            from: deviceId,
+            to: connectionStart.deviceId,
+            fromPort: portIndex,
+            toPort: connectionStart.port,
+          };
+          setConnections(prev => [...prev, newConnection]);
+        }
+      }
+
       setConnectionStart(null);
     }
+  };
+
+  const removeConnection = (connectionId: string) => {
+    setConnections(prev => prev.filter(c => c.id !== connectionId));
   };
 
   const handleSave = () => {
@@ -321,20 +471,97 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
               </div>
 
               <DroppableCanvas onDrop={handleCanvasDrop}>
+                {/* Render connections first so they appear behind devices */}
+                <svg
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    overflow: 'visible',
+                    zIndex: 0
+                  }}
+                >
+                  {connections.map(connection => {
+                    const fromDevice = devices.find(d => d.id === connection.from);
+                    const toDevice = devices.find(d => d.id === connection.to);
+
+                    if (!fromDevice || !toDevice) return null;
+
+                    const deviceHeight = 100;
+                    const portSpacing = 20;
+
+                    // Helper function to calculate port Y position
+                    const getPortYPosition = (index: number, total: number) => {
+                      if (total === 1) return 0.5;
+                      const totalHeight = (total - 1) * portSpacing;
+                      const startY = 0.5 - totalHeight / deviceHeight / 2;
+                      return startY + (index * portSpacing) / deviceHeight;
+                    };
+
+                    // Output port position (right side of source device)
+                    const fromX = fromDevice.x + 150 + 2;
+                    const fromYRatio = getPortYPosition(connection.fromPort, fromDevice.outputs);
+                    const fromY = fromDevice.y + deviceHeight * fromYRatio;
+
+                    // Input port position (left side of target device)
+                    const toX = toDevice.x - 2;
+                    const toYRatio = getPortYPosition(connection.toPort, toDevice.inputs);
+                    const toY = toDevice.y + deviceHeight * toYRatio;
+
+                    // Calculate control points for curved path
+                    const midX = (fromX + toX) / 2;
+                    const controlOffset = Math.min(Math.abs(toX - fromX) * 0.5, 100);
+
+                    return (
+                      <g key={connection.id}>
+                        <defs>
+                          <marker
+                            id={`arrowhead-${connection.id}`}
+                            markerWidth="10"
+                            markerHeight="7"
+                            refX="9"
+                            refY="3.5"
+                            orient="auto"
+                          >
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#60A5FA" />
+                          </marker>
+                        </defs>
+                        <path
+                          d={`M ${fromX} ${fromY} C ${fromX + controlOffset} ${fromY}, ${toX - controlOffset} ${toY}, ${toX} ${toY}`}
+                          stroke="#60A5FA"
+                          strokeWidth="3"
+                          fill="none"
+                          markerEnd={`url(#arrowhead-${connection.id})`}
+                        />
+                        {!isConnecting && (
+                          <circle
+                            cx={midX}
+                            cy={(fromY + toY) / 2}
+                            r="10"
+                            fill="#EF4444"
+                            stroke="#fff"
+                            strokeWidth="2"
+                            className="cursor-pointer pointer-events-auto opacity-0 hover:opacity-100"
+                            onClick={() => removeConnection(connection.id)}
+                          >
+                            <title>Remove connection</title>
+                          </circle>
+                        )}
+                      </g>
+                    );
+                  })}
+                </svg>
+
+                {/* Render devices on top */}
                 {devices.map(device => (
                   <DraggableDevice
                     key={device.id}
                     device={device}
                     onRemove={removeDevice}
                     onMove={moveDevice}
-                  />
-                ))}
-                
-                {connections.map(connection => (
-                  <ConnectionLine
-                    key={connection.id}
-                    connection={connection}
-                    devices={devices}
+                    onPortClick={handlePortClick}
+                    isConnecting={isConnecting}
+                    connectionStart={connectionStart}
                   />
                 ))}
               </DroppableCanvas>
@@ -403,19 +630,30 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
               {/* Connection Mode Toggle */}
               <div className="mt-6">
                 <button
-                  onClick={() => setIsConnecting(!isConnecting)}
+                  onClick={() => {
+                    setIsConnecting(!isConnecting);
+                    setConnectionStart(null);
+                  }}
                   className={`w-full py-2 px-4 rounded-lg transition-colors ${
-                    isConnecting 
-                      ? 'bg-red-600 text-white hover:bg-red-700' 
-                      : 'bg-gray-600 text-white hover:bg-gray-500'
+                    isConnecting
+                      ? 'bg-red-600 text-white hover:bg-red-700'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
                   }`}
                 >
                   {isConnecting ? 'Exit Connection Mode' : 'Enter Connection Mode'}
                 </button>
                 {isConnecting && (
-                  <p className="text-xs text-gray-400 mt-2">
-                    Click output port first, then input port to connect
-                  </p>
+                  <div className="mt-2 p-2 bg-gray-800 rounded text-xs">
+                    {connectionStart ? (
+                      <p className="text-yellow-400">
+                        Now click on {connectionStart.isOutput ? 'an input' : 'an output'} port to complete the connection
+                      </p>
+                    ) : (
+                      <p className="text-gray-400">
+                        Click on any port to start a connection
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
