@@ -163,27 +163,6 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
   return (
     <div className="w-full h-full bg-gray-800 rounded-lg p-6 overflow-auto">
       <div className="min-w-[1600px]">
-        {/* Top Controls */}
-        <div className="flex gap-4 mb-6">
-          <button className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600">
-            Read
-          </button>
-          <button className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600">
-            Save
-          </button>
-          <button className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600">
-            Clear
-          </button>
-          <div className="ml-auto flex items-center gap-2">
-            <span className="text-gray-400">DTB View:</span>
-            <select className="bg-gray-700 text-white px-3 py-1 rounded">
-              <option>UNIFIED</option>
-              <option>MAIN</option>
-              <option>SUB</option>
-            </select>
-          </div>
-        </div>
-
         {/* Main Horizontal Layout */}
         <div className="relative bg-gray-900 rounded-lg p-8">
           <div className="flex items-start gap-12 relative">
