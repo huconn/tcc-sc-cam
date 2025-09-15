@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Camera, Eye, Monitor, Cpu } from 'lucide-react';
-import { MainCoreView } from './MainCoreView';
+import { MainCoreViewHorizontal } from './MainCoreViewHorizontal';
 import { ExternalDevicePopup } from './ExternalDevicePopup';
 import { useCameraStore } from '@/store/cameraStore';
 import { ViewMode } from '@/types/camera';
@@ -71,29 +71,29 @@ export const OverviewPage: React.FC = () => {
           </div>
           {/* View Mode Selector */}
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-400 mr-2">View Mode:</span>
-            {modes.map((mode) => (
-              <button
-                key={mode.value}
-                onClick={() => setViewMode(mode.value)}
-                className={clsx(
-                  'flex items-center gap-1 px-3 py-1.5 rounded-lg transition-all text-sm',
-                  viewMode === mode.value
-                    ? 'bg-primary-600 text-white shadow-lg'
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                )}
-              >
-                {mode.icon}
-                <span className="font-medium">{mode.label}</span>
-              </button>
-            ))}
+              <span className="text-sm font-medium text-gray-400 mr-2">View Mode:</span>
+              {modes.map((mode) => (
+                <button
+                  key={mode.value}
+                  onClick={() => setViewMode(mode.value)}
+                  className={clsx(
+                    'flex items-center gap-1 px-3 py-1.5 rounded-lg transition-all text-sm',
+                    viewMode === mode.value
+                      ? 'bg-primary-600 text-white shadow-lg'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  )}
+                >
+                  {mode.icon}
+                  <span className="font-medium">{mode.label}</span>
+                </button>
+              ))}
           </div>
         </div>
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-auto p-6">
-        <MainCoreView
+        <MainCoreViewHorizontal
           selectedDevices={selectedDevices}
           externalDevices={externalDevices}
           onDeviceClick={openDevicePopup}
