@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Camera, Wifi, Settings, Plus, Edit, Trash2, ArrowRight, GitBranch } from 'lucide-react';
+import { X, Camera, Wifi, Settings, Plus, Edit, Trash2, ArrowRight, GitBranch, FileCode } from 'lucide-react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { DeviceConfigModal, DeviceConfig, DeviceProperty } from './DeviceConfigModal';
@@ -344,6 +344,7 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
   const [connectionStart, setConnectionStart] = useState<{ deviceId: string; port: number; isOutput: boolean } | null>(null);
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [showConfigModal, setShowConfigModal] = useState(false);
+  const [showDTSPreview, setShowDTSPreview] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
@@ -639,6 +640,54 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
     onClose();
   };
 
+  // Generate DTS content
+  const generateDTS = () => {
+    let dtsContent = `/* Device Tree Source for ${mipi.toUpperCase()} */\n\n`;
+    dtsContent += `&${mipi} {\n`;
+    dtsContent += `\tstatus = "okay";\n`;
+    dtsContent += `\tdata-lanes = <1 2 3 4>;\n\n`;
+
+    // Add each device as a node
+    devices.forEach((device, index) => {
+      const i2cAddress = device.config?.reg || `0x${(48 + index).toString(16)}`;
+      const nodeName = device.name.toLowerCase().replace(/\s+/g, '_');
+
+      dtsContent += `\t${nodeName}@${i2cAddress.replace('0x', '')} {\n`;
+      dtsContent += `\t\tcompatible = "${device.type},${device.model.toLowerCase().replace(/[\s()]/g, '')}";\n`;
+      dtsContent += `\t\treg = <${i2cAddress}>;\n`;
+      dtsContent += `\t\tstatus = "${device.config?.status || 'okay'}";\n`;
+
+      // Add device-specific properties
+      if (device.type === 'sensor') {
+        dtsContent += `\t\tclocks = <&cam_clk>;\n`;
+        dtsContent += `\t\tclock-names = "xclk";\n`;
+        dtsContent += `\t\tclock-frequency = <24000000>;\n`;
+        if (device.config?.gpioReset) {
+          dtsContent += `\t\treset-gpios = <&${device.config.gpioReset}>;\n`;
+        }
+        if (device.config?.gpioPower) {
+          dtsContent += `\t\tpowerdown-gpios = <&${device.config.gpioPower}>;\n`;
+        }
+      } else if (device.type === 'serializer' || device.type === 'deserializer') {
+        dtsContent += `\t\ti2c-alias-pool = <0x40 0x41 0x42 0x43>;\n`;
+      }
+
+      // Add custom properties from config
+      if (device.config?.properties && device.config.properties.length > 0) {
+        device.config.properties.forEach(prop => {
+          if (prop.value) {
+            dtsContent += `\t\t${prop.name} = ${prop.value};\n`;
+          }
+        });
+      }
+
+      dtsContent += `\t};\n\n`;
+    });
+
+    dtsContent += `};\n`;
+    return dtsContent;
+  };
+
   // Auto Route function to automatically connect devices in sequence
   const handleAutoRoute = () => {
     // Clear existing connections
@@ -719,6 +768,14 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
                 Auto Route
               </button>
               <button
+                onClick={() => setShowDTSPreview(true)}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+                title="Preview Device Tree Source"
+              >
+                <FileCode className="w-4 h-4" />
+                DTS Preview
+              </button>
+              <button
                 onClick={handleSave}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
@@ -736,14 +793,6 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
           <div className="flex flex-1 overflow-hidden">
             {/* Canvas Area */}
             <div className="flex-1 relative bg-gray-900 p-4">
-              <div className="text-center mb-4">
-                <div className="bg-blue-600 text-white p-3 rounded-lg inline-block">
-                  <div className="flex items-center gap-2">
-                    <ArrowRight className="w-5 h-5" />
-                    <span>Input port에서 Output port로 연결할 수 있는 인터페이스 제공 (drag & drop)</span>
-                  </div>
-                </div>
-              </div>
 
               <DroppableCanvas onDrop={handleCanvasDrop}>
                 {/* Render connections first so they appear behind devices */}
@@ -948,6 +997,51 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
             setSelectedDevice(null);
           }}
         />
+      )}
+
+      {/* DTS Preview Modal */}
+      {showDTSPreview && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
+          <div className="bg-gray-800 rounded-lg p-6 w-[80vw] max-w-4xl h-[80vh] flex flex-col">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <FileCode className="w-5 h-5 text-purple-500" />
+                Device Tree Source Preview - {mipi.toUpperCase()}
+              </h3>
+              <button
+                onClick={() => setShowDTSPreview(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-auto bg-gray-900 rounded-lg p-4">
+              <pre className="text-sm text-gray-300 font-mono whitespace-pre">
+                {generateDTS()}
+              </pre>
+            </div>
+
+            <div className="flex justify-end gap-2 mt-4">
+              <button
+                onClick={() => {
+                  // Copy to clipboard
+                  navigator.clipboard.writeText(generateDTS());
+                  alert('DTS content copied to clipboard!');
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Copy to Clipboard
+              </button>
+              <button
+                onClick={() => setShowDTSPreview(false)}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </DndProvider>
   );
