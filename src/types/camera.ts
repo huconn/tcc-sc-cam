@@ -1,6 +1,6 @@
 export type ViewMode = 'unified' | 'main' | 'sub';
 
-export type DeviceType = 'sensor' | 'serializer' | 'deserializer' | 'external-isp';
+export type DeviceType = 'sensor' | 'serializer' | 'deserializer' | 'converter' | 'soc' | 'external-isp';
 
 export interface Device {
   id: string;
@@ -95,10 +95,21 @@ export interface MDWConfig {
   yuvStandard: 'BT.601' | 'BT.709' | 'BT.2020';
 }
 
+export interface ExternalDevice {
+  id: string;
+  type: DeviceType;
+  name: string;
+  model: string;
+}
+
 export interface CameraConfiguration {
   viewMode: ViewMode;
   devices: Device[];
   connections: Connection[];
+  externalDevices?: {
+    mipi0: ExternalDevice[];
+    mipi1: ExternalDevice[];
+  };
   mipiChannels: MIPIChannel[];
   ispConfigs: ISPConfig[];
   cameraMux: CameraMuxConfig;

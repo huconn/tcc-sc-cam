@@ -7,7 +7,7 @@ import { DeviceConfigModal, DeviceConfig, DeviceProperty } from './DeviceConfigM
 interface ExternalDevicePopupProps {
   mipi: 'mipi0' | 'mipi1';
   selectedDevices: string[];
-  onSelect: (mipi: 'mipi0' | 'mipi1', devices: string[]) => void;
+  onSelect: (mipi: 'mipi0' | 'mipi1', devices: any[]) => void;
   onClose: () => void;
 }
 
@@ -551,8 +551,14 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
   };
 
   const handleSave = () => {
-    const deviceIds = devices.map(d => d.id);
-    onSelect(mipi, deviceIds);
+    // Return full device information instead of just IDs
+    const deviceInfo = devices.map(d => ({
+      id: d.id,
+      type: d.type,
+      name: d.name,
+      model: d.model
+    }));
+    onSelect(mipi, deviceInfo);
     onClose();
   };
 

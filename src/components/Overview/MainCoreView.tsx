@@ -7,11 +7,25 @@ interface MainCoreViewProps {
     mipi0: string[];
     mipi1: string[];
   };
+  externalDevices?: {
+    mipi0: any[];
+    mipi1: any[];
+  };
   onDeviceClick: (mipi: 'mipi0' | 'mipi1') => void;
 }
 
+// Device type colors mapping
+const deviceTypeColors: Record<string, string> = {
+  sensor: 'bg-orange-500',
+  serializer: 'bg-blue-500',
+  deserializer: 'bg-purple-500',
+  converter: 'bg-yellow-500',
+  soc: 'bg-red-500'
+};
+
 export const MainCoreView: React.FC<MainCoreViewProps> = ({
   selectedDevices,
+  externalDevices,
   onDeviceClick
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -62,12 +76,33 @@ export const MainCoreView: React.FC<MainCoreViewProps> = ({
               {/* External Device 1 - Show in unified and main */}
               {(viewMode === 'unified' || viewMode === 'main') && (
                 <div
-                  className="bg-blue-600 text-white p-3 rounded-lg cursor-pointer hover:bg-blue-700 transition-colors"
+                  className="bg-blue-600 text-white p-3 rounded-lg cursor-pointer hover:bg-blue-700 transition-colors relative"
                   onClick={() => onDeviceClick('mipi0')}
                 >
                   <div className="flex items-center gap-2 justify-center">
                     <Camera className="w-4 h-4" />
                     <span className="text-xs font-semibold">Device 1</span>
+                  </div>
+                  {/* Device type indicators */}
+                  <div className="flex gap-1 mt-2 justify-center">
+                    {externalDevices?.mipi0 && externalDevices.mipi0.length > 0 ? (
+                      externalDevices.mipi0.map((device, index) => (
+                        <div
+                          key={index}
+                          className={`w-3 h-3 rounded-sm ${deviceTypeColors[device.type] || 'bg-gray-500'}`}
+                          title={`${device.name} - ${device.model}`}
+                        />
+                      ))
+                    ) : (
+                      // Show 3 black squares when no devices are configured
+                      Array.from({ length: 3 }, (_, i) => (
+                        <div
+                          key={i}
+                          className="w-3 h-3 rounded-sm bg-gray-900"
+                          title="No device configured"
+                        />
+                      ))
+                    )}
                   </div>
                 </div>
               )}
@@ -75,12 +110,33 @@ export const MainCoreView: React.FC<MainCoreViewProps> = ({
               {/* External Device 2 - Show in unified and sub */}
               {(viewMode === 'unified' || viewMode === 'sub') && (
                 <div
-                  className="bg-blue-600 text-white p-3 rounded-lg cursor-pointer hover:bg-blue-700 transition-colors"
+                  className="bg-blue-600 text-white p-3 rounded-lg cursor-pointer hover:bg-blue-700 transition-colors relative"
                   onClick={() => onDeviceClick('mipi1')}
                 >
                   <div className="flex items-center gap-2 justify-center">
                     <Camera className="w-4 h-4" />
                     <span className="text-xs font-semibold">Device 2</span>
+                  </div>
+                  {/* Device type indicators */}
+                  <div className="flex gap-1 mt-2 justify-center">
+                    {externalDevices?.mipi1 && externalDevices.mipi1.length > 0 ? (
+                      externalDevices.mipi1.map((device, index) => (
+                        <div
+                          key={index}
+                          className={`w-3 h-3 rounded-sm ${deviceTypeColors[device.type] || 'bg-gray-500'}`}
+                          title={`${device.name} - ${device.model}`}
+                        />
+                      ))
+                    ) : (
+                      // Show 3 black squares when no devices are configured
+                      Array.from({ length: 3 }, (_, i) => (
+                        <div
+                          key={i}
+                          className="w-3 h-3 rounded-sm bg-gray-900"
+                          title="No device configured"
+                        />
+                      ))
+                    )}
                   </div>
                 </div>
               )}

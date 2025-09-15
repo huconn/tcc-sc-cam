@@ -18,6 +18,7 @@ interface CameraStore extends CameraConfiguration {
   addDevice: (device: Device) => void;
   updateDevice: (id: string, updates: Partial<Device>) => void;
   removeDevice: (id: string) => void;
+  setExternalDevices: (mipi: 'mipi0' | 'mipi1', devices: any[]) => void;
   addConnection: (connection: Connection) => void;
   removeConnection: (id: string) => void;
   updateMIPIChannel: (id: string, updates: Partial<MIPIChannel>) => void;
@@ -35,6 +36,10 @@ const initialState: CameraConfiguration = {
   viewMode: 'unified',
   devices: [],
   connections: [],
+  externalDevices: {
+    mipi0: [],
+    mipi1: []
+  },
   mipiChannels: [
     {
       id: 'mipi0',
@@ -118,6 +123,13 @@ export const useCameraStore = create<CameraStore>((set) => ({
   removeDevice: (id) => set((state) => ({
     devices: state.devices.filter(d => d.id !== id),
     connections: state.connections.filter(c => c.sourceId !== id && c.targetId !== id)
+  })),
+
+  setExternalDevices: (mipi, devices) => set((state) => ({
+    externalDevices: {
+      ...state.externalDevices,
+      [mipi]: devices
+    }
   })),
 
   addConnection: (connection) => set((state) => ({

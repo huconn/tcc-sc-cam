@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { Camera } from 'lucide-react';
 import { MainCoreView } from './MainCoreView';
 import { ExternalDevicePopup } from './ExternalDevicePopup';
+import { useCameraStore } from '@/store/cameraStore';
 
 export const OverviewPage: React.FC = () => {
+  const { externalDevices, setExternalDevices } = useCameraStore();
   const [selectedDevices, setSelectedDevices] = useState<{
     mipi0: string[];
     mipi1: string[];
@@ -16,10 +18,13 @@ export const OverviewPage: React.FC = () => {
     mipi: 'mipi0' | 'mipi1' | null;
   }>({ show: false, mipi: null });
 
-  const handleDeviceSelect = (mipi: 'mipi0' | 'mipi1', devices: string[]) => {
+  const handleDeviceSelect = (mipi: 'mipi0' | 'mipi1', devices: any[]) => {
+    // Store devices in the global store
+    setExternalDevices(mipi, devices);
+    // Also update local state for backward compatibility
     setSelectedDevices(prev => ({
       ...prev,
-      [mipi]: devices
+      [mipi]: devices.map(d => d.id)
     }));
   };
 
@@ -46,6 +51,7 @@ export const OverviewPage: React.FC = () => {
       <div className="flex-1 overflow-auto p-6">
         <MainCoreView
           selectedDevices={selectedDevices}
+          externalDevices={externalDevices}
           onDeviceClick={openDevicePopup}
         />
       </div>
