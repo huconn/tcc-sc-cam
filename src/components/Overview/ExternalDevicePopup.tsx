@@ -45,7 +45,7 @@ const deviceModels = {
   serializer: ['MAX96701', 'MAX96705', 'DS90UB953', 'DS90UB954'],
   deserializer: ['MAX9286', 'MAX9288', 'DS90UB954', 'DS90UB960'],
   converter: ['ADV7280', 'ADV7282', 'TW9910', 'TW9912'],
-  soc: ['TCC8050', 'TCC8051', 'TCC8052'],
+  soc: ['TCC807x'],
 };
 
 const DraggableDevice: React.FC<{
