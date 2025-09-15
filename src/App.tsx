@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { Download, Upload, Save, FileText, Settings } from 'lucide-react';
 import { ViewModeSelector } from '@/components/ViewModeSelector';
-import { DevicePanel } from '@/components/ExternalDevices/DevicePanel';
-import { DragDropCanvas } from '@/components/Canvas/DragDropCanvas';
 import { MIPIPanel } from '@/components/MIPIConfiguration/MIPIPanel';
 import { ISPPanel } from '@/components/ISPConfiguration/ISPPanel';
 import { CameraMuxPanel } from '@/components/CameraMux/CameraMuxPanel';
@@ -12,7 +10,7 @@ import { useCameraStore } from '@/store/cameraStore';
 import { DTSGenerator } from '@/utils/dtsGenerator';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'canvas' | 'mipi' | 'isp' | 'mux' | 'preview'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'mipi' | 'isp' | 'mux' | 'preview'>('overview');
   const { exportConfiguration, loadConfiguration } = useCameraStore();
 
   const handleExportDTS = () => {
@@ -111,9 +109,6 @@ export const App: React.FC = () => {
 
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Device Panel */}
-        <DevicePanel />
-
         {/* Configuration Area */}
         <div className="flex-1 flex flex-col">
           {/* Tab Navigation */}
@@ -126,14 +121,6 @@ export const App: React.FC = () => {
                 }`}
               >
                 Overview
-              </button>
-              <button
-                onClick={() => setActiveTab('canvas')}
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  activeTab === 'canvas' ? 'bg-primary-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                }`}
-              >
-                Canvas
               </button>
               <button
                 onClick={() => setActiveTab('mipi')}
@@ -173,7 +160,6 @@ export const App: React.FC = () => {
           {/* Tab Content */}
           <div className={`flex-1 overflow-auto ${activeTab === 'preview' || activeTab === 'overview' ? 'p-0' : 'p-4'}`}>
             {activeTab === 'overview' && <OverviewPage />}
-            {activeTab === 'canvas' && <DragDropCanvas />}
             {activeTab === 'mipi' && <MIPIPanel />}
             {activeTab === 'isp' && <ISPPanel />}
             {activeTab === 'mux' && <CameraMuxPanel />}
