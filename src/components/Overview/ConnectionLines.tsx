@@ -11,6 +11,7 @@ interface Connection {
   to: string;
   color?: string;
   strokeWidth?: number;
+  strokeDasharray?: string;
 }
 
 interface ConnectionLinesProps {
@@ -63,27 +64,20 @@ export const ConnectionLines: React.FC<ConnectionLinesProps> = ({
   const drawConnection = (connection: Connection) => {
     const fromPoint = connectionPoints.get(connection.from);
     const toPoint = connectionPoints.get(connection.to);
-    
+
     if (!fromPoint || !toPoint) return null;
 
-    const dx = toPoint.x - fromPoint.x;
-    const dy = toPoint.y - fromPoint.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    
-    // 베지어 곡선을 위한 제어점 계산
-    const controlPoint1X = fromPoint.x + dx * 0.3;
-    const controlPoint1Y = fromPoint.y;
-    const controlPoint2X = toPoint.x - dx * 0.3;
-    const controlPoint2Y = toPoint.y;
-
     return (
-      <path
+      <line
         key={`${connection.from}-${connection.to}`}
-        d={`M ${fromPoint.x} ${fromPoint.y} C ${controlPoint1X} ${controlPoint1Y}, ${controlPoint2X} ${controlPoint2Y}, ${toPoint.x} ${toPoint.y}`}
+        x1={fromPoint.x}
+        y1={fromPoint.y}
+        x2={toPoint.x}
+        y2={toPoint.y}
         stroke={connection.color || '#3b82f6'}
         strokeWidth={connection.strokeWidth || 2}
-        fill="none"
         strokeLinecap="round"
+        strokeDasharray={connection.strokeDasharray}
         className="transition-all duration-300"
       />
     );
