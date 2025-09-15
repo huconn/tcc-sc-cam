@@ -55,7 +55,8 @@ const DraggableDevice: React.FC<{
   onPortClick: (deviceId: string, portIndex: number, isOutput: boolean) => void;
   onDeviceClick: (device: Device) => void;
   connectionStart: { deviceId: string; port: number; isOutput: boolean } | null;
-}> = ({ device, onRemove, onMove, onPortClick, onDeviceClick, connectionStart }) => {
+  connections: Connection[];
+}> = ({ device, onRemove, onMove, onPortClick, onDeviceClick, connectionStart, connections }) => {
   const [{ isDragging }, drag] = useDrag({
     type: 'device',
     item: { id: device.id, type: device.type, width: 150, height: 100 },
@@ -77,6 +78,17 @@ const DraggableDevice: React.FC<{
     return startY + index * portSpacing;
   };
 
+  // Check if a specific port is connected
+  const isPortConnected = (portIndex: number, isOutput: boolean) => {
+    return connections.some(conn => {
+      if (isOutput) {
+        return conn.from === device.id && conn.fromPort === portIndex;
+      } else {
+        return conn.to === device.id && conn.toPort === portIndex;
+      }
+    });
+  };
+
   return (
     <div
       ref={drag}
@@ -94,10 +106,12 @@ const DraggableDevice: React.FC<{
               e.stopPropagation();
               onPortClick(device.id, i, false);
             }}
-            className={`w-4 h-4 bg-gray-700 border-2 border-white rounded-full cursor-pointer hover:bg-blue-400 transition-colors ${
+            className={`w-4 h-4 border-2 border-white rounded-full cursor-pointer transition-colors ${
               connectionStart?.deviceId === device.id && !connectionStart.isOutput && connectionStart.port === i
                 ? 'bg-blue-500 ring-2 ring-blue-300'
-                : ''
+                : isPortConnected(i, false)
+                ? 'bg-blue-500 hover:bg-blue-600'
+                : 'bg-gray-700 hover:bg-blue-400'
             }`}
             style={{
               position: 'absolute',
@@ -140,10 +154,12 @@ const DraggableDevice: React.FC<{
               e.stopPropagation();
               onPortClick(device.id, i, true);
             }}
-            className={`w-4 h-4 bg-gray-700 border-2 border-white rounded-full cursor-pointer hover:bg-green-400 transition-colors ${
+            className={`w-4 h-4 border-2 border-white rounded-full cursor-pointer transition-colors ${
               connectionStart?.deviceId === device.id && connectionStart.isOutput && connectionStart.port === i
                 ? 'bg-green-500 ring-2 ring-green-300'
-                : ''
+                : isPortConnected(i, true)
+                ? 'bg-green-500 hover:bg-green-600'
+                : 'bg-gray-700 hover:bg-green-400'
             }`}
             style={{
               position: 'absolute',
@@ -656,6 +672,7 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
                     onPortClick={handlePortClick}
                     onDeviceClick={handleDeviceClick}
                     connectionStart={connectionStart}
+                    connections={connections}
                   />
                 ))}
               </DroppableCanvas>
