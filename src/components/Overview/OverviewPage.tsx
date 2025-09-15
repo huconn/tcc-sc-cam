@@ -18,14 +18,17 @@ export const OverviewPage: React.FC = () => {
     mipi: 'mipi0' | 'mipi1' | null;
   }>({ show: false, mipi: null });
 
-  const handleDeviceSelect = (mipi: 'mipi0' | 'mipi1', devices: any[]) => {
-    // Store devices in the global store
-    setExternalDevices(mipi, devices);
-    // Also update local state for backward compatibility
-    setSelectedDevices(prev => ({
-      ...prev,
-      [mipi]: devices.map(d => d.id)
-    }));
+  const handleDeviceSelect = (mipi: 'mipi0' | 'mipi1', deviceData: any) => {
+    // Store device data in the global store
+    setExternalDevices(mipi, deviceData);
+
+    // Update local state for backward compatibility
+    if (deviceData && deviceData.devices) {
+      setSelectedDevices(prev => ({
+        ...prev,
+        [mipi]: deviceData.devices.map((d: any) => d.id)
+      }));
+    }
   };
 
   const openDevicePopup = (mipi: 'mipi0' | 'mipi1') => {
@@ -61,6 +64,7 @@ export const OverviewPage: React.FC = () => {
         <ExternalDevicePopup
           mipi={showDevicePopup.mipi}
           selectedDevices={selectedDevices[showDevicePopup.mipi]}
+          savedDevices={externalDevices?.[showDevicePopup.mipi] || []}
           onSelect={handleDeviceSelect}
           onClose={closeDevicePopup}
         />

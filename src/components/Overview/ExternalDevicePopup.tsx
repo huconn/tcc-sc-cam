@@ -1,13 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Camera, Wifi, Settings, Plus, Edit, Trash2, ArrowRight } from 'lucide-react';
+import { X, Camera, Wifi, Settings, Plus, Edit, Trash2, ArrowRight, GitBranch } from 'lucide-react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { DeviceConfigModal, DeviceConfig, DeviceProperty } from './DeviceConfigModal';
 
+interface SavedDeviceData {
+  devices: any[];
+  connections: any[];
+}
+
 interface ExternalDevicePopupProps {
   mipi: 'mipi0' | 'mipi1';
   selectedDevices: string[];
-  onSelect: (mipi: 'mipi0' | 'mipi1', devices: any[]) => void;
+  savedDevices?: any[];
+  onSelect: (mipi: 'mipi0' | 'mipi1', deviceData: any) => void;
   onClose: () => void;
 }
 
@@ -327,6 +333,7 @@ const ConnectionLine: React.FC<{
 export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
   mipi,
   selectedDevices,
+  savedDevices,
   onSelect,
   onClose,
 }) => {
@@ -338,12 +345,74 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [showConfigModal, setShowConfigModal] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Reset selected model when device type changes
   useEffect(() => {
     const models = deviceModels[selectedType as keyof typeof deviceModels] || [];
     setSelectedModel(models[0] || '');
   }, [selectedType]);
+
+  // Load saved devices and connections when popup opens
+  useEffect(() => {
+    if (!isInitialized && savedDevices) {
+      // Check if savedDevices is the new format with devices and connections
+      if (savedDevices && typeof savedDevices === 'object' && 'devices' in savedDevices && 'connections' in savedDevices) {
+        const savedData = savedDevices as unknown as SavedDeviceData;
+
+        // Reconstruct devices
+        const reconstructedDevices: Device[] = savedData.devices.map((savedDevice: any) => {
+          const deviceType = deviceTypes.find(dt => dt.id === savedDevice.type);
+          return {
+            ...savedDevice,
+            color: deviceType?.color || 'bg-gray-500'
+          };
+        });
+
+        // Reconstruct connections
+        const reconstructedConnections: Connection[] = savedData.connections || [];
+
+        setDevices(reconstructedDevices);
+        setConnections(reconstructedConnections);
+      } else if (Array.isArray(savedDevices) && savedDevices.length > 0) {
+        // Legacy format - just devices array
+        const reconstructedDevices: Device[] = [];
+
+        savedDevices.forEach((savedDevice, index) => {
+          const deviceType = deviceTypes.find(dt => dt.id === savedDevice.type);
+          if (deviceType) {
+            const device: Device = {
+              id: savedDevice.id || `${savedDevice.type}-${Date.now()}-${index}`,
+              type: savedDevice.type as Device['type'],
+              name: savedDevice.name || deviceType.name,
+              model: savedDevice.model || 'Default',
+              x: savedDevice.x || (50 + (index % 3) * 200),
+              y: savedDevice.y || (50 + Math.floor(index / 3) * 120),
+              inputs: savedDevice.inputs ?? (savedDevice.type === 'sensor' ? 0 : (savedDevice.type === 'soc' ? 1 : 2)),
+              outputs: savedDevice.outputs ?? (savedDevice.type === 'soc' ? 0 : 1),
+              color: deviceType.color,
+              config: savedDevice.config || {
+                deviceName: deviceType.name.toLowerCase().replace(/\s+/g, '_'),
+                nodeName: `${savedDevice.type}_${savedDevice.id || Date.now()}`,
+                compatible: `vendor,${savedDevice.type}-${(savedDevice.model || 'default').split(' ')[0].toLowerCase()}`,
+                reg: '0x40',
+                inEndpoints: [],
+                outEndpoints: [],
+                status: 'okay',
+                properties: []
+              }
+            };
+            reconstructedDevices.push(device);
+          }
+        });
+
+        setDevices(reconstructedDevices);
+        // Don't auto-create connections for legacy format
+        setConnections([]);
+      }
+      setIsInitialized(true);
+    }
+  }, [savedDevices, isInitialized]);
 
   const addDevice = (type: string, x?: number, y?: number, useSelectedModel: boolean = true) => {
     const deviceType = deviceTypes.find(dt => dt.id === type);
@@ -551,15 +620,86 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
   };
 
   const handleSave = () => {
-    // Return full device information instead of just IDs
-    const deviceInfo = devices.map(d => ({
-      id: d.id,
-      type: d.type,
-      name: d.name,
-      model: d.model
-    }));
-    onSelect(mipi, deviceInfo);
+    // Save both devices and connections
+    const saveData = {
+      devices: devices.map(d => ({
+        id: d.id,
+        type: d.type,
+        name: d.name,
+        model: d.model,
+        x: d.x,
+        y: d.y,
+        inputs: d.inputs,
+        outputs: d.outputs,
+        config: d.config
+      })),
+      connections: connections
+    };
+    onSelect(mipi, saveData);
     onClose();
+  };
+
+  // Auto Route function to automatically connect devices in sequence
+  const handleAutoRoute = () => {
+    // Clear existing connections
+    setConnections([]);
+
+    // Sort devices by x position (left to right)
+    const sortedDevices = [...devices].sort((a, b) => a.x - b.x);
+
+    const newConnections: Connection[] = [];
+
+    // Try to connect each device to the next suitable device
+    for (let i = 0; i < sortedDevices.length - 1; i++) {
+      const fromDevice = sortedDevices[i];
+
+      // Skip if device has no outputs
+      if (fromDevice.outputs === 0) continue;
+
+      // Find next device with inputs
+      for (let j = i + 1; j < sortedDevices.length; j++) {
+        const toDevice = sortedDevices[j];
+
+        if (toDevice.inputs > 0) {
+          // Check if connection already exists
+          const existingConnection = newConnections.find(
+            c => c.from === fromDevice.id && c.to === toDevice.id
+          );
+
+          if (!existingConnection) {
+            const connection: Connection = {
+              id: `conn-auto-${Date.now()}-${newConnections.length}`,
+              from: fromDevice.id,
+              to: toDevice.id,
+              fromPort: 0,
+              toPort: 0
+            };
+            newConnections.push(connection);
+
+            // Update device endpoints
+            const { fromLabel, toLabel } = generateEndpointLabel(fromDevice, toDevice, 0, 0);
+
+            // Update the devices with endpoint information
+            setDevices(prev => prev.map(device => {
+              if (device.id === fromDevice.id && device.config) {
+                const updatedConfig = { ...device.config };
+                updatedConfig.outEndpoints[0] = `&${toLabel}`;
+                return { ...device, config: updatedConfig };
+              } else if (device.id === toDevice.id && device.config) {
+                const updatedConfig = { ...device.config };
+                updatedConfig.inEndpoints[0] = `&${fromLabel}`;
+                return { ...device, config: updatedConfig };
+              }
+              return device;
+            }));
+
+            break; // Connect to only one device
+          }
+        }
+      }
+    }
+
+    setConnections(newConnections);
   };
 
   return (
@@ -570,6 +710,14 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
           <div className="flex justify-between items-center p-4 border-b border-gray-700">
             <h2 className="text-xl font-bold text-white">External Devices - {mipi.toUpperCase()}</h2>
             <div className="flex gap-2">
+              <button
+                onClick={handleAutoRoute}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+                title="Automatically connect devices in sequence"
+              >
+                <GitBranch className="w-4 h-4" />
+                Auto Route
+              </button>
               <button
                 onClick={handleSave}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"

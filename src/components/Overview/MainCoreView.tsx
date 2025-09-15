@@ -85,8 +85,10 @@ export const MainCoreView: React.FC<MainCoreViewProps> = ({
                   </div>
                   {/* Device type indicators */}
                   <div className="flex gap-1 mt-2 justify-center">
-                    {externalDevices?.mipi0 && externalDevices.mipi0.length > 0 ? (
-                      externalDevices.mipi0.map((device, index) => (
+                    {externalDevices?.mipi0 &&
+                     ((externalDevices.mipi0.devices && externalDevices.mipi0.devices.length > 0) ||
+                      (Array.isArray(externalDevices.mipi0) && externalDevices.mipi0.length > 0)) ? (
+                      (externalDevices.mipi0.devices || externalDevices.mipi0).map((device: any, index: number) => (
                         <div
                           key={index}
                           className={`w-3 h-3 rounded-sm ${deviceTypeColors[device.type] || 'bg-gray-500'}`}
@@ -119,8 +121,10 @@ export const MainCoreView: React.FC<MainCoreViewProps> = ({
                   </div>
                   {/* Device type indicators */}
                   <div className="flex gap-1 mt-2 justify-center">
-                    {externalDevices?.mipi1 && externalDevices.mipi1.length > 0 ? (
-                      externalDevices.mipi1.map((device, index) => (
+                    {externalDevices?.mipi1 &&
+                     ((externalDevices.mipi1.devices && externalDevices.mipi1.devices.length > 0) ||
+                      (Array.isArray(externalDevices.mipi1) && externalDevices.mipi1.length > 0)) ? (
+                      (externalDevices.mipi1.devices || externalDevices.mipi1).map((device: any, index: number) => (
                         <div
                           key={index}
                           className={`w-3 h-3 rounded-sm ${deviceTypeColors[device.type] || 'bg-gray-500'}`}
