@@ -1,16 +1,10 @@
-import React, { useState } from 'react';
-import { Download, Upload, Save, FileText, Settings } from 'lucide-react';
-import { ViewModeSelector } from '@/components/ViewModeSelector';
-import { MIPIPanel } from '@/components/MIPIConfiguration/MIPIPanel';
-import { ISPPanel } from '@/components/ISPConfiguration/ISPPanel';
-import { CameraMuxPanel } from '@/components/CameraMux/CameraMuxPanel';
-import { PreviewPanel } from '@/components/Preview/PreviewPanel';
+import React from 'react';
+import { Download, Upload, Save } from 'lucide-react';
 import { OverviewPage } from '@/components/Overview/OverviewPage';
 import { useCameraStore } from '@/store/cameraStore';
 import { DTSGenerator } from '@/utils/dtsGenerator';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'mipi' | 'isp' | 'mux' | 'preview'>('overview');
   const { exportConfiguration, loadConfiguration } = useCameraStore();
 
   const handleExportDTS = () => {
@@ -104,66 +98,13 @@ export const App: React.FC = () => {
         </div>
       </header>
 
-      {/* View Mode Selector */}
-      <ViewModeSelector />
-
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
         {/* Configuration Area */}
         <div className="flex-1 flex flex-col">
-          {/* Tab Navigation */}
-          <div className="bg-gray-800 border-b border-gray-700">
-            <div className="flex gap-1 p-2">
-              <button
-                onClick={() => setActiveTab('overview')}
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  activeTab === 'overview' ? 'bg-primary-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                }`}
-              >
-                Overview
-              </button>
-              <button
-                onClick={() => setActiveTab('mipi')}
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  activeTab === 'mipi' ? 'bg-primary-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                }`}
-              >
-                MIPI CSI
-              </button>
-              <button
-                onClick={() => setActiveTab('isp')}
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  activeTab === 'isp' ? 'bg-primary-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                }`}
-              >
-                ISP
-              </button>
-              <button
-                onClick={() => setActiveTab('mux')}
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  activeTab === 'mux' ? 'bg-primary-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                }`}
-              >
-                Camera Mux
-              </button>
-              <button
-                onClick={() => setActiveTab('preview')}
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  activeTab === 'preview' ? 'bg-primary-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                }`}
-              >
-                Preview
-              </button>
-            </div>
-          </div>
-
-          {/* Tab Content */}
-          <div className={`flex-1 overflow-auto ${activeTab === 'preview' || activeTab === 'overview' ? 'p-0' : 'p-4'}`}>
-            {activeTab === 'overview' && <OverviewPage />}
-            {activeTab === 'mipi' && <MIPIPanel />}
-            {activeTab === 'isp' && <ISPPanel />}
-            {activeTab === 'mux' && <CameraMuxPanel />}
-            {activeTab === 'preview' && <PreviewPanel />}
+          {/* Overview Content - Always shown */}
+          <div className="flex-1 overflow-auto p-0">
+            <OverviewPage />
           </div>
         </div>
       </div>

@@ -76,20 +76,8 @@ export const MainCoreView: React.FC<MainCoreViewProps> = ({
 
   return (
     <div className="w-full h-full">
-      {/* System Overview Title */}
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-gray-100 mb-2">
-          {viewMode === 'unified' ? 'Unified View' : viewMode === 'main' ? 'Main Core View' : 'Sub Core View'}
-        </h2>
-        <p className="text-gray-400">
-          {viewMode === 'unified' ? 'Complete camera system overview' :
-           viewMode === 'main' ? 'Primary camera processing path' :
-           'Secondary camera processing path'}
-        </p>
-      </div>
-
       {/* Diagram Container */}
-      <div ref={containerRef} className="w-full bg-gray-800 rounded-lg p-6">
+      <div ref={containerRef} className="w-full h-full bg-gray-800 rounded-lg p-6">
 
         {/* Main Layout Container */}
         <div className="flex gap-8">
