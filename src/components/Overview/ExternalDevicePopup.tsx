@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { X, Camera, Wifi, Settings, Plus, Edit, Trash2, ArrowRight } from 'lucide-react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
+import { DeviceConfigModal, DeviceConfig, DeviceProperty } from './DeviceConfigModal';
 
 interface ExternalDevicePopupProps {
   mipi: 'mipi0' | 'mipi1';
@@ -20,6 +21,7 @@ interface Device {
   inputs: number;
   outputs: number;
   color: string;
+  config?: DeviceConfig;
 }
 
 interface Connection {
@@ -51,8 +53,9 @@ const DraggableDevice: React.FC<{
   onRemove: (id: string) => void;
   onMove: (id: string, x: number, y: number) => void;
   onPortClick: (deviceId: string, portIndex: number, isOutput: boolean) => void;
+  onDeviceClick: (device: Device) => void;
   connectionStart: { deviceId: string; port: number; isOutput: boolean } | null;
-}> = ({ device, onRemove, onMove, onPortClick, connectionStart }) => {
+}> = ({ device, onRemove, onMove, onPortClick, onDeviceClick, connectionStart }) => {
   const [{ isDragging }, drag] = useDrag({
     type: 'device',
     item: { id: device.id, type: device.type, width: 150, height: 100 },
@@ -106,7 +109,13 @@ const DraggableDevice: React.FC<{
         ))}
       </div>
 
-      <div className="p-3 h-full flex flex-col justify-center">
+      <div
+        className="p-3 h-full flex flex-col justify-center cursor-pointer"
+        onClick={(e) => {
+          e.stopPropagation();
+          onDeviceClick(device);
+        }}
+      >
         <div className="flex justify-between items-start mb-2">
           <span className="font-semibold text-sm">{device.name}</span>
           <button
@@ -310,6 +319,8 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
   const [selectedType, setSelectedType] = useState<string>('sensor');
   const [selectedModel, setSelectedModel] = useState<string>('');
   const [connectionStart, setConnectionStart] = useState<{ deviceId: string; port: number; isOutput: boolean } | null>(null);
+  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  const [showConfigModal, setShowConfigModal] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
 
   const addDevice = (type: string, x?: number, y?: number) => {
@@ -318,7 +329,7 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
 
     const models = deviceModels[type as keyof typeof deviceModels] || [];
     const model = selectedModel || models[0] || 'Default';
-    
+
     const newDevice: Device = {
       id: `${type}-${Date.now()}`,
       type: type as Device['type'],
@@ -329,6 +340,16 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
       inputs: type === 'sensor' ? 0 : (type === 'soc' ? 1 : 2),
       outputs: type === 'soc' ? 0 : 1,
       color: deviceType.color,
+      config: {
+        deviceName: deviceType.name.toLowerCase().replace(/\s+/g, '_'),
+        nodeName: `${type}_${Date.now()}`,
+        compatible: `vendor,${type}-${model.split(' ')[0].toLowerCase()}`,
+        reg: '0x40',
+        inEndpoints: [],
+        outEndpoints: [],
+        status: 'okay',
+        properties: []
+      }
     };
 
     setDevices(prev => [...prev, newDevice]);
@@ -423,6 +444,19 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
 
   const removeConnection = (connectionId: string) => {
     setConnections(prev => prev.filter(c => c.id !== connectionId));
+  };
+
+  const handleDeviceClick = (device: Device) => {
+    setSelectedDevice(device);
+    setShowConfigModal(true);
+  };
+
+  const handleSaveDeviceConfig = (config: DeviceConfig) => {
+    if (selectedDevice) {
+      setDevices(prev => prev.map(d =>
+        d.id === selectedDevice.id ? { ...d, config } : d
+      ));
+    }
   };
 
   const handleSave = () => {
@@ -554,6 +588,7 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
                     onRemove={removeDevice}
                     onMove={moveDevice}
                     onPortClick={handlePortClick}
+                    onDeviceClick={handleDeviceClick}
                     connectionStart={connectionStart}
                   />
                 ))}
@@ -644,6 +679,30 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Device Configuration Modal */}
+      {showConfigModal && selectedDevice && (
+        <DeviceConfigModal
+          deviceId={selectedDevice.id}
+          deviceType={selectedDevice.type}
+          deviceModel={selectedDevice.model}
+          config={selectedDevice.config || {
+            deviceName: selectedDevice.name.toLowerCase().replace(/\s+/g, '_'),
+            nodeName: `${selectedDevice.type}_${selectedDevice.id}`,
+            compatible: `vendor,${selectedDevice.type}`,
+            reg: '0x40',
+            inEndpoints: [],
+            outEndpoints: [],
+            status: 'okay',
+            properties: []
+          }}
+          onSave={handleSaveDeviceConfig}
+          onClose={() => {
+            setShowConfigModal(false);
+            setSelectedDevice(null);
+          }}
+        />
+      )}
     </DndProvider>
   );
 };
