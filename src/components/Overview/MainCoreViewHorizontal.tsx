@@ -1,8 +1,32 @@
 import React, { useState } from 'react';
-import { Camera, Monitor, AlertCircle, MoreHorizontal } from 'lucide-react';
+import { 
+  Camera, 
+  Monitor, 
+  AlertCircle, 
+  MoreHorizontal,
+  Zap,
+  Cpu,
+  Network,
+  Settings,
+  Eye,
+  Layers,
+  Activity,
+  Wifi,
+  HardDrive,
+  Video,
+  Image,
+  Filter,
+  ArrowRight,
+  ArrowDown,
+  Circle,
+  Square,
+  Triangle,
+  Hexagon
+} from 'lucide-react';
 import { useCameraStore } from '@/store/cameraStore';
 import { ISPConfigModal } from './ISPConfigModal';
 import { MIPIChannelConfigModal } from './MIPIChannelConfigModal';
+import { CameraMuxConfigModal } from './CameraMuxConfigModal';
 
 interface MainCoreViewHorizontalProps {
   selectedDevices: {
@@ -57,6 +81,10 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
     channel: number;
   } | null>(null);
   const [mipiChannelConfigs, setMipiChannelConfigs] = useState<Record<string, any>>({});
+  const [showCameraMuxConfig, setShowCameraMuxConfig] = useState(false);
+  const [cameraMuxConfig, setCameraMuxConfig] = useState<{ mappings: Record<number, number> }>({
+    mappings: { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7 }
+  });
 
   // Channel colors - more vibrant and visible
   const channelColors = [
@@ -363,16 +391,24 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
             </div>
 
             {/* Column 4: Camera Mux */}
-            <div className="bg-gray-700 border-2 border-yellow-600 rounded-lg p-4 w-[180px] h-[320px] flex flex-col" id="camera-mux">
+            <div
+              className="bg-gray-700 border-2 border-yellow-600 rounded-lg p-4 w-[180px] h-[320px] flex flex-col cursor-pointer hover:bg-gray-600 transition-colors"
+              id="camera-mux"
+              onClick={() => setShowCameraMuxConfig(true)}
+              title="Click to configure Camera Mux"
+            >
               <div className="text-center font-semibold text-sm mb-1 text-gray-300">TCC807X</div>
               <div className="text-center font-semibold text-sm mb-3 text-yellow-400">Camera Mux</div>
               <div className="flex-1 flex flex-col justify-around">
-                {activeChannels.map((ch, idx) => (
-                  <div key={idx} className="flex items-center gap-2" data-anchor={`mux-ch${ch.globalIndex}`}>
-                    <div className={`w-4 h-4 rounded ${channelColorClasses[ch.globalIndex]}`}></div>
-                    <span className="text-xs font-medium text-gray-200">CAM CH{ch.globalIndex}</span>
-                  </div>
-                ))}
+                {activeChannels.map((ch, idx) => {
+                  const mappedInput = cameraMuxConfig.mappings[ch.globalIndex] ?? ch.globalIndex;
+                  return (
+                    <div key={idx} className="flex items-center gap-2" data-anchor={`mux-ch${ch.globalIndex}`}>
+                      <div className={`w-4 h-4 rounded ${channelColorClasses[mappedInput]}`}></div>
+                      <span className="text-xs font-medium text-gray-200">CAM CH{ch.globalIndex} ← CH{mappedInput}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -482,6 +518,18 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
             setShowMIPIConfig(null);
           }}
           onClose={() => setShowMIPIConfig(null)}
+        />
+      )}
+
+      {/* Camera Mux Configuration Modal */}
+      {showCameraMuxConfig && (
+        <CameraMuxConfigModal
+          currentConfig={cameraMuxConfig}
+          onSave={(config) => {
+            setCameraMuxConfig(config);
+            setShowCameraMuxConfig(false);
+          }}
+          onClose={() => setShowCameraMuxConfig(false)}
         />
       )}
     </div>
