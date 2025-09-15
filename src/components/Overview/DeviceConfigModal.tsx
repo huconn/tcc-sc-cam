@@ -42,7 +42,7 @@ export const DeviceConfigModal: React.FC<DeviceConfigModalProps> = ({
   onClose
 }) => {
   const [config, setConfig] = useState<DeviceConfig>(initialConfig);
-  const [showDtsPreview, setShowDtsPreview] = useState(false);
+  const [showDtsPreview, setShowDtsPreview] = useState(true);
   const [newProperty, setNewProperty] = useState<DeviceProperty>({
     id: '',
     name: '',
