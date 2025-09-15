@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { X, Camera, Wifi, Settings, Plus, Edit, Trash2, ArrowRight } from 'lucide-react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
@@ -175,7 +175,7 @@ const DraggableDevice: React.FC<{
   );
 };
 
-const DeviceItem: React.FC<{ type: typeof deviceTypes[0]; onAdd: (type: string) => void }> = ({ type, onAdd }) => {
+const DeviceItem: React.FC<{ type: typeof deviceTypes[0]; onAdd: (type: string, useSelectedModel: boolean) => void }> = ({ type, onAdd }) => {
   const [{ isDragging }, drag] = useDrag({
     type: 'device-item',
     item: { type: type.id, id: null }, // id를 null로 명시적으로 설정
@@ -190,7 +190,7 @@ const DeviceItem: React.FC<{ type: typeof deviceTypes[0]; onAdd: (type: string) 
       className={`${type.color} text-white p-3 rounded-lg cursor-move select-none ${
         isDragging ? 'opacity-50' : ''
       }`}
-      onClick={() => onAdd(type.id)}
+      onClick={() => onAdd(type.id, false)} // Use default model when clicking from Available Devices
     >
       <div className="flex items-center gap-2">
         <type.icon className="w-5 h-5" />
@@ -339,12 +339,20 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
   const [showConfigModal, setShowConfigModal] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
 
-  const addDevice = (type: string, x?: number, y?: number) => {
+  // Reset selected model when device type changes
+  useEffect(() => {
+    const models = deviceModels[selectedType as keyof typeof deviceModels] || [];
+    setSelectedModel(models[0] || '');
+  }, [selectedType]);
+
+  const addDevice = (type: string, x?: number, y?: number, useSelectedModel: boolean = true) => {
     const deviceType = deviceTypes.find(dt => dt.id === type);
     if (!deviceType) return;
 
     const models = deviceModels[type as keyof typeof deviceModels] || [];
-    const model = selectedModel || models[0] || 'Default';
+    // Use selectedModel only when adding from the "Add Device" button (useSelectedModel = true)
+    // Use default model (first in list) when dragging from Available Devices (useSelectedModel = false)
+    const model = useSelectedModel ? (selectedModel || models[0] || 'Default') : (models[0] || 'Default');
 
     const newDevice: Device = {
       id: `${type}-${Date.now()}`,
@@ -386,7 +394,8 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
 
     if (item.type && !item.id) {
       // New device from device item (only if it doesn't have an id)
-      addDevice(item.type, adjustedX, adjustedY);
+      // Use false to indicate using default model instead of selected model
+      addDevice(item.type, adjustedX, adjustedY, false);
     } else if (item.id) {
       // Move existing device
       moveDevice(item.id, adjustedX, adjustedY);
@@ -719,7 +728,7 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
 
               {/* Add Device Button */}
               <button
-                onClick={() => addDevice(selectedType)}
+                onClick={() => addDevice(selectedType, undefined, undefined, true)} // Use selected model
                 className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors mb-4"
               >
                 <Plus className="w-4 h-4 inline mr-2" />
@@ -733,7 +742,7 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
                   <DeviceItem
                     key={type.id}
                     type={type}
-                    onAdd={addDevice}
+                    onAdd={(typeId, useSelectedModel) => addDevice(typeId, undefined, undefined, useSelectedModel)}
                   />
                 ))}
               </div>
