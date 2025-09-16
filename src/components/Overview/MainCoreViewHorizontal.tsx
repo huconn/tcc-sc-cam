@@ -27,6 +27,9 @@ import { useCameraStore } from '@/store/cameraStore';
 import { ISPConfigModal } from './ISPConfigModal';
 import { MIPIChannelConfigModal } from './MIPIChannelConfigModal';
 import { CameraMuxConfigModal } from './CameraMuxConfigModal';
+import { SVDWBlock } from '@/components/SVDW/SVDWBlock';
+import { VideoOutputsSection } from '@/components/VideoPipeline/VideoOutputsSection';
+import { CIEDBar } from '@/components/CIED/CIEDBar';
 
 interface MainCoreViewHorizontalProps {
   selectedDevices: {
@@ -412,73 +415,22 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
               </div>
             </div>
 
-            {/* Column 5: SVDW Block */}
-            <div className="bg-gray-700 border-2 border-amber-600 rounded-lg p-4 w-[140px]">
-              <div className="text-center font-semibold text-sm mb-3 text-amber-400">SVDW</div>
-              <div className="space-y-2">
-                {activeChannels.slice(0, 4).map((ch, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <div className={`w-4 h-4 rounded ${channelColorClasses[ch.globalIndex]}`}></div>
-                    <div className="bg-gray-600 border border-gray-500 rounded px-2 py-0.5 text-xs flex-1 text-gray-200">
-                      Grabber
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-3 bg-amber-700 rounded p-1 text-center text-xs font-semibold text-amber-200">
-                Blender
-              </div>
-            </div>
+            {/* Right group: CIED + SVDW/VideoPipeline (right-aligned) */}
+            <div className="ml-auto flex items-start gap-12">
+              {/* CIED */}
+              <CIEDBar />
 
-            {/* Column 6: VIE/MDW Blocks */}
-            <div className="flex flex-col gap-4">
-              {/* VWDMA Blocks */}
-              <div className="space-y-2">
-                <div className="bg-gray-700 border-2 border-gray-500 rounded px-3 py-1 text-xs font-semibold text-gray-200">
-                  VWDMA0
+              {/* SVDW + VideoPipeline */}
+              <div className="flex flex-col">
+                <SVDWBlock />
+                <div style={{ marginTop: '4.5rem' }}>
+                  <VideoOutputsSection />
                 </div>
-                <div className="bg-gray-700 border-2 border-gray-500 rounded px-3 py-1 text-xs font-semibold text-gray-200">
-                  VWDMA1
-                </div>
-              </div>
-
-              {/* VIN Blocks */}
-              <div className="space-y-2">
-                <div className="bg-gray-700 border-2 border-gray-500 rounded px-3 py-1 text-xs font-semibold text-gray-200">
-                  VIN0
-                </div>
-                <div className="bg-gray-700 border-2 border-gray-500 rounded px-3 py-1 text-xs font-semibold text-gray-200">
-                  VIN1
-                </div>
-              </div>
-
-              {/* MDW Block */}
-              <div className="bg-gray-700 border-2 border-gray-500 rounded px-3 py-1 text-xs font-semibold text-gray-200">
-                MDW
               </div>
             </div>
           </div>
 
-          {/* CIED Block at bottom */}
-          <div className="mt-8 flex justify-center">
-            <div className="bg-gray-700 border-2 border-cyan-600 rounded-lg p-4">
-              <div className="text-center font-semibold text-sm mb-2 text-cyan-400">CIED</div>
-              <div className="flex gap-1">
-                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
-                  <div
-                    key={num}
-                    className={`w-8 h-8 flex items-center justify-center rounded text-xs font-bold ${
-                      num < activeChannels.length
-                        ? `${channelColorClasses[activeChannels[num].globalIndex]} text-white`
-                        : 'bg-gray-300 text-gray-600'
-                    }`}
-                  >
-                    {num}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+          
         </div>
 
         {/* Legend */}

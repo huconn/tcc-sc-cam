@@ -32,6 +32,9 @@ export class DTSGenerator {
     // Generate ISP nodes
     this.generateISP(lines, core);
 
+    // Generate SVDW nodes
+    this.generateSVDW(lines, core);
+
     // Generate Video Input nodes
     this.generateVideoInput(lines, core);
 
@@ -131,6 +134,43 @@ export class DTSGenerator {
       lines.push(`${this.indent}};`);
       lines.push('');
     });
+  }
+
+  private generateSVDW(lines: string[], core: 'main' | 'sub'): void {
+    const svdwConfigs = this.config.svdwConfigs;
+    const grabbers = svdwConfigs.filter(config => config.type === 'grabber');
+    const blender = svdwConfigs.find(config => config.type === 'blender');
+
+    // Generate SVDW Grabbers
+    grabbers.forEach((grabber, index) => {
+      lines.push(`${this.indent}${grabber.name.toLowerCase().replace(' ', '_')}: svdw-grabber@${index} {`);
+      lines.push(`${this.indent}${this.indent}compatible = "telechips,tcc-svdw-grabber";`);
+      lines.push(`${this.indent}${this.indent}status = "${grabber.enabled ? 'okay' : 'disabled'}";`);
+      lines.push(`${this.indent}${this.indent}grabber-id = <${index}>;`);
+      
+      // Add input port configuration
+      if (grabber.inputPorts && grabber.inputPorts.length > 0) {
+        lines.push(`${this.indent}${this.indent}input-ports = <${grabber.inputPorts.map(port => port.replace('port', '')).join(' ')}>;`);
+      }
+
+      lines.push(`${this.indent}};`);
+      lines.push('');
+    });
+
+    // Generate SVDW Blender
+    if (blender) {
+      lines.push(`${this.indent}${blender.name.toLowerCase().replace(' ', '_')}: svdw-blender@0 {`);
+      lines.push(`${this.indent}${this.indent}compatible = "telechips,tcc-svdw-blender";`);
+      lines.push(`${this.indent}${this.indent}status = "${blender.enabled ? 'okay' : 'disabled'}";`);
+      
+      // Add input port configuration for blender
+      if (blender.inputPorts && blender.inputPorts.length > 0) {
+        lines.push(`${this.indent}${this.indent}input-ports = <${blender.inputPorts.map(port => port.replace('port', '')).join(' ')}>;`);
+      }
+
+      lines.push(`${this.indent}};`);
+      lines.push('');
+    }
   }
 
   private generateVideoInput(lines: string[], core: 'main' | 'sub'): void {

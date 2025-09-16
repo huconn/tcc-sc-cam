@@ -59,11 +59,12 @@ export const OverviewPage: React.FC = () => {
     },
   ];
 
+
   return (
     <div className="flex flex-col h-full bg-gray-900">
       {/* Header */}
       <div className="bg-gray-800 border-b border-gray-700 p-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
             <Camera className="w-6 h-6 text-primary-500" />
             <h1 className="text-xl font-bold text-gray-100">Camera Path Overview</h1>
