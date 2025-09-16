@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Camera, 
   Monitor, 
@@ -65,6 +65,32 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
   onDeviceClick
 }) => {
   const viewMode = useCameraStore(state => state.viewMode);
+  const rightColRef = useRef<HTMLDivElement>(null);
+  const [ciedTopOffset, setCiedTopOffset] = useState<number>(0);
+  const ciedRef = useRef<HTMLDivElement>(null);
+  const [paddingBottom, setPaddingBottom] = useState<number>(0);
+  const mainRef = useRef<HTMLDivElement>(null);
+  const legendRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const updateOnce = () => {
+      const h = rightColRef.current?.getBoundingClientRect().height || 0;
+      const top = h + 8;
+      setCiedTopOffset(top);
+      const legendH = legendRef.current?.getBoundingClientRect().height || 80;
+      setPaddingBottom(legendH + 8);
+    };
+    const update = () => requestAnimationFrame(updateOnce);
+    update();
+    const ro = new ResizeObserver(update);
+    if (rightColRef.current) ro.observe(rightColRef.current);
+    if (legendRef.current) ro.observe(legendRef.current as Element);
+    window.addEventListener('resize', update);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', update);
+    };
+  }, []);
 
   // Channel configurations for each MIPI
   const [mipi0Channels, setMipi0Channels] = useState<ChannelMode[]>(['isp0', 'bypass', 'isp2', 'bypass']);
@@ -195,7 +221,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
     <div className="w-full h-full bg-gray-800 rounded-lg p-6 overflow-auto">
       <div className="min-w-[1600px]">
         {/* Main Horizontal Layout */}
-        <div className="relative bg-gray-900 rounded-lg p-8">
+        <div ref={mainRef} className="relative bg-gray-900 rounded-lg p-8 flex flex-col" style={{ paddingBottom: '150px' }}>
           <div className="flex items-start gap-12 relative">
 
             {/* Column 1: External Devices */}
@@ -415,13 +441,13 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
               </div>
             </div>
 
-            {/* Right group: CIED + SVDW/VideoPipeline (right-aligned) */}
-            <div className="ml-auto flex items-start gap-12">
-              {/* CIED */}
-              <CIEDBar />
-
-              {/* SVDW + VideoPipeline */}
-              <div className="flex flex-col">
+            {/* Right group: CIED (left) — 20px spacer — SVDW/VideoPipeline (right) */}
+            <div className="ml-auto flex items-start relative">
+              <div ref={ciedRef} className="absolute" style={{ top: `${ciedTopOffset + 50}px`, left: '-400px' }}>
+                <CIEDBar />
+              </div>
+              <div style={{ width: '20px' }} />
+              <div ref={rightColRef} className="flex flex-col">
                 <SVDWBlock />
                 <div style={{ marginTop: '4.5rem' }}>
                   <VideoOutputsSection />
@@ -433,16 +459,14 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
           
         </div>
 
-        {/* Legend */}
-        <div className="mt-6 bg-gray-700 p-3 rounded-lg">
+        {/* Legend - stick to the bottom of dark background */}
+        <div ref={legendRef} className="absolute left-8 right-8 bg-gray-700 p-3 rounded-lg" style={{ bottom: '30px' }}>
           <h3 className="text-white text-sm font-semibold mb-2">Channel Mapping</h3>
           <div className="grid grid-cols-8 gap-3">
             {activeChannels.map((ch, idx) => (
               <div key={idx} className="flex items-center gap-2">
                 <div className={`w-4 h-4 rounded ${channelColorClasses[ch.globalIndex]}`}></div>
-                <span className="text-xs text-gray-300">
-                  {ch.mipi.toUpperCase()}-VC{ch.index}
-                </span>
+                <span className="text-xs text-gray-300">{ch.mipi.toUpperCase()}-VC{ch.index}</span>
               </div>
             ))}
           </div>
