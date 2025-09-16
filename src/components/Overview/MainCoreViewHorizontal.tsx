@@ -221,7 +221,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
     <div className="w-full h-full bg-gray-800 rounded-lg p-6 overflow-auto">
       <div className="min-w-[1600px]">
         {/* Main Horizontal Layout */}
-        <div ref={mainRef} className="relative bg-gray-900 rounded-lg p-8 flex flex-col" style={{ paddingBottom: '150px' }}>
+        <div ref={mainRef} className="relative bg-gray-900 rounded-lg p-8 flex flex-col" style={{ paddingBottom: '250px' }}>
           <div className="flex items-start gap-12 relative">
 
             {/* Column 1: External Devices */}
@@ -443,7 +443,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
 
             {/* Right group: CIED (left) — 20px spacer — SVDW/VideoPipeline (right) */}
             <div className="ml-auto flex items-start relative">
-              <div ref={ciedRef} className="absolute" style={{ top: `${ciedTopOffset + 50}px`, left: '-400px' }}>
+              <div ref={ciedRef} className="absolute" style={{ top: `${ciedTopOffset + 100}px`, left: '-400px' }}>
                 <CIEDBar />
               </div>
               <div style={{ width: '20px' }} />
