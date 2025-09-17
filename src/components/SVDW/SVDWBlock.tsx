@@ -1,4 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { SVDWGrabberConfigModal, SVDWGrabberStatus } from './SVDWGrabberConfigModal';
+import { SVDWBlenderConfigModal, SVDWBlenderStatus } from './SVDWBlenderConfigModal';
 
 export const SVDWBlock: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -23,6 +25,11 @@ export const SVDWBlock: React.FC = () => {
   const grabberRightRefs = useRef<Array<HTMLDivElement | null>>([]);
   const blenderLeftRefs = useRef<Array<HTMLDivElement | null>>([]);
   const [lines, setLines] = useState<Array<{ x1: number; y1: number; x2: number; y2: number }>>([]);
+  const [modalOpen, setModalOpen] = useState<boolean>(false);
+  const [activeGrabber, setActiveGrabber] = useState<number>(0);
+  const [grabberStatus, setGrabberStatus] = useState<Record<number, SVDWGrabberStatus>>({ 0: 'okay', 1: 'okay', 2: 'okay', 3: 'okay' });
+  const [blenderOpen, setBlenderOpen] = useState<boolean>(false);
+  const [blenderStatus, setBlenderStatus] = useState<SVDWBlenderStatus>('okay');
 
   useEffect(() => {
     const update = () => {
@@ -63,14 +70,19 @@ export const SVDWBlock: React.FC = () => {
       <div ref={containerRef} className="relative pr-[200px]">
         {/* Right Blender spanning full stack height */}
         <div className="absolute top-0 bottom-0 right-0 flex items-center">
-          <div className={`relative ${blenderBg} ${blenderText} ${blenderBorder} rounded w-[120px] h-full flex items-center justify-center text-xs font-medium`}>
+          <button
+            type="button"
+            onClick={() => setBlenderOpen(true)}
+            className={`relative ${blenderBg} ${blenderText} ${blenderBorder} rounded w-[120px] h-full flex items-center justify-center text-xs font-medium hover:border-white hover:ring-2 hover:ring-white focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors`}
+            title="Configure Blender"
+          >
             Blender
             {/* Left edge indicator boxes (1-2, 2-2, 3-2, 4-2) aligned per row */}
             <div className="absolute left-0 top-0 -translate-x-1/2 h-full flex flex-col gap-4">
               {[0,1,2,3].map((idx) => (
                 <div key={idx} className="h-10 flex items-center">
                   <div
-                    ref={(el) => (blenderLeftRefs.current[idx] = el)}
+                    ref={(el) => { blenderLeftRefs.current[idx] = el; }}
                     className="relative text-white rounded w-8 h-6 flex items-center justify-center text-[10px] font-semibold border-2 border-white"
                     style={{ backgroundColor: grabberHex[idx] }}
                   >
@@ -79,7 +91,7 @@ export const SVDWBlock: React.FC = () => {
                 </div>
               ))}
             </div>
-          </div>
+          </button>
         </div>
 
         {/* Left column: 4 Grabbers stacked */}
@@ -95,13 +107,18 @@ export const SVDWBlock: React.FC = () => {
               </div>
 
               {/* Main Grabber block */}
-              <div className={`${grabberBg[idx]} ${grabberText} ${grabberBorder} rounded px-4 h-10 flex items-center text-xs font-semibold min-w-[120px] text-center shadow-sm`}>
+              <button
+                type="button"
+                onClick={() => { setActiveGrabber(idx); setModalOpen(true); }}
+                className={`${grabberBg[idx]} ${grabberText} ${grabberBorder} rounded px-4 h-10 flex items-center justify-center text-xs font-semibold min-w-[120px] text-center shadow-sm hover:border-white hover:ring-2 hover:ring-white focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors`}
+                title={`Configure Grabber ${idx}`}
+              >
                 Grabber
-              </div>
+              </button>
 
               {/* Right number indicator (centered on border, shifted left) */}
               <div
-                ref={(el) => (grabberRightRefs.current[idx] = el)}
+                ref={(el) => { grabberRightRefs.current[idx] = el; }}
                 className="absolute top-1/2 -translate-y-1/2 z-10 text-white rounded w-8 h-6 flex items-center justify-center text-[10px] font-semibold border-2 border-white"
                 style={{ left: 'calc(100% - 36px)', transform: 'translate(-50%, -50%)', backgroundColor: grabberHex[idx] }}
               >
@@ -128,6 +145,21 @@ export const SVDWBlock: React.FC = () => {
         )}
       </div>
 
+      {/* Modal */}
+      <SVDWGrabberConfigModal
+        open={modalOpen}
+        grabberIndex={activeGrabber}
+        status={grabberStatus[activeGrabber]}
+        onSave={(next) => { setGrabberStatus({ ...grabberStatus, [activeGrabber]: next.status }); setModalOpen(false); }}
+        onClose={() => setModalOpen(false)}
+      />
+
+      <SVDWBlenderConfigModal
+        open={blenderOpen}
+        initial={{ status: blenderStatus }}
+        onSave={(cfg) => { setBlenderStatus(cfg.status); setBlenderOpen(false); }}
+        onClose={() => setBlenderOpen(false)}
+      />
     </div>
   );
 };
