@@ -244,6 +244,9 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
                     <input className={inputCls} defaultValue="2" />
                   </div>
                 </Section>
+
+                {/* Empty space to match Solid status height */}
+                <div className="h-24"></div>
               </div>
             </Section>
             </div>
@@ -291,6 +294,9 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
                     <input className={inputCls} defaultValue="2" />
                   </div>
                 </Section>
+
+                {/* Empty space to match Solid status height */}
+                <div className="h-24"></div>
               </div>
             </Section>
             </div>
@@ -351,6 +357,9 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
                     <input className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm w-16" defaultValue="2" />
                   </div>
                 </Section>
+
+                {/* Empty space to match Bright status height */}
+                <div className="h-1"></div>
               </div>
             </Section>
             </div>

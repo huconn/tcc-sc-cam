@@ -30,6 +30,11 @@ interface CameraStore extends CameraConfiguration {
   updateMDWConfig: (updates: Partial<MDWConfig>) => void;
   loadConfiguration: (config: CameraConfiguration) => void;
   exportConfiguration: () => CameraConfiguration;
+  // I2C selections for MIPI blocks
+  i2cMain?: number;
+  i2cSub?: number;
+  setI2cMain?: (n: number) => void;
+  setI2cSub?: (n: number) => void;
 }
 
 const initialState: CameraConfiguration = {
@@ -109,6 +114,8 @@ const initialState: CameraConfiguration = {
 
 export const useCameraStore = create<CameraStore>((set) => ({
   ...initialState,
+  i2cMain: 12,
+  i2cSub: 13,
 
   setViewMode: (mode) => set({ viewMode: mode }),
 
@@ -185,4 +192,7 @@ export const useCameraStore = create<CameraStore>((set) => ({
       mdwConfig: state.mdwConfig,
     };
   },
+
+  setI2cMain: (n) => set({ i2cMain: n }),
+  setI2cSub: (n) => set({ i2cSub: n }),
 }));

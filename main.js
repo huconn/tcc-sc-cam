@@ -26,7 +26,7 @@ const createWindow = () => {
 
   // In development, load from Vite dev server
   if (isDev) {
-    mainWindow.loadURL('http://localhost:5173')
+    mainWindow.loadURL('http://localhost:5175')
     mainWindow.webContents.openDevTools()
   } else {
     // In production, load the built files

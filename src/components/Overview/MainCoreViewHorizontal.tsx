@@ -24,9 +24,12 @@ import {
   Hexagon
 } from 'lucide-react';
 import { useCameraStore } from '@/store/cameraStore';
-import { ISPConfigModal } from './ISPConfigModal';
+import { ISPConfigModal } from '@/components/ISPConfiguration/ISPConfigModal';
+import { ISPSelector, ChannelMode as SelectorChannelMode } from '@/components/ISPConfiguration/ISPSelector';
+import { channelHex as CHANNEL_HEX, channelBgClass as CHANNEL_BG, getChannelHex, getChannelBgClass } from '@/utils/channelPalette';
 import { MIPIChannelConfigModal } from './MIPIChannelConfigModal';
-import { CameraMuxConfigModal } from './CameraMuxConfigModal';
+import { CameraMuxConfigModal } from '../CameraMux/CameraMuxConfigModal';
+import { CameraMuxBlock } from '@/components/CameraMux/CameraMuxBlock';
 import { SVDWBlock } from '@/components/SVDW/SVDWBlock';
 import { VideoOutputsSection } from '@/components/VideoPipeline/VideoOutputsSection';
 import { CIEDBar } from '@/components/CIED/CIEDBar';
@@ -37,8 +40,8 @@ interface MainCoreViewHorizontalProps {
     mipi1: string[];
   };
   externalDevices?: {
-    mipi0: any[];
-    mipi1: any[];
+    mipi0: any | any[];
+    mipi1: any | any[];
   };
   onDeviceClick: (mipi: 'mipi0' | 'mipi1') => void;
 }
@@ -71,6 +74,157 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
   const [paddingBottom, setPaddingBottom] = useState<number>(0);
   const mainRef = useRef<HTMLDivElement>(null);
   const legendRef = useRef<HTMLDivElement>(null);
+  const selectorsRef = useRef<HTMLDivElement>(null);
+  const extColRef = useRef<HTMLDivElement>(null);
+  const [extMipi1Top, setExtMipi1Top] = useState<number | null>(null);
+  const [camToSvdw, setCamToSvdw] = useState<{x1:number;y1:number;x2:number;y2:number}|null>(null);
+  const [camToSvdwLines, setCamToSvdwLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string;arrow?:boolean}>>([]);
+  const [camToCiedLines, setCamToCiedLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string}>>([]);
+  const [muxToMipi, setMuxToMipi] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string}>>([]);
+  const [chToIspLines, setChToIspLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string}>>([]);
+  const [ispToLLines, setIspToLLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string}>>([]);
+  const [selectorTopOverrides, setSelectorTopOverrides] = useState<Record<number, number>>({});
+  // Read each field separately to avoid creating a new snapshot object every render
+  const i2cMain = useCameraStore((s: any) => s.i2cMain ?? 12);
+  const i2cSub = useCameraStore((s: any) => s.i2cSub ?? 13);
+  const setI2cMain = useCameraStore((s: any) => s.setI2cMain ?? (() => {}));
+  const setI2cSub = useCameraStore((s: any) => s.setI2cSub ?? (() => {}));
+
+  // Compute Camera Mux R0/R1/R2/R3 -> SVDW 1-1/2-1/3-1/4-1 connections
+  const computeCamMuxToSvdw = () => {
+    const pairs = [
+      { from: 'mux-right-0-target', fallback: 'mux-right-0', to: 'svdw-left-0', arrow: true }, // R0 -> 1-1
+      { from: 'mux-right-1-target', fallback: 'mux-right-1', to: 'svdw-left-1', arrow: true }, // R1 -> 2-1
+      { from: 'mux-right-2-target', fallback: 'mux-right-2', to: 'svdw-left-2', arrow: true }, // R2 -> 3-1
+      { from: 'mux-right-3-target', fallback: 'mux-right-3', to: 'svdw-left-3', arrow: true }, // R3 -> 4-1
+      { from: 'mux-right-4-target', fallback: 'mux-right-4', to: 'video-out-vwdma0', arrow: true }, // R4 -> VWDMA0
+      { from: 'mux-right-5-target', fallback: 'mux-right-5', to: 'video-out-vwdma1', arrow: true }, // R5 -> VWDMA1
+      { from: 'mux-right-6-target', fallback: 'mux-right-6', to: 'video-out-vin0', arrow: true }, // R6 -> VIN0 (arrow)
+      { from: 'mux-right-7-target', fallback: 'mux-right-7', to: 'video-out-vin1', arrow: true }, // R7 -> VIN1 (arrow)
+    ];
+    const collected: Array<{x1:number;y1:number;x2:number;y2:number;color:string;arrow?:boolean}> = [];
+    pairs.forEach(p => {
+      const camTarget = document.querySelector(`[data-connection-point="${p.from}"]`) as HTMLElement | null;
+      const camBox = document.querySelector(`[data-connection-point="${p.fallback}"]`) as HTMLElement | null;
+      const camEl = camTarget || camBox;
+      const svdw = document.querySelector(`[data-connection-point="${p.to}"]`) as HTMLElement | null;
+      if (camEl && svdw) {
+        // Start from the RIGHT edge of the Camera Mux right marker box (if available), else the target element
+        const camRectBase = (camBox?.getBoundingClientRect()) || camEl.getBoundingClientRect();
+        const svdwRect = svdw.getBoundingClientRect();
+        const x1 = camRectBase.left + camRectBase.width; // right edge
+        const y1 = camRectBase.top + camRectBase.height / 2;
+        const x2 = svdwRect.left;
+        const y2 = svdwRect.top + svdwRect.height / 2;
+        const match = p.from.match(/mux-right-(\d+)/);
+        const idx = match ? parseInt(match[1], 10) : 0;
+        const color = channelColors[idx] || '#93c5fd';
+        collected.push({ x1, y1, x2, y2, color, arrow: p.arrow });
+      }
+    });
+    setCamToSvdwLines(collected);
+    // Keep backward-compat single line for any consumers
+    setCamToSvdw(collected[0] || null);
+  };
+
+  // Camera Mux R0..R7 -> CIED 0..7 (slot buttons)
+  const computeCamMuxToCied = () => {
+    const lines: Array<{x1:number;y1:number;x2:number;y2:number;color:string}> = [];
+    for (let i = 0; i < 8; i += 1) {
+      //console.log(`mux-right-${i}-target`, `cied-slot-${i}`);
+      const from = document.querySelector(`[data-connection-point="mux-right-${i}-target"]`) as HTMLElement | null;
+      const to = document.querySelector(`[data-connection-point="cied-slot-${i}"]`) as HTMLElement | null;
+      if (!from || !to) continue;
+      const a = from.getBoundingClientRect();
+      const b = to.getBoundingClientRect();
+      const x1 = a.left + a.width; // start at right edge of R- box
+      const y1 = a.top + a.height / 2;
+      const x2 = b.left + b.width / 2; // align to horizontal center
+      const y2 = b.top; // snap to top edge of the CIED slot bar
+      lines.push({ x1, y1, x2, y2, color: channelColors[i] });
+    }
+    setCamToCiedLines(lines);
+  };
+
+  // 1) CHi -> ISPi (CH right edge to ISP left edge)
+  const computeMipiToIsp = () => {
+    const lines: Array<{x1:number;y1:number;x2:number;y2:number;color:string}> = [];
+
+    // mipi0: CHi -> ISPi
+    for (let i = 0; i < 4; i += 1) {
+      //console.log(`mipi0-ch${i}`, `isp${i}-box`);
+      const ch = document.querySelector(`[data-anchor="mipi0-ch${i}"]`) as HTMLElement | null;
+      const isp = document.querySelector(`[data-connection-point="isp-left-${i}-box"]`) as HTMLElement | null;
+      if (!ch || !isp) continue;
+      //onsole.log(ch, isp);
+      const a = ch.getBoundingClientRect();
+      const b = isp.getBoundingClientRect();
+      lines.push({
+        x1: a.left + a.width,
+        y1: a.top + a.height / 2,
+        x2: b.left,
+        y2: b.top + b.height / 2,
+        color: channelColors[i]
+      });
+    }
+    // mipi1: CHi -> ISP(i+4)
+    for (let i = 0; i < 4; i += 1) {
+      //console.log(`mipi1-ch${i}`, `isp${i + 4}-box`);
+      
+      const ch = document.querySelector(`[data-anchor=\"mipi1-ch${i}\"]`) as HTMLElement | null;
+      const isp = document.querySelector(`[data-connection-point=\"isp-left-${i + 4}-box\"]`) as HTMLElement | null;
+      if (!ch || !isp) continue;
+      //console.log(ch, isp);
+      const a = ch.getBoundingClientRect();
+      const b = isp.getBoundingClientRect();
+      lines.push({
+        x1: a.left + a.width,
+        y1: a.top + a.height / 2,
+        x2: b.left,
+        y2: b.top + b.height / 2,
+        color: channelColors[i + 4]
+      });
+    }
+    setChToIspLines(lines);
+  };
+
+  // ISP right edge to Camera Mux left edge
+  const computeIspToCamMux = () => {
+    const lines: Array<{x1:number;y1:number;x2:number;y2:number;color:string}> = [];
+    for (let i = 0; i < 4; i += 1) {
+      //console.log(`isp-right-${i}-box`, `mux-left-${i}`);
+      const isp = document.querySelector(`[data-anchor-point="isp-right-${i}-box"]`) as HTMLElement | null;
+      const l = document.querySelector(`[data-connection-point="mux-left-${i}-target"]`) as HTMLElement | null;
+      if (!isp || !l) continue;
+      const a = isp.getBoundingClientRect();
+      const b = l.getBoundingClientRect();
+      lines.push({
+        x1: a.left + a.width,
+        y1: a.top + a.height / 2,
+        x2: b.left,
+        y2: b.top + b.height / 2,
+        color: channelColors[i]
+      });
+    }
+    // isp4..7 -> L4..7
+    for (let i = 0; i < 4; i += 1) {
+      const ispIdx = i + 4;
+      //console.log(`isp-right-${ispIdx}-box`, `mux-left-${ispIdx}`);
+      const isp = document.querySelector(`[data-anchor-point=\"isp-right-${ispIdx}-box\"]`) as HTMLElement | null;
+      const l = document.querySelector(`[data-connection-point=\"mux-left-${ispIdx}-target\"]`) as HTMLElement | null;
+      if (!isp || !l) continue;
+      const a = isp.getBoundingClientRect();
+      const b = l.getBoundingClientRect();
+      lines.push({
+        x1: a.left + a.width,
+        y1: a.top + a.height / 2,
+        x2: b.left,
+        y2: b.top + b.height / 2,
+        color: channelColors[ispIdx]
+      });
+    }
+    setIspToLLines(lines);
+  };
 
   useEffect(() => {
     const updateOnce = () => {
@@ -79,22 +233,100 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
       setCiedTopOffset(top);
       const legendH = legendRef.current?.getBoundingClientRect().height || 80;
       setPaddingBottom(legendH + 8);
+
+      //cam mux0,1,2,3 to svdw1,2,3,4
+      computeCamMuxToSvdw();
+
+      //mipi0,1 to isp0,1,2,3,4,5,6,7
+      computeMipiToIsp();
+
+      //isp0,1,2,3,4,5,6,7 to cam mux0,1,2,3
+      computeIspToCamMux();
+
+      //cam mux0..7 to cied0..7
+      computeCamMuxToCied();
+
+      // Align ISP0 selector top with Camera Mux L0 box top (with minor visual offset)
+      try {
+        const l0 = document.querySelector('[data-connection-point="mux-left-0"]') as HTMLElement | null;
+        if (l0 && selectorsRef.current) {
+          const l0Rect = l0.getBoundingClientRect();
+          const selRect = selectorsRef.current.getBoundingClientRect();
+          const top = Math.round(l0Rect.top - selRect.top - 1); // -1px to account for borders
+          setSelectorTopOverrides(prev => ({ ...prev, 0: top }));
+        }
+      } catch {}
+
+      // Align second External Devices panel top to MIPI1 block top using DOM coordinates
+      try {
+        const mipi1 = document.getElementById('mipi1-block');
+        if (mipi1 && extColRef.current) {
+          const mipi1Rect = mipi1.getBoundingClientRect();
+          const extColRect = extColRef.current.getBoundingClientRect();
+          const offset = Math.max(0, Math.round(mipi1Rect.top - extColRect.top));
+          setExtMipi1Top(offset);
+        }
+      } catch {}
     };
     const update = () => requestAnimationFrame(updateOnce);
     update();
     const ro = new ResizeObserver(update);
     if (rightColRef.current) ro.observe(rightColRef.current);
     if (legendRef.current) ro.observe(legendRef.current as Element);
+    if (mainRef.current) ro.observe(mainRef.current);
+    // Observe DOM mutations around anchors to force line recompute when elements move/appear
+    const mo = new MutationObserver(() => requestAnimationFrame(updateOnce));
+    if (mainRef.current) {
+      mo.observe(mainRef.current, {
+        subtree: true,
+        childList: true,
+        attributes: true,
+        attributeFilter: ['data-connection-point', 'data-anchor', 'class', 'style']
+      });
+    }
+    if (document.body) {
+      mo.observe(document.body, {
+        subtree: true,
+        childList: true,
+        attributes: true,
+        attributeFilter: ['data-connection-point', 'data-anchor', 'class', 'style']
+      });
+    }
+    // Also watch the entire document body since overlay uses viewport coords
+    ro.observe(document.body as Element);
     window.addEventListener('resize', update);
     return () => {
       ro.disconnect();
+      mo.disconnect();
       window.removeEventListener('resize', update);
     };
   }, []);
 
+  // Also recompute frequently for a short period to reflect layout settling without refresh
+  useEffect(() => {
+    computeCamMuxToSvdw();
+    computeMipiToIsp();
+    computeIspToCamMux();
+    computeCamMuxToCied();
+    const t1 = setTimeout(computeCamMuxToSvdw, 100);
+    const t2 = setTimeout(computeCamMuxToSvdw, 300);
+    const t3 = setTimeout(computeCamMuxToSvdw, 600);
+    const u1 = setTimeout(computeMipiToIsp, 100);
+    const u2 = setTimeout(computeMipiToIsp, 300);
+    const u3 = setTimeout(computeMipiToIsp, 600);
+    const v1 = setTimeout(computeIspToCamMux, 100);
+    const v2 = setTimeout(computeIspToCamMux, 300);
+    const v3 = setTimeout(computeIspToCamMux, 600);
+    const w1 = setTimeout(computeCamMuxToCied, 100);
+    const w2 = setTimeout(computeCamMuxToCied, 300);
+    const w3 = setTimeout(computeCamMuxToCied, 600);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(u1); clearTimeout(u2); clearTimeout(u3); clearTimeout(v1); clearTimeout(v2); clearTimeout(v3); clearTimeout(w1); clearTimeout(w2); clearTimeout(w3); };
+  }, []);
+
   // Channel configurations for each MIPI
-  const [mipi0Channels, setMipi0Channels] = useState<ChannelMode[]>(['isp0', 'bypass', 'isp2', 'bypass']);
-  const [mipi1Channels, setMipi1Channels] = useState<ChannelMode[]>(['bypass', 'isp1', 'bypass', 'isp3']);
+  // Defaults: mipi0 -> isp0..isp3, mipi1 -> bypass; pairs still share same ISP index
+  const [mipi0Channels, setMipi0Channels] = useState<ChannelMode[]>(['isp0', 'isp1', 'isp2', 'isp3']);
+  const [mipi1Channels, setMipi1Channels] = useState<ChannelMode[]>(['bypass', 'bypass', 'bypass', 'bypass']);
 
   // ISP configurations
   const [ispConfigs, setIspConfigs] = useState<Record<string, ISPConfig>>({
@@ -116,54 +348,32 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
   });
 
   // Channel colors - more vibrant and visible
-  const channelColors = [
-    '#3b82f6', // blue-500
-    '#10b981', // emerald-500
-    '#f97316', // orange-500
-    '#eab308', // yellow-500
-    '#a855f7', // purple-500
-    '#06b6d4', // cyan-500
-    '#ec4899', // pink-500
-    '#ef4444', // red-500
-  ];
+  const channelColors = CHANNEL_HEX;
 
-  const channelColorClasses = [
-    'bg-blue-500',
-    'bg-emerald-500',
-    'bg-orange-500',
-    'bg-yellow-500',
-    'bg-purple-500',
-    'bg-cyan-500',
-    'bg-pink-500',
-    'bg-red-500',
-  ];
+  const channelColorClasses = CHANNEL_BG;
 
   // Handle channel mode change
   const handleChannelChange = (mipi: 'mipi0' | 'mipi1', channelIndex: number, mode: ChannelMode) => {
+    // Only isp{index} or bypass are allowed per design
     if (mipi === 'mipi0') {
-      const newChannels = [...mipi0Channels];
-
-      // If switching to an ISP that's already used by mipi1, force mipi1 to bypass
-      if (mode.startsWith('isp') && mipi1Channels[channelIndex] === mode) {
-        const newMipi1Channels = [...mipi1Channels];
-        newMipi1Channels[channelIndex] = 'bypass';
-        setMipi1Channels(newMipi1Channels);
+      const next0 = [...mipi0Channels];
+      const next1 = [...mipi1Channels];
+      // If selecting isp{index} and the paired mipi1 already has isp{index}, force it to bypass
+      if (mode.startsWith('isp') && next1[channelIndex] === mode) {
+        next1[channelIndex] = 'bypass';
       }
-
-      newChannels[channelIndex] = mode;
-      setMipi0Channels(newChannels);
+      next0[channelIndex] = mode;
+      setMipi0Channels(next0);
+      setMipi1Channels(next1);
     } else {
-      const newChannels = [...mipi1Channels];
-
-      // If switching to an ISP that's already used by mipi0, force mipi0 to bypass
-      if (mode.startsWith('isp') && mipi0Channels[channelIndex] === mode) {
-        const newMipi0Channels = [...mipi0Channels];
-        newMipi0Channels[channelIndex] = 'bypass';
-        setMipi0Channels(newMipi0Channels);
+      const next0 = [...mipi0Channels];
+      const next1 = [...mipi1Channels];
+      if (mode.startsWith('isp') && next0[channelIndex] === mode) {
+        next0[channelIndex] = 'bypass';
       }
-
-      newChannels[channelIndex] = mode;
-      setMipi1Channels(newChannels);
+      next1[channelIndex] = mode;
+      setMipi0Channels(next0);
+      setMipi1Channels(next1);
     }
   };
 
@@ -183,16 +393,9 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
   };
 
   // Get available options for a channel
-  const getAvailableOptions = (mipi: 'mipi0' | 'mipi1', channelIndex: number): ChannelMode[] => {
-    const ispOptions: ChannelMode[] = [`isp${channelIndex}` as ChannelMode, 'bypass'];
-    const otherMipiChannels = mipi === 'mipi0' ? mipi1Channels : mipi0Channels;
-
-    // If the other MIPI is using the ISP for this channel, don't include it as an option
-    if (otherMipiChannels[channelIndex] === `isp${channelIndex}`) {
-      return ['bypass'];
-    }
-
-    return ispOptions;
+  const getAvailableOptions = (_mipi: 'mipi0' | 'mipi1', channelIndex: number): ChannelMode[] => {
+    // Each index shares the same ISP across mipi0/mipi1
+    return [`isp${channelIndex}` as ChannelMode, 'bypass'];
   };
 
   const shouldShowMipi0 = viewMode === 'unified' || viewMode === 'main';
@@ -200,7 +403,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
 
   // Calculate which channels to show based on view mode
   const getActiveChannels = () => {
-    const channels = [];
+    const channels: Array<{ mipi: 'mipi0' | 'mipi1'; index: number; mode: ChannelMode; globalIndex: number }> = [];
     if (shouldShowMipi0) {
       mipi0Channels.forEach((mode, idx) => {
         channels.push({ mipi: 'mipi0', index: idx, mode, globalIndex: idx });
@@ -225,18 +428,18 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
           <div className="flex items-start gap-12 relative">
 
             {/* Column 1: External Devices */}
-            <div className="flex flex-col gap-8">
+            <div ref={extColRef} className="flex flex-col gap-8">
               {shouldShowMipi0 && (
                 <div
-                  className="bg-gray-700 border-2 border-gray-500 rounded-lg p-4 cursor-pointer hover:bg-gray-600 transition-colors w-[140px]"
+                  className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 cursor-pointer hover:bg-gray-600 transition-colors w-[140px]"
                   onClick={() => onDeviceClick('mipi0')}
                 >
-                  <div className="text-center font-semibold text-sm mb-2 text-gray-200">External Devices</div>
+                  <div className="text-center font-semibold text-sm mb-4 text-purple-400">External Devices</div>
                   <div className="flex gap-1 justify-center">
                     {externalDevices?.mipi0 &&
-                     ((externalDevices.mipi0.devices && externalDevices.mipi0.devices.length > 0) ||
-                      (Array.isArray(externalDevices.mipi0) && externalDevices.mipi0.length > 0)) ? (
-                      (externalDevices.mipi0.devices || externalDevices.mipi0).slice(0, 4).map((device: any, index: number) => (
+                     ((((externalDevices.mipi0 as any)?.devices && (externalDevices.mipi0 as any).devices.length > 0) ||
+                      (Array.isArray(externalDevices.mipi0) && externalDevices.mipi0.length > 0))) ? (
+                      (((externalDevices.mipi0 as any)?.devices || externalDevices.mipi0) as any[]).slice(0, 4).map((device: any, index: number) => (
                         <div
                           key={index}
                           className={`w-6 h-6 rounded ${deviceTypeColors[device.type] || 'bg-gray-500'}`}
@@ -257,15 +460,16 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
 
               {shouldShowMipi1 && (
                 <div
-                  className="bg-gray-700 border-2 border-gray-500 rounded-lg p-4 cursor-pointer hover:bg-gray-600 transition-colors w-[140px]"
+                  className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 cursor-pointer hover:bg-gray-600 transition-colors w-[140px]"
                   onClick={() => onDeviceClick('mipi1')}
+                  style={extMipi1Top != null ? { marginTop: `${extMipi1Top}px` } : undefined}
                 >
-                  <div className="text-center font-semibold text-sm mb-2 text-gray-200">External Devices</div>
+                  <div className="text-center font-semibold text-sm mb-4 text-purple-400">External Devices</div>
                   <div className="flex gap-1 justify-center">
                     {externalDevices?.mipi1 &&
-                     ((externalDevices.mipi1.devices && externalDevices.mipi1.devices.length > 0) ||
-                      (Array.isArray(externalDevices.mipi1) && externalDevices.mipi1.length > 0)) ? (
-                      (externalDevices.mipi1.devices || externalDevices.mipi1).slice(0, 4).map((device: any, index: number) => (
+                     ((((externalDevices.mipi1 as any)?.devices && (externalDevices.mipi1 as any).devices.length > 0) ||
+                      (Array.isArray(externalDevices.mipi1) && externalDevices.mipi1.length > 0))) ? (
+                      (((externalDevices.mipi1 as any)?.devices || externalDevices.mipi1) as any[]).slice(0, 4).map((device: any, index: number) => (
                         <div
                           key={index}
                           className={`w-6 h-6 rounded ${deviceTypeColors[device.type] || 'bg-gray-500'}`}
@@ -291,13 +495,21 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                 <div className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 w-[140px] relative" id="mipi0-block">
                   <div className="text-center font-semibold text-sm text-purple-400">MIPI0</div>
                   <div className="text-center text-xs text-gray-400 mb-2">MAIN</div>
-                  <select className="w-full text-xs bg-gray-600 text-gray-200 border border-gray-500 rounded px-1 py-0.5 mb-2">
-                    <option>I2C12</option>
+                  <select
+                    className="w-full text-xs bg-gray-600 text-gray-200 border border-gray-500 rounded px-1 py-0.5 mb-2 font-bold"
+                    value={i2cMain}
+                    onChange={(e) => setI2cMain(parseInt(e.target.value))}
+                  >
+                    {Array.from({ length: 16 }).map((_, n) => (
+                      <option key={n} value={n} disabled={n === i2cSub} className="bg-gray-700 text-gray-200">
+                        {`I2C${n}`}
+                      </option>
+                    ))}
                   </select>
                   <div className="space-y-2">
                     {[0, 1, 2, 3].map(i => (
                       <div key={i} className="flex items-center justify-between" data-channel={`mipi0-${i}`}>
-                        <span className="text-xs text-gray-400">CH{i}</span>
+                        <span className="text-xs font-bold text-gray-200">CH{i}</span>
                         <div
                           className={`w-4 h-4 rounded ${channelColorClasses[i]} cursor-pointer hover:ring-2 hover:ring-white transition-all`}
                           onClick={() => setShowMIPIConfig({ mipi: 'mipi0', channel: i })}
@@ -311,16 +523,24 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
               )}
 
               {shouldShowMipi1 && (
-                <div className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 w-[140px] relative" id="mipi1-block">
+                <div className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 w-[140px] relative" id="mipi1-block" style={{ marginTop: '100px' }}>
                   <div className="text-center font-semibold text-sm text-purple-400">MIPI1</div>
                   <div className="text-center text-xs text-gray-400 mb-2">SUB</div>
-                  <select className="w-full text-xs bg-gray-600 text-gray-200 border border-gray-500 rounded px-1 py-0.5 mb-2">
-                    <option>I2C13</option>
+                  <select
+                    className="w-full text-xs bg-gray-600 text-gray-200 border border-gray-500 rounded px-1 py-0.5 mb-2 font-bold"
+                    value={i2cSub}
+                    onChange={(e) => setI2cSub(parseInt(e.target.value))}
+                  >
+                    {Array.from({ length: 16 }).map((_, n) => (
+                      <option key={n} value={n} disabled={n === i2cMain} className="bg-gray-700 text-gray-200">
+                        {`I2C${n}`}
+                      </option>
+                    ))}
                   </select>
                   <div className="space-y-2">
                     {[0, 1, 2, 3].map(i => (
                       <div key={i} className="flex items-center justify-between" data-channel={`mipi1-${i}`}>
-                        <span className="text-xs text-gray-400">CH{i}</span>
+                        <span className="text-xs font-bold text-gray-200">CH{i}</span>
                         <div
                           className={`w-4 h-4 rounded ${channelColorClasses[i + 4]} cursor-pointer hover:ring-2 hover:ring-white transition-all`}
                           onClick={() => setShowMIPIConfig({ mipi: 'mipi1', channel: i })}
@@ -335,39 +555,9 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
             </div>
 
             {/* Column 3: ISP/Bypass Selectors (positioned on lines) */}
-            <div className="relative w-[300px]" style={{ height: '400px' }}>
+            <div ref={selectorsRef} className="relative w-[300px]" style={{ height: '400px' }}>
               {/* Connection lines will be drawn here */}
-              <svg className="absolute inset-0" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
-                {activeChannels.map((ch, idx) => {
-                  // Fixed positioning for MIPI side
-                  // MIPI0 block starts at y=0, MIPI1 block starts at y=170 (when both shown)
-                  const mipiBlockY = ch.mipi === 'mipi0' ? 0 : (shouldShowMipi0 ? 170 : 0);
-                  // Header + select box height is about 60px, then channels start
-                  const channelStartY = 60;
-                  const channelSpacing = 28; // Space between each channel
-                  const mipiY = mipiBlockY + channelStartY + (ch.index * channelSpacing) + 8; // +8 to center on the dot
-
-                  // Fixed positioning for Camera Mux side
-                  // Camera Mux has fixed height of 320px, channels distributed evenly
-                  const muxTotalHeight = 280; // Usable height for channels
-                  const muxStartY = 50; // Starting Y position for first channel
-                  const muxSpacing = muxTotalHeight / Math.max(activeChannels.length - 1, 1);
-                  const muxY = muxStartY + (idx * muxSpacing);
-
-                  return (
-                    <line
-                      key={`line-${idx}`}
-                      x1="0"
-                      y1={mipiY}
-                      x2="300"
-                      y2={muxY}
-                      stroke={channelColors[ch.globalIndex]}
-                      strokeWidth="3"
-                      strokeOpacity="0.8"
-                    />
-                  );
-                })}
-              </svg>
+              <svg className="absolute inset-0" style={{ width: '100%', height: '100%', overflow: 'visible' }}></svg>
 
               {/* ISP Selectors */}
               {activeChannels.map((ch, idx) => {
@@ -384,62 +574,124 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
 
                 const middleY = (mipiY + muxY) / 2 - 12; // Center the selector on the line
 
+                const overrideTop = selectorTopOverrides[ch.globalIndex];
+                let baseTop = (overrideTop !== undefined && ch.globalIndex === 0) ? overrideTop : middleY;
+                if (ch.globalIndex >= 4) {
+                  baseTop += 150; // push ISP4..ISP7 (globalIndex 4..7) down by 200px
+                }
+                const topPx = `${baseTop}px`;
                 return (
                   <div
                     key={`selector-${idx}`}
-                    className="absolute bg-gray-700 border-2 rounded px-2 py-0.5"
-                    style={{
-                      borderColor: channelColors[ch.globalIndex],
-                      left: '120px',
-                      top: `${middleY}px`,
-                      zIndex: 10
-                    }}
+                    className="absolute"
+                    style={{ left: '120px', top: topPx, zIndex: 10 }}
+                    data-connection-point={`isp-left-${ch.globalIndex}-box`}
                   >
-                    <select
-                      value={ch.mode}
-                      onChange={(e) => handleChannelChange(ch.mipi as 'mipi0' | 'mipi1', ch.index, e.target.value as ChannelMode)}
-                      className="bg-transparent text-gray-200 text-xs font-semibold outline-none cursor-pointer"
-                    >
-                      {getAvailableOptions(ch.mipi as 'mipi0' | 'mipi1', ch.index).map(option => (
-                        <option key={option} value={option} className="bg-gray-700 text-gray-200">
-                          {option.toUpperCase()}
-                        </option>
-                      ))}
-                    </select>
-                    {ch.mode.startsWith('isp') && (
-                      <button
-                        onClick={() => setShowISPConfig(ch.mode)}
-                        className="ml-1 hover:bg-gray-600 rounded p-0.5"
-                      >
-                        <MoreHorizontal className="w-3 h-3 text-gray-300" />
-                      </button>
-                    )}
+                    {/* Right-edge anchor for ISP box to attach lines from ISP to CAM Mux */}
+                    <div
+                      data-anchor-point={`isp-right-${ch.globalIndex}-box`}
+                      className="absolute right-0 top-1/2 -translate-y-1/2 w-0 h-0"
+                    />
+                    <ISPSelector
+                      value={ch.mode as unknown as SelectorChannelMode}
+                      onChange={(next) => handleChannelChange(ch.mipi as 'mipi0' | 'mipi1', ch.index, next as unknown as ChannelMode)}
+                      color={channelColors[ch.globalIndex]}
+                      options={getAvailableOptions(ch.mipi as 'mipi0' | 'mipi1', ch.index) as unknown as SelectorChannelMode[]}
+                      showConfigButton={String(ch.mode).startsWith('isp')}
+                      onOpenConfig={() => setShowISPConfig(String(ch.mode))}
+                      // Add hover scale via wrapper to avoid select width jitter
+                    />
                   </div>
                 );
               })}
             </div>
 
             {/* Column 4: Camera Mux */}
-            <div
-              className="bg-gray-700 border-2 border-yellow-600 rounded-lg p-4 w-[180px] h-[320px] flex flex-col cursor-pointer hover:bg-gray-600 transition-colors"
-              id="camera-mux"
-              onClick={() => setShowCameraMuxConfig(true)}
-              title="Click to configure Camera Mux"
-            >
-              <div className="text-center font-semibold text-sm mb-1 text-gray-300">TCC807X</div>
-              <div className="text-center font-semibold text-sm mb-3 text-yellow-400">Camera Mux</div>
-              <div className="flex-1 flex flex-col justify-around">
-                {activeChannels.map((ch, idx) => {
-                  const mappedInput = cameraMuxConfig.mappings[ch.globalIndex] ?? ch.globalIndex;
-                  return (
-                    <div key={idx} className="flex items-center gap-2" data-anchor={`mux-ch${ch.globalIndex}`}>
-                      <div className={`w-4 h-4 rounded ${channelColorClasses[mappedInput]}`}></div>
-                      <span className="text-xs font-medium text-gray-200">CAM CH{ch.globalIndex} ← CH{mappedInput}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            <CameraMuxBlock
+              activeChannels={activeChannels}
+              cameraMuxConfig={cameraMuxConfig}
+              channelColorClasses={channelColorClasses}
+              onOpen={() => setShowCameraMuxConfig(true)}
+            />
+          
+          {/* Overlay lines: Camera Mux R0..R3 -> SVDW 1-1..4-1 */}
+          {camToSvdwLines.length > 0 && (
+            <svg className="fixed top-0 left-0 w-screen h-screen pointer-events-none z-10" style={{ overflow: 'visible' }}>
+              <defs>
+                <marker id="arrowhead-small" markerWidth="5" markerHeight="3.5" refX="4.5" refY="1.75" orient="auto">
+                  <polygon points="0 0, 5 1.75, 0 3.5" fill="context-stroke" />
+                </marker>
+              </defs>
+              {camToSvdwLines.map((l, i) => (
+                <g key={i}>
+                  <line
+                    x1={l.x1}
+                    y1={l.y1}
+                    x2={l.x2}
+                    y2={l.y2}
+                    stroke={l.color}
+                    strokeWidth={3}
+                    strokeOpacity="0.9"
+                    markerEnd={l.arrow ? 'url(#arrowhead-small)' : undefined}
+                  />
+                  {!l.arrow && <circle cx={l.x2} cy={l.y2} r="4" fill={l.color} />}
+                  <circle cx={l.x1} cy={l.y1} r="4" fill={l.color} />
+                </g>
+              ))}
+            </svg>
+          )}
+
+          {/* Overlay lines: Camera Mux R0..R7 -> CIED slots 0..7 */}
+          {camToCiedLines.length > 0 && (
+            <svg className="fixed top-0 left-0 w-screen h-screen pointer-events-none z-10" style={{ overflow: 'visible' }}>
+              <defs>
+                <marker id="arrowhead-cied" markerWidth="5" markerHeight="3.5" refX="4.5" refY="1.75" orient="auto">
+                  <polygon points="0 0, 5 1.75, 0 3.5" fill="context-stroke" />
+                </marker>
+              </defs>
+              {camToCiedLines.map((l, i) => (
+                <line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke={l.color} strokeWidth="3" strokeOpacity="0.9" markerEnd="url(#arrowhead-cied)" />
+              ))}
+            </svg>
+          )}
+
+          {/* Overlay lines: Camera Mux right markers -> MIPI channel squares */}
+          {muxToMipi.length > 0 && (
+            <svg className="fixed top-0 left-0 w-screen h-screen pointer-events-none z-10" style={{ overflow: 'visible' }}>
+              <defs>
+                <marker id="arrowhead-l" markerWidth="5" markerHeight="3.5" refX="4.5" refY="1.75" orient="auto">
+                  <polygon points="0 0, 5 1.75, 0 3.5" fill="context-stroke" />
+                </marker>
+              </defs>
+              {muxToMipi.map((l, i) => (
+                <line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke={l.color} strokeWidth="3" strokeOpacity="0.9" markerEnd="url(#arrowhead-l)" />
+              ))}
+            </svg>
+          )}
+
+          {/* Overlay lines: CHi -> ISPi */}
+          {chToIspLines.length > 0 && (
+            <svg className="fixed top-0 left-0 w-screen h-screen pointer-events-none z-10" style={{ overflow: 'visible' }}>
+              {chToIspLines.map((l, i) => (
+                <line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke={l.color} strokeWidth="3" strokeOpacity="0.9" />
+              ))}
+            </svg>
+          )}
+
+          {/* Overlay lines: ISPi -> Li */}
+          {ispToLLines.length > 0 && (
+            <svg className="fixed top-0 left-0 w-screen h-screen pointer-events-none z-10" style={{ overflow: 'visible' }}>
+              <defs>
+                <marker id="arrowhead-l-isp" markerWidth="5" markerHeight="3.5" refX="4.5" refY="1.75" orient="auto">
+                  <polygon points="0 0, 5 1.75, 0 3.5" fill="context-stroke" />
+                </marker>
+              </defs>
+              {ispToLLines.map((l, i) => (
+                <line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke={l.color} strokeWidth="3" strokeOpacity="0.9" markerEnd="url(#arrowhead-l-isp)" />
+              ))}
+            </svg>
+          )}
+
 
             {/* Right group: CIED (left) — 20px spacer — SVDW/VideoPipeline (right) */}
             <div className="ml-auto flex items-start relative">
@@ -456,7 +708,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
             </div>
           </div>
 
-          
+
         </div>
 
         {/* Legend - stick to the bottom of dark background */}

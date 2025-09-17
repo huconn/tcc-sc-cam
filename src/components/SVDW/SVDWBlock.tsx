@@ -1,19 +1,19 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { getChannelHex } from '@/utils/channelPalette';
 import { SVDWGrabberConfigModal, SVDWGrabberStatus } from './SVDWGrabberConfigModal';
 import { SVDWBlenderConfigModal, SVDWBlenderStatus } from './SVDWBlenderConfigModal';
 
 export const SVDWBlock: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Distinct colors per Grabber (match channel palette feel)
-  const grabberBg: string[] = [
-    'bg-blue-600',
-    'bg-emerald-600',
-    'bg-orange-600',
-    'bg-yellow-600',
+  // Distinct colors per Grabber from shared palette (channels 0..3)
+  const grabberHex: string[] = [
+    getChannelHex(0),
+    getChannelHex(1),
+    getChannelHex(2),
+    getChannelHex(3),
   ];
-  const grabberHex: string[] = ['#2563eb', '#059669', '#ea580c', '#ca8a04'];
-  const grabberText = 'text-white';
+  const grabberText = 'text-black';
   const grabberBorder = 'border-0';
 
   // Blender theme color
@@ -62,7 +62,7 @@ export const SVDWBlock: React.FC = () => {
   }, []);
 
   return (
-    <div className="bg-gray-700 border-2 border-gray-500 rounded-lg p-4 relative inline-block max-w-full overflow-visible text-gray-200">
+    <div className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 relative inline-block max-w-full overflow-visible text-gray-200">
       {/* SVDW Title */}
       <div className="text-center font-semibold text-sm mb-3 text-purple-400">SVDW</div>
       
@@ -73,20 +73,20 @@ export const SVDWBlock: React.FC = () => {
           <button
             type="button"
             onClick={() => setBlenderOpen(true)}
-            className={`relative ${blenderBg} ${blenderText} ${blenderBorder} rounded w-[120px] h-full flex items-center justify-center text-xs font-medium hover:border-white hover:ring-2 hover:ring-white focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors`}
+            className={`relative ${blenderBg} ${blenderText} ${blenderBorder} rounded w-[120px] h-full flex items-center justify-center text-xs font-medium hover:border-white hover:ring-1 hover:ring-white focus:outline-none focus:ring-1 focus:ring-primary-500 transition-colors`}
             title="Configure Blender"
           >
             Blender
             {/* Left edge indicator boxes (1-2, 2-2, 3-2, 4-2) aligned per row */}
-            <div className="absolute left-0 top-0 -translate-x-1/2 h-full flex flex-col gap-4">
+              <div className="absolute left-0 top-0 -translate-x-1/2 h-full flex flex-col gap-4">
               {[0,1,2,3].map((idx) => (
                 <div key={idx} className="h-10 flex items-center">
                   <div
-                    ref={(el) => { blenderLeftRefs.current[idx] = el; }}
-                    className="relative text-white rounded w-8 h-6 flex items-center justify-center text-[10px] font-semibold border-2 border-white"
+                      ref={(el) => { blenderLeftRefs.current[idx] = el; }}
+                className="relative text-black rounded w-8 h-6 flex items-center justify-center text-[10px] font-semibold border-2 border-white"
                     style={{ backgroundColor: grabberHex[idx] }}
                   >
-                    {`${idx+1}-2`}
+                    {`CH${idx+1}`}
                   </div>
                 </div>
               ))}
@@ -100,18 +100,21 @@ export const SVDWBlock: React.FC = () => {
             <div key={idx} className="relative grid grid-cols-[auto_2rem] items-center gap-0 h-10">
               {/* Left number indicator (x-1) */}
               <div
-                className="absolute right-full top-1/2 translate-x-1/2 -translate-y-1/2 z-10 text-white rounded w-8 h-6 flex items-center justify-center text-[10px] font-semibold border-2 border-white"
+                className="absolute right-full top-1/2 translate-x-1/2 -translate-y-1/2 z-10 text-black rounded w-8 h-6 flex items-center justify-center text-[10px] font-semibold border border-gray-500"
                 style={{ backgroundColor: grabberHex[idx] }}
+                data-connection-point={`svdw-left-${idx}`}
+                
               >
-                {`${idx+1}-1`}
+                {`CH${idx+1}`}
               </div>
 
               {/* Main Grabber block */}
               <button
                 type="button"
                 onClick={() => { setActiveGrabber(idx); setModalOpen(true); }}
-                className={`${grabberBg[idx]} ${grabberText} ${grabberBorder} rounded px-4 h-10 flex items-center justify-center text-xs font-semibold min-w-[120px] text-center shadow-sm hover:border-white hover:ring-2 hover:ring-white focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors`}
+                className={`${grabberText} ${grabberBorder} rounded px-4 h-10 flex items-center justify-center text-xs font-semibold min-w-[120px] text-center shadow-sm hover:border-white hover:ring-2 hover:ring-white focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors transform transition-transform hover:scale-110`}
                 title={`Configure Grabber ${idx}`}
+                style={{ backgroundColor: grabberHex[idx] }}
               >
                 Grabber
               </button>
@@ -119,10 +122,10 @@ export const SVDWBlock: React.FC = () => {
               {/* Right number indicator (centered on border, shifted left) */}
               <div
                 ref={(el) => { grabberRightRefs.current[idx] = el; }}
-                className="absolute top-1/2 -translate-y-1/2 z-10 text-white rounded w-8 h-6 flex items-center justify-center text-[10px] font-semibold border-2 border-white"
+                className="absolute top-1/2 -translate-y-1/2 z-10 text-black rounded w-8 h-6 flex items-center justify-center text-[10px] font-semibold"
                 style={{ left: 'calc(100% - 36px)', transform: 'translate(-50%, -50%)', backgroundColor: grabberHex[idx] }}
               >
-                {`${idx+1}-2`}
+                {``}
               </div>
             </div>
           ))}
@@ -133,12 +136,12 @@ export const SVDWBlock: React.FC = () => {
           <svg className="absolute inset-0 w-full h-full pointer-events-none">
             <defs>
               <marker id="arrowhead" markerWidth="5" markerHeight="3.5" refX="4.5" refY="1.75" orient="auto">
-                <polygon points="0 0, 5 1.75, 0 3.5" fill="#93c5fd" />
+                <polygon points="0 0, 5 1.75, 0 3.5" fill="context-stroke" />
               </marker>
             </defs>
             <g transform="translate(-17,0)">
               {lines.map((l, i) => (
-                <line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke="#93c5fd" strokeWidth={3} markerEnd="url(#arrowhead)" />
+                <line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke={grabberHex[i]} strokeWidth={3} markerEnd="url(#arrowhead)" />
               ))}
             </g>
           </svg>
