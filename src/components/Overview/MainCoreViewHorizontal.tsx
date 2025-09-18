@@ -111,6 +111,22 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
       { from: 'mux-right-7-target', fallback: 'mux-right-7', to: 'video-out-vin1', arrow: true }, // R7 -> VIN1 (arrow)
     ];
     const collected: Array<{x1:number;y1:number;x2:number;y2:number;color:string;arrow?:boolean}> = [];
+    
+    // When forceHorizontalOutputs is true, we need to ensure all lines are perfectly horizontal
+    // by using a consistent Y coordinate for all connections
+    let horizontalY: number | null = null;
+    
+    if (forceHorizontalOutputs) {
+      // Get the Y coordinate from the first Camera Mux output (R0) as the baseline
+      const firstCamTarget = document.querySelector(`[data-connection-point="mux-right-0-target"]`) as HTMLElement | null;
+      const firstCamBox = document.querySelector(`[data-connection-point="mux-right-0"]`) as HTMLElement | null;
+      const firstCamEl = firstCamTarget || firstCamBox;
+      if (firstCamEl) {
+        const firstCamRect = firstCamEl.getBoundingClientRect();
+        horizontalY = firstCamRect.top + firstCamRect.height / 2;
+      }
+    }
+    
     pairs.forEach(p => {
       const camTarget = document.querySelector(`[data-connection-point="${p.from}"]`) as HTMLElement | null;
       const camBox = document.querySelector(`[data-connection-point="${p.fallback}"]`) as HTMLElement | null;
@@ -124,10 +140,13 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
         const y1 = camRectBase.top + camRectBase.height / 2;
         const x2 = svdwRect.left;
         let y2 = svdwRect.top + svdwRect.height / 2;
-        if (forceHorizontalOutputs) {
-          // Force horizontal by aligning destination Y to source Y
-          y2 = y1;
+        
+        if (forceHorizontalOutputs && horizontalY !== null) {
+          // Force all lines to be perfectly horizontal using the baseline Y
+          y1 = horizontalY;
+          y2 = horizontalY;
         }
+        
         const match = p.from.match(/mux-right-(\d+)/);
         const idx = match ? parseInt(match[1], 10) : 0;
         const color = channelColors[idx] || '#93c5fd';
@@ -153,6 +172,19 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
       6: 'video-out-vin0',
       7: 'video-out-vin1'
     };
+    
+    // When forceHorizontalOutputs is true, get the baseline Y coordinate
+    let horizontalY: number | null = null;
+    if (forceHorizontalOutputs) {
+      const firstCamTarget = document.querySelector(`[data-connection-point="mux-right-0-target"]`) as HTMLElement | null;
+      const firstCamBox = document.querySelector(`[data-connection-point="mux-right-0"]`) as HTMLElement | null;
+      const firstCamEl = firstCamTarget || firstCamBox;
+      if (firstCamEl) {
+        const firstCamRect = firstCamEl.getBoundingClientRect();
+        horizontalY = firstCamRect.top + firstCamRect.height / 2;
+      }
+    }
+    
     for (let i = 0; i < 8; i += 1) {
       const fromTarget = document.querySelector(`[data-connection-point="mux-right-${i}-target"]`) as HTMLElement | null;
       const fromFallback = document.querySelector(`[data-connection-point="mux-right-${i}"]`) as HTMLElement | null;
@@ -170,8 +202,11 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
       let yStart = a.top + a.height / 2;
       const xEnd = r.left;
       let yEnd = r.top + r.height / 2;
-      if (forceHorizontalOutputs) {
-        yEnd = yStart; // force horizontal baseline for OUT -> target
+      
+      if (forceHorizontalOutputs && horizontalY !== null) {
+        // Use the consistent horizontal baseline for all connections
+        yStart = horizontalY;
+        yEnd = horizontalY;
       }
 
       // Align X to the CIED slot center so each channel has unique x and doesn't overlap
@@ -357,8 +392,11 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
           const groupRect = group1Ref.current.getBoundingClientRect();
           const rightGroupRect = rightGroupRef.current.getBoundingClientRect();
           const ciedRect = ciedRef.current.getBoundingClientRect();
-          // desired top within rightGroup: (group1.bottom - rightGroup.top) - cied.height
-          const desiredTop = Math.max(0, Math.round((groupRect.bottom - rightGroupRect.top) - ciedRect.height));
+          // Ensure the right-side group (6) has the same height as container 1 so bottom:0 aligns correctly
+          (rightGroupRef.current as HTMLDivElement).style.height = `${Math.round(groupRect.height)}px`;
+          // 강제 보정: CEID 하단을 1번 컨테이너 하단에 맞추고, CEID 높이만큼 위로 올림
+          // Raise slightly above by 8px to visually align with border thickness
+          const desiredTop = Math.round((groupRect.top + groupRect.height) - ciedRect.height - rightGroupRect.top - 20);
           ciedRef.current.style.top = `${desiredTop}px`;
         }
       } catch {}
@@ -537,9 +575,9 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
         {/* Main Horizontal Layout */}
         <div
           ref={mainRef}
-          className={`relative bg-gray-900 rounded-lg p-8 flex flex-col h-full ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? 'debug' : '')}`}
+          className={`relative bg-gray-900 rounded-lg px-8 pt-0 flex flex-col h-full ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? 'debug' : '')}`}
           style={{ paddingBottom: `${(() => {
-            const topGapPx = 32; // p-8 top padding in px
+            const topGapPx = 100; // pt-6 top padding in px (reduced to 75% of 32px)
             const bottomOffsetPx = 30; // legend bottom offset
             const h = legendRef.current ? legendRef.current.getBoundingClientRect().height : 0;
             return topGapPx + bottomOffsetPx + h;
@@ -845,7 +883,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
               {useCameraStore(s => s.debugMainCoreViewHorizontalLayout) && (
                 <span className="absolute -top-3 -left-3 bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded">6</span>
               )}
-              <div ref={ciedRef} className="absolute" style={{ top: `${ciedTopOffset}px`, left: '-400px' }}>
+              <div ref={ciedRef} className="absolute" style={{ left: '-600px' }}>
                 <CIEDBar />
               </div>
               <div style={{ width: '20px' }} />
