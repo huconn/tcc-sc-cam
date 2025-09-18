@@ -49,7 +49,7 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
   const [imgHeight, setImgHeight] = React.useState('720');
 
   // 그리드 테두리 표시 전역 플래그
-  const showGridBorders = useCameraStore(s => s.showGridBorders ?? false);
+  const showGridBorders = useCameraStore(s => s.debugCIEDConfigModalGridBorders ?? false);
 
   if (!open) return null;
 

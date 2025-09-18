@@ -62,7 +62,7 @@ export const SVDWBlock: React.FC = () => {
   }, []);
 
   return (
-    <div className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 relative inline-block max-w-full overflow-visible text-gray-200">
+    <div className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 relative w-full overflow-visible text-gray-200">
       {/* SVDW Title */}
       <div className="text-center font-semibold text-sm mb-3 text-purple-400">SVDW</div>
       
@@ -78,7 +78,7 @@ export const SVDWBlock: React.FC = () => {
           >
             Blender
             {/* Left edge indicator boxes (1-2, 2-2, 3-2, 4-2) aligned per row */}
-              <div className="absolute left-0 top-0 -translate-x-1/2 h-full flex flex-col gap-4">
+            <div className="absolute left-0 top-0 -translate-x-1/2 h-full flex flex-col gap-9">
               {[0,1,2,3].map((idx) => (
                 <div key={idx} className="h-10 flex items-center">
                   <div
@@ -95,7 +95,7 @@ export const SVDWBlock: React.FC = () => {
         </div>
 
         {/* Left column: 4 Grabbers stacked */}
-        <div className="flex flex-col items-start gap-4">
+        <div className="flex flex-col items-start gap-9">
           {[0,1,2,3].map((idx) => (
             <div key={idx} className="relative grid grid-cols-[auto_2rem] items-center gap-0 h-10">
               {/* Left number indicator (x-1) */}

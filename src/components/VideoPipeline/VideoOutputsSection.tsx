@@ -41,7 +41,7 @@ export const VideoOutputsSection: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col items-start gap-3">
+    <div className="flex flex-col items-start gap-9">
       <OutputRow label="VWDMA0" colorTop="#6d28d9" colorBottom="#4d7c57" onClick={() => handleOpen('VWDMA0')} connectionId="video-out-vwdma0" />
       <OutputRow label="VWDMA1" colorTop="#65a30d" colorBottom="#92400e" onClick={() => handleOpen('VWDMA1')} connectionId="video-out-vwdma1" />
       <OutputRow label="VIN0" colorTop="#2563eb" onClick={() => handleOpen('VIN0')} connectionId="video-out-vin0" />

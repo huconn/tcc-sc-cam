@@ -35,11 +35,13 @@ interface CameraStore extends CameraConfiguration {
   i2cSub?: number;
   setI2cMain?: (n: number) => void;
   setI2cSub?: (n: number) => void;
-  // Global UI flags
-  forceHorizontalOutputs?: boolean;
-  setForceHorizontalOutputs?: (v: boolean) => void;
-  showGridBorders?: boolean;
-  setShowGridBorders?: (v: boolean) => void;
+  // Global UI debug flags (namespaced by screen/component)
+  debugMainCoreViewHorizontalForceOutputs?: boolean;
+  setDebugMainCoreViewHorizontalForceOutputs?: (v: boolean) => void;
+  debugCIEDConfigModalGridBorders?: boolean;
+  setDebugCIEDConfigModalGridBorders?: (v: boolean) => void;
+  debugMainCoreViewHorizontalLayout?: boolean;
+  setDebugMainCoreViewHorizontalLayout?: (v: boolean) => void;
 }
 
 const initialState: CameraConfiguration = {
@@ -123,11 +125,14 @@ export const useCameraStore = create<CameraStore>((set) => ({
   i2cSub: 13,
 
   // for debugging  ================================================
-  // force horizontal outputs for camera mux to svdw/video lines
-  forceHorizontalOutputs: false,
+  // MainCoreViewHorizontal: force OUT->SVDW/Video lines horizontal
+  debugMainCoreViewHorizontalForceOutputs: false,
 
-  // ceid grid borders
-  showGridBorders: false,
+  // CIEDConfigModal: show grid borders
+  debugCIEDConfigModalGridBorders: false,
+
+  // MainCoreViewHorizontal: show layout guide borders
+  debugMainCoreViewHorizontalLayout: true,
   // ==============================================================
 
   setViewMode: (mode) => set({ viewMode: mode }),
@@ -208,6 +213,7 @@ export const useCameraStore = create<CameraStore>((set) => ({
 
   setI2cMain: (n) => set({ i2cMain: n }),
   setI2cSub: (n) => set({ i2cSub: n }),
-  setForceHorizontalOutputs: (v) => set({ forceHorizontalOutputs: v }),
-  setShowGridBorders: (v) => set({ showGridBorders: v }),
+  setDebugMainCoreViewHorizontalForceOutputs: (v) => set({ debugMainCoreViewHorizontalForceOutputs: v }),
+  setDebugCIEDConfigModalGridBorders: (v) => set({ debugCIEDConfigModalGridBorders: v }),
+  setDebugMainCoreViewHorizontalLayout: (v) => set({ debugMainCoreViewHorizontalLayout: v }),
 }));

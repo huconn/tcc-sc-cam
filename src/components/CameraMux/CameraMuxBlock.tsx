@@ -6,6 +6,7 @@ interface CameraMuxBlockProps {
   cameraMuxConfig: { mappings: Record<number, number> };
   channelColorClasses: string[];
   onOpen: () => void;
+  heightPx?: number;
 }
 
 export const CameraMuxBlock: React.FC<CameraMuxBlockProps> = ({
@@ -13,12 +14,15 @@ export const CameraMuxBlock: React.FC<CameraMuxBlockProps> = ({
   cameraMuxConfig,
   channelColorClasses,
   onOpen,
+  heightPx,
 }) => {
   return (
     <div
-      className="relative bg-gray-700 border-2 border-purple-500 rounded-lg w-[200px] h-[560px] p-4 cursor-pointer text-gray-200 transform transition-transform hover:scale-105 hover:border-white hover:ring-1 hover:ring-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+      className="relative bg-gray-700 border-2 border-purple-500 rounded-lg w-[200px] p-4 cursor-pointer text-gray-200 transform transition-transform hover:scale-105 hover:border-white hover:ring-1 hover:ring-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+      data-connection-point="camera-mux-box"
       onClick={onOpen}
       title="Click to configure Camera Mux"
+      style={{ height: heightPx ? `${heightPx}px` : '560px' }}
     >
       {/* Title */}
       <div className="text-center font-semibold text-sm mb-4 text-purple-400">CAMERA MUX</div>

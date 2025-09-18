@@ -69,6 +69,8 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
 }) => {
   const viewMode = useCameraStore(state => state.viewMode);
   const rightColRef = useRef<HTMLDivElement>(null);
+  const rightGroupRef = useRef<HTMLDivElement>(null);
+  const group1Ref = useRef<HTMLDivElement>(null);
   const camMuxRef = useRef<HTMLDivElement>(null);
   const [ciedTopOffset, setCiedTopOffset] = useState<number>(0);
   const ciedRef = useRef<HTMLDivElement>(null);
@@ -77,6 +79,9 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
   const legendRef = useRef<HTMLDivElement>(null);
   const selectorsRef = useRef<HTMLDivElement>(null);
   const extColRef = useRef<HTMLDivElement>(null);
+  const videoGroupRef = useRef<HTMLDivElement>(null);
+  const [videoGroupTopOffset, setVideoGroupTopOffset] = useState<number>(0);
+  const svdwRef = useRef<HTMLDivElement>(null);
   const [extMipi1Top, setExtMipi1Top] = useState<number | null>(null);
   const [selectorsHeight, setSelectorsHeight] = useState<number>(400);
   const [camToSvdw, setCamToSvdw] = useState<{x1:number;y1:number;x2:number;y2:number}|null>(null);
@@ -295,13 +300,16 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
       //cam mux0..7 to cied0..7
       computeCamMuxToCied();
 
-      // Align ISP0 selector top with Camera Mux L0 box top (with minor visual offset)
+      // Align ISP0 selector center with Camera Mux IN-0 (mux-left-0) center
       try {
-        const l0 = document.querySelector('[data-connection-point="mux-left-0"]') as HTMLElement | null;
+        const l0 = document.querySelector('[data-connection-point="mux-left-0-target"]') as HTMLElement | null;
         if (l0 && selectorsRef.current) {
           const l0Rect = l0.getBoundingClientRect();
           const selRect = selectorsRef.current.getBoundingClientRect();
-          const top = Math.round(l0Rect.top - selRect.top - 1); // -1px to account for borders
+          const isp0Wrap = document.querySelector('[data-connection-point="isp-left-0-box"]') as HTMLElement | null;
+          const isp0Height = isp0Wrap ? isp0Wrap.getBoundingClientRect().height : 0;
+          const l0CenterY = l0Rect.top + l0Rect.height / 2;
+          const top = Math.round(l0CenterY - selRect.top - (isp0Height / 2));
           setSelectorTopOverrides(prev => ({ ...prev, 0: top }));
         }
       } catch {}
@@ -314,6 +322,44 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
           const extColRect = extColRef.current.getBoundingClientRect();
           const offset = Math.max(0, Math.round(mipi1Rect.top - extColRect.top));
           setExtMipi1Top(offset);
+        }
+      } catch {}
+
+      // Align SVDW (right column top) with Camera Mux top
+      try {
+        if (camMuxRef.current && rightColRef.current) {
+          const camRect = camMuxRef.current.getBoundingClientRect();
+          const rightRect = rightColRef.current.getBoundingClientRect();
+          const offset = Math.max(0, Math.round(camRect.top - rightRect.top));
+          setRightColTopOffset(offset);
+        }
+      } catch {}
+
+      // Align video group (6-3) bottom to Camera Mux BOX bottom by setting its top offset inside right column
+      try {
+        const camBox = document.querySelector('[data-connection-point="camera-mux-box"]') as HTMLElement | null;
+        if (camBox && rightColRef.current && videoGroupRef.current) {
+          const camRect = camBox.getBoundingClientRect();
+          const rightRect = rightColRef.current.getBoundingClientRect();
+          const vgRect = videoGroupRef.current.getBoundingClientRect();
+          const svdwHeight = svdwRef.current ? svdwRef.current.getBoundingClientRect().height : 0;
+          // desiredTop is distance from rightCol top to place vg top so that vg bottom == cam bottom
+          const desiredTop = Math.max(0, Math.round(camRect.bottom - rightRect.top - vgRect.height));
+          // Since vg is after SVDW in normal flow, apply only the extra margin needed beyond SVDW height
+          const marginTop = Math.max(0, desiredTop - svdwHeight);
+          setVideoGroupTopOffset(marginTop);
+        }
+      } catch {}
+
+      // Align CIED bottom to container 1 bottom (relative to its positioned parent 6)
+      try {
+        if (ciedRef.current && group1Ref.current && rightGroupRef.current) {
+          const groupRect = group1Ref.current.getBoundingClientRect();
+          const rightGroupRect = rightGroupRef.current.getBoundingClientRect();
+          const ciedRect = ciedRef.current.getBoundingClientRect();
+          // desired top within rightGroup: (group1.bottom - rightGroup.top) - cied.height
+          const desiredTop = Math.max(0, Math.round((groupRect.bottom - rightGroupRect.top) - ciedRect.height));
+          ciedRef.current.style.top = `${desiredTop}px`;
         }
       } catch {}
     };
@@ -404,6 +450,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
   const [cameraMuxConfig, setCameraMuxConfig] = useState<{ mappings: Record<number, number> }>({
     mappings: { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7 }
   });
+  const [rightColTopOffset, setRightColTopOffset] = useState<number>(0);
 
   // Channel colors - more vibrant and visible
   const channelColors = CHANNEL_HEX;
@@ -479,31 +526,51 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
   const activeChannels = getActiveChannels();
 
   return (
-    <div className="w-full h-full bg-gray-800 rounded-lg p-6 overflow-auto">
-      <div className="min-w-[1600px]">
+    <div className={`w-full h-full bg-gray-800 rounded-lg p-6 overflow-auto relative ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? 'debug' : '')}`}>
+      {useCameraStore(s => s.debugMainCoreViewHorizontalLayout) && (
+        <span className="absolute top-1 left-1 bg-gray-700 text-white text-[10px] px-1.5 py-0.5 rounded">0</span>
+      )}
+      <div className={`min-w-[1600px] relative h-full ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? 'debug' : '')}`}>
+        {useCameraStore(s => s.debugMainCoreViewHorizontalLayout) && (
+          <span className="absolute -top-3 -left-3 bg-gray-700 text-white text-[10px] px-1.5 py-0.5 rounded">0-1</span>
+        )}
         {/* Main Horizontal Layout */}
-        <div ref={mainRef} className="relative bg-gray-900 rounded-lg p-8 flex flex-col" style={{ paddingBottom: '250px' }}>
-          <div className={`flex items-stretch gap-12 relative ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? 'debug-purple' : '')}`}>
+        <div
+          ref={mainRef}
+          className={`relative bg-gray-900 rounded-lg p-8 flex flex-col h-full ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? 'debug' : '')}`}
+          style={{ paddingBottom: `${(() => {
+            const topGapPx = 32; // p-8 top padding in px
+            const bottomOffsetPx = 30; // legend bottom offset
+            const h = legendRef.current ? legendRef.current.getBoundingClientRect().height : 0;
+            return topGapPx + bottomOffsetPx + h;
+          })()}px` }}
+        >
+          {useCameraStore(s => s.debugMainCoreViewHorizontalLayout) && (
+            <span className="absolute -top-3 -left-3 bg-gray-700 text-white text-[10px] px-1.5 py-0.5 rounded">0-2</span>
+          )}
+          <div ref={group1Ref} className={`flex items-stretch gap-12 relative h-full ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? 'debug-purple' : '')}`}>
             {useCameraStore(s => s.debugMainCoreViewHorizontalLayout) && (
               <span className="absolute -top-3 -left-3 bg-purple-600 text-white text-[10px] px-1.5 py-0.5 rounded">1</span>
             )}
 
             {/* Column 1: External Devices */}
-            <div ref={extColRef} className={`flex flex-col justify-between relative ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? 'debug-green' : '')}`} style={{ height: `${selectorsHeight}px` }}>
+            <div ref={extColRef} className={`flex flex-col relative ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? 'debug-green' : '')}`} style={{ height: `${selectorsHeight}px` }}>
               {useCameraStore(s => s.debugMainCoreViewHorizontalLayout) && (
                 <span className="absolute -top-3 -left-3 bg-green-600 text-white text-[10px] px-1.5 py-0.5 rounded">2</span>
               )}
+              <div style={{ height: '20%' }} />
+              <div className="flex flex-col justify-between flex-1">
               {shouldShowMipi0 && (
                 <div
-                  className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 cursor-pointer hover:bg-gray-600 transition-colors w-[140px]"
+                    className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 cursor-pointer hover:bg-gray-600 transition-colors w-[140px]"
                   onClick={() => onDeviceClick('mipi0')}
                 >
-                  <div className="text-center font-semibold text-sm mb-4 text-purple-400">External Devices</div>
+                    <div className="text-center font-semibold text-sm mb-4 text-purple-400">External Devices</div>
                   <div className="flex gap-1 justify-center">
                     {externalDevices?.mipi0 &&
-                     ((((externalDevices.mipi0 as any)?.devices && (externalDevices.mipi0 as any).devices.length > 0) ||
-                      (Array.isArray(externalDevices.mipi0) && externalDevices.mipi0.length > 0))) ? (
-                      (((externalDevices.mipi0 as any)?.devices || externalDevices.mipi0) as any[]).slice(0, 4).map((device: any, index: number) => (
+                       ((((externalDevices.mipi0 as any)?.devices && (externalDevices.mipi0 as any).devices.length > 0) ||
+                        (Array.isArray(externalDevices.mipi0) && externalDevices.mipi0.length > 0))) ? (
+                        (((externalDevices.mipi0 as any)?.devices || externalDevices.mipi0) as any[]).slice(0, 4).map((device: any, index: number) => (
                         <div
                           key={index}
                           className={`w-6 h-6 rounded ${deviceTypeColors[device.type] || 'bg-gray-500'}`}
@@ -524,16 +591,15 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
 
               {shouldShowMipi1 && (
                 <div
-                  className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 cursor-pointer hover:bg-gray-600 transition-colors w-[140px]"
+                    className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 cursor-pointer hover:bg-gray-600 transition-colors w-[140px]"
                   onClick={() => onDeviceClick('mipi1')}
-                  style={extMipi1Top != null ? { marginTop: `${extMipi1Top}px` } : undefined}
                 >
-                  <div className="text-center font-semibold text-sm mb-4 text-purple-400">External Devices</div>
+                    <div className="text-center font-semibold text-sm mb-4 text-purple-400">External Devices</div>
                   <div className="flex gap-1 justify-center">
                     {externalDevices?.mipi1 &&
-                     ((((externalDevices.mipi1 as any)?.devices && (externalDevices.mipi1 as any).devices.length > 0) ||
-                      (Array.isArray(externalDevices.mipi1) && externalDevices.mipi1.length > 0))) ? (
-                      (((externalDevices.mipi1 as any)?.devices || externalDevices.mipi1) as any[]).slice(0, 4).map((device: any, index: number) => (
+                       ((((externalDevices.mipi1 as any)?.devices && (externalDevices.mipi1 as any).devices.length > 0) ||
+                        (Array.isArray(externalDevices.mipi1) && externalDevices.mipi1.length > 0))) ? (
+                        (((externalDevices.mipi1 as any)?.devices || externalDevices.mipi1) as any[]).slice(0, 4).map((device: any, index: number) => (
                         <div
                           key={index}
                           className={`w-6 h-6 rounded ${deviceTypeColors[device.type] || 'bg-gray-500'}`}
@@ -551,74 +617,80 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                   </div>
                 </div>
               )}
+              </div>
+              <div style={{ height: '20%' }} />
             </div>
 
             {/* Column 2: MIPI Blocks */}
-            <div className={`flex flex-col gap-8 relative self-stretch ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? 'debug-green' : '')}`} id="mipi-column" style={{ height: `${selectorsHeight}px` }}>
+            <div className={`flex flex-col relative self-stretch ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? 'debug-green' : '')}`} id="mipi-column" style={{ height: `${selectorsHeight}px` }}>
               {useCameraStore(s => s.debugMainCoreViewHorizontalLayout) && (
                 <span className="absolute -top-3 -left-3 bg-green-600 text-white text-[10px] px-1.5 py-0.5 rounded">3</span>
               )}
-              {shouldShowMipi0 && (
-                <div className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 w-[140px] relative" id="mipi0-block">
-                  <div className="text-center font-semibold text-sm text-purple-400">MIPI0</div>
-                  <div className="text-center text-xs text-gray-400 mb-2">MAIN</div>
-                  <select
-                    className="w-full text-xs bg-gray-600 text-gray-200 border border-gray-500 rounded px-1 py-0.5 mb-2 font-bold"
-                    value={i2cMain}
-                    onChange={(e) => setI2cMain(parseInt(e.target.value))}
-                  >
-                    {Array.from({ length: 16 }).map((_, n) => (
-                      <option key={n} value={n} disabled={n === i2cSub} className="bg-gray-700 text-gray-200">
-                        {`I2C${n}`}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="space-y-2">
-                    {[0, 1, 2, 3].map(i => (
-                      <div key={i} className="flex items-center justify-between" data-channel={`mipi0-${i}`}>
-                        <span className="text-xs font-bold text-gray-200">CH{i}</span>
-                        <div
-                          className={`w-4 h-4 rounded ${channelColorClasses[i]} cursor-pointer hover:ring-2 hover:ring-white transition-all`}
-                          onClick={() => setShowMIPIConfig({ mipi: 'mipi0', channel: i })}
-                          title={`Configure MIPI0 CH${i}`}
-                          data-anchor={`mipi0-ch${i}`}
-                        ></div>
-                      </div>
-                    ))}
+              <div style={{ height: '20%' }} />
+              <div className="flex flex-col justify-between flex-1">
+                {shouldShowMipi0 && (
+                  <div className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 w-[140px] relative" id="mipi0-block">
+                    <div className="text-center font-semibold text-sm text-purple-400">MIPI0</div>
+                    <div className="text-center text-xs text-gray-400 mb-2">MAIN</div>
+                    <select
+                      className="w-full text-xs bg-gray-600 text-gray-200 border border-gray-500 rounded px-1 py-0.5 mb-2 font-bold"
+                      value={i2cMain}
+                      onChange={(e) => setI2cMain(parseInt(e.target.value))}
+                    >
+                      {Array.from({ length: 16 }).map((_, n) => (
+                        <option key={n} value={n} disabled={n === i2cSub} className="bg-gray-700 text-gray-200">
+                          {`I2C${n}`}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="space-y-2">
+                      {[0, 1, 2, 3].map(i => (
+                        <div key={i} className="flex items-center justify-between" data-channel={`mipi0-${i}`}>
+                          <span className="text-xs font-bold text-gray-200">CH{i}</span>
+                          <div
+                            className={`w-4 h-4 rounded ${channelColorClasses[i]} cursor-pointer hover:ring-2 hover:ring-white transition-all`}
+                            onClick={() => setShowMIPIConfig({ mipi: 'mipi0', channel: i })}
+                            title={`Configure MIPI0 CH${i}`}
+                            data-anchor={`mipi0-ch${i}`}
+                          ></div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {shouldShowMipi1 && (
-                <div className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 w-[140px] relative mt-auto" id="mipi1-block">
-                  <div className="text-center font-semibold text-sm text-purple-400">MIPI1</div>
-                  <div className="text-center text-xs text-gray-400 mb-2">SUB</div>
-                  <select
-                    className="w-full text-xs bg-gray-600 text-gray-200 border border-gray-500 rounded px-1 py-0.5 mb-2 font-bold"
-                    value={i2cSub}
-                    onChange={(e) => setI2cSub(parseInt(e.target.value))}
-                  >
-                    {Array.from({ length: 16 }).map((_, n) => (
-                      <option key={n} value={n} disabled={n === i2cMain} className="bg-gray-700 text-gray-200">
-                        {`I2C${n}`}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="space-y-2">
-                    {[0, 1, 2, 3].map(i => (
-                      <div key={i} className="flex items-center justify-between" data-channel={`mipi1-${i}`}>
-                        <span className="text-xs font-bold text-gray-200">CH{i}</span>
-                        <div
-                          className={`w-4 h-4 rounded ${channelColorClasses[i + 4]} cursor-pointer hover:ring-2 hover:ring-white transition-all`}
-                          onClick={() => setShowMIPIConfig({ mipi: 'mipi1', channel: i })}
-                          title={`Configure MIPI1 CH${i}`}
-                          data-anchor={`mipi1-ch${i}`}
-                        ></div>
-                      </div>
-                    ))}
+                {shouldShowMipi1 && (
+                  <div className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 w-[140px] relative" id="mipi1-block">
+                    <div className="text-center font-semibold text-sm text-purple-400">MIPI1</div>
+                    <div className="text-center text-xs text-gray-400 mb-2">SUB</div>
+                    <select
+                      className="w-full text-xs bg-gray-600 text-gray-200 border border-gray-500 rounded px-1 py-0.5 mb-2 font-bold"
+                      value={i2cSub}
+                      onChange={(e) => setI2cSub(parseInt(e.target.value))}
+                    >
+                      {Array.from({ length: 16 }).map((_, n) => (
+                        <option key={n} value={n} disabled={n === i2cMain} className="bg-gray-700 text-gray-200">
+                          {`I2C${n}`}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="space-y-2">
+                      {[0, 1, 2, 3].map(i => (
+                        <div key={i} className="flex items-center justify-between" data-channel={`mipi1-${i}`}>
+                          <span className="text-xs font-bold text-gray-200">CH{i}</span>
+                          <div
+                            className={`w-4 h-4 rounded ${channelColorClasses[i + 4]} cursor-pointer hover:ring-2 hover:ring-white transition-all`}
+                            onClick={() => setShowMIPIConfig({ mipi: 'mipi1', channel: i })}
+                            title={`Configure MIPI1 CH${i}`}
+                            data-anchor={`mipi1-ch${i}`}
+                          ></div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
+              <div style={{ height: '20%' }} />
             </div>
 
             {/* Column 3: ISP/Bypass Selectors (positioned on lines) */}
@@ -631,23 +703,17 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
 
               {/* ISP Selectors */}
               {activeChannels.map((ch, idx) => {
-                // Match the line positioning
-                const mipiBlockY = ch.mipi === 'mipi0' ? 0 : (shouldShowMipi0 ? 170 : 0);
-                const channelStartY = 60;
-                const channelSpacing = 28;
-                const mipiY = mipiBlockY + channelStartY + (ch.index * channelSpacing) + 8;
-
-                const muxTotalHeight = 280;
-                const muxStartY = 50;
-                const muxSpacing = muxTotalHeight / Math.max(activeChannels.length - 1, 1);
-                const muxY = muxStartY + (idx * muxSpacing);
-
-                const middleY = (mipiY + muxY) / 2 - 12; // Center the selector on the line
-
-                const overrideTop = selectorTopOverrides[ch.globalIndex];
-                let baseTop = (overrideTop !== undefined && ch.globalIndex === 0) ? overrideTop : middleY;
-                if (ch.globalIndex >= 4) {
-                  baseTop += 150; // push ISP4..ISP7 (globalIndex 4..7) down by 200px
+                // Place ISP0..ISP3 in segment 2, ISP4..ISP7 in segment 4 (5 equal vertical segments)
+                const segmentHeight = selectorsHeight / 5;
+                const approxHalfSelector = 12; // approximate half of selector height
+                let baseTop: number;
+                if (ch.globalIndex < 4) {
+                  // Segment index 1 (second segment). Distribute 4 items evenly within the segment
+                  baseTop = (segmentHeight * 1) + (((ch.index + 0.5) * (segmentHeight / 4)) - approxHalfSelector);
+                } else {
+                  // Segment index 3 (fourth segment)
+                  const localIdx = ch.globalIndex - 4;
+                  baseTop = (segmentHeight * 3) + (((localIdx + 0.5) * (segmentHeight / 4)) - approxHalfSelector);
                 }
                 const topPx = `${baseTop}px`;
                 return (
@@ -677,7 +743,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
             </div>
 
             {/* Column 4: Camera Mux */}
-            <div ref={camMuxRef} className={`relative h-full ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? 'debug-red' : '')}`}>
+            <div ref={camMuxRef} className={`relative h-full flex flex-col justify-center ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? 'debug-red' : '')}`}>
               {useCameraStore(s => s.debugMainCoreViewHorizontalLayout) && (
                 <span className="absolute -top-3 -left-3 bg-red-600 text-white text-[10px] px-1.5 py-0.5 rounded">5</span>
               )}
@@ -686,6 +752,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
               cameraMuxConfig={cameraMuxConfig}
               channelColorClasses={channelColorClasses}
               onOpen={() => setShowCameraMuxConfig(true)}
+              heightPx={Math.max(0, Math.round((selectorsHeight * 3) / 5))}
             />
             </div>
           
@@ -774,17 +841,33 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
 
 
             {/* Right group: CIED (left) — 20px spacer — SVDW/VideoPipeline (right) */}
-            <div className={`ml-auto flex items-start relative ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? 'debug-blue' : '')}`}>
+            <div ref={rightGroupRef} className={`ml-auto flex items-start relative ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? 'debug-blue' : '')}`}>
               {useCameraStore(s => s.debugMainCoreViewHorizontalLayout) && (
                 <span className="absolute -top-3 -left-3 bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded">6</span>
               )}
-              <div ref={ciedRef} className="absolute" style={{ top: `${ciedTopOffset + 100}px`, left: '-400px' }}>
+              <div ref={ciedRef} className="absolute" style={{ top: `${ciedTopOffset}px`, left: '-400px' }}>
                 <CIEDBar />
               </div>
               <div style={{ width: '20px' }} />
-              <div ref={rightColRef} className="flex flex-col">
-                <SVDWBlock />
-                <div style={{ marginTop: '4.5rem' }}>
+              <div ref={rightColRef} className={`flex flex-col ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? '' : '')}`} style={{ marginTop: `${rightColTopOffset}px`, height: `${selectorsHeight}px` }}>
+                {/* Top half: SVDW bottom-aligned */}
+                <div className={`relative w-full ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? 'debug-orange' : '')}`} style={{ height: `${Math.max(0, Math.round(selectorsHeight/2) - 10)}px`, display: 'flex', alignItems: 'flex-end' }}>
+                  {useCameraStore(s => s.debugMainCoreViewHorizontalLayout) && (
+                    <span className="absolute -top-3 -left-3 bg-orange-600 text-white text-[10px] px-1.5 py-0.5 rounded">6-1</span>
+                  )}
+                  <div ref={svdwRef} className="w-full">
+                    <div className="w-full">
+                      <SVDWBlock />
+                    </div>
+                  </div>
+                </div>
+                {/* Gap 20px */}
+                <div style={{ height: '20px' }} />
+                {/* Bottom half: Video group top-aligned */}
+                <div ref={videoGroupRef} className={`relative ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? 'debug-orange' : '')}`} style={{ height: `${Math.max(0, Math.round(selectorsHeight/2) - 10)}px`, display: 'flex', alignItems: 'flex-start' }}>
+                  {useCameraStore(s => s.debugMainCoreViewHorizontalLayout) && (
+                    <span className="absolute -top-3 -left-3 bg-orange-600 text-white text-[10px] px-1.5 py-0.5 rounded">6-3</span>
+                  )}
                   <VideoOutputsSection />
                 </div>
               </div>
