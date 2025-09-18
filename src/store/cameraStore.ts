@@ -126,7 +126,7 @@ export const useCameraStore = create<CameraStore>((set) => ({
 
   // for debugging  ================================================
   // MainCoreViewHorizontal: force OUT->SVDW/Video lines horizontal
-  debugMainCoreViewHorizontalForceOutputs: false,
+  debugMainCoreViewHorizontalForceOutputs: true,
 
   // CIEDConfigModal: show grid borders
   debugCIEDConfigModalGridBorders: false,
