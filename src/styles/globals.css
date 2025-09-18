@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Debug border helpers (toggle via store flag) */
+.debug-orange { border: 2px solid rgb(249 115 22); /* tailwind orange-500 */ }
+.debug-red { border: 2px solid rgb(239 68 68); /* red-500 */ }
+.debug-green { border: 2px solid rgb(34 197 94); /* green-500 */ }
+.debug-yellow { border: 2px solid rgb(234 179 8); /* yellow-500 */ }
+.debug-purple { border: 2px solid rgb(168 85 247); /* purple-500 */ }
+.debug-blue { border: 2px solid rgb(59 130 246); /* blue-500 */ }
+.debug { border: 2px dashed rgba(255,255,255,0.4); }
+
 @layer base {
   body {
     @apply bg-gray-900 text-gray-100;

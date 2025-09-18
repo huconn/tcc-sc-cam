@@ -1,4 +1,5 @@
 import React from 'react';
+import { useCameraStore } from '@/store/cameraStore';
 import { Settings, X } from 'lucide-react';
 
 interface CIEDConfigModalProps {
@@ -47,8 +48,8 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
   const [imgWidth, setImgWidth] = React.useState('1280');
   const [imgHeight, setImgHeight] = React.useState('720');
 
-  // 그리드 테두리 표시 제어 변수
-  const showGridBorders = false; // true로 설정하면 모든 그리드 테두리가 표시됨
+  // 그리드 테두리 표시 전역 플래그
+  const showGridBorders = useCameraStore(s => s.showGridBorders ?? false);
 
   if (!open) return null;
 
@@ -78,9 +79,9 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
 
         <div className="p-6 space-y-10 flex-1 overflow-auto">
           {/* Common */}
-          <div className={showGridBorders ? 'border-2 border-orange-500' : ''}>
+          <div className={showGridBorders ? 'debug-orange' : ''}>
             <Section title="Common">
-            <div className={`grid gap-6 ${showGridBorders ? 'border-2 border-red-500' : ''}`} style={{ gridTemplateColumns: 'minmax(0, calc(50% - 200px)) minmax(0, calc(50% + 200px))' }}>
+            <div className={`grid gap-6 ${showGridBorders ? 'debug-red' : ''}`} style={{ gridTemplateColumns: 'minmax(0, calc(50% - 200px)) minmax(0, calc(50% + 200px))' }}>
               <Section title="Windows size" smallTitle={true} variant="small">
                 <div className="space-y-2">
                   {windows.map((w, i) => (
@@ -103,8 +104,8 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
               </Section>
 
               {/* Right: 2x3 grid per reference */}
-              <div className={`grid grid-rows-2 gap-6 ${showGridBorders ? 'border-2 border-green-500' : ''}`}>
-                <div className={`grid grid-cols-3 gap-6 ${showGridBorders ? 'border-2 border-yellow-500' : ''}`}>
+              <div className={`grid grid-rows-2 gap-6 ${showGridBorders ? 'debug-green' : ''}`}>
+                <div className={`grid grid-cols-3 gap-6 ${showGridBorders ? 'debug-yellow' : ''}`}>
                   {/* Input image size - compact inline fields */}
                   <Section title="Input image size" smallTitle={true} variant="small">
                     <div className="grid items-center" style={{ gridTemplateColumns: '80px 64px 80px 64px', columnGap: '6px' }}>
@@ -149,7 +150,7 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
                   </Section>
                 </div>
 
-                <div className={`grid grid-cols-3 gap-6 ${showGridBorders ? 'border-2 border-purple-500' : ''}`}>
+                <div className={`grid grid-cols-3 gap-6 ${showGridBorders ? 'debug-purple' : ''}`}>
                   {/* Window calculate left as-is */}
                   <Section title="Window calculate" smallTitle={true} variant="small">
                     <div className="grid grid-cols-2 gap-x-10 gap-y-3 text-sm">
@@ -198,7 +199,7 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
           </div>
 
           {/* Status groups */}
-          <div className={`grid grid-cols-5 gap-4 items-start ${showGridBorders ? 'border-2 border-blue-500' : ''}`}>
+          <div className={`grid grid-cols-5 gap-4 items-start ${showGridBorders ? 'debug-blue' : ''}`}>
             <div className="transform scale-90 origin-top-left">
             <Section title="Dark status :">
               <div className="space-y-6">

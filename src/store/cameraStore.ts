@@ -35,6 +35,11 @@ interface CameraStore extends CameraConfiguration {
   i2cSub?: number;
   setI2cMain?: (n: number) => void;
   setI2cSub?: (n: number) => void;
+  // Global UI flags
+  forceHorizontalOutputs?: boolean;
+  setForceHorizontalOutputs?: (v: boolean) => void;
+  showGridBorders?: boolean;
+  setShowGridBorders?: (v: boolean) => void;
 }
 
 const initialState: CameraConfiguration = {
@@ -117,6 +122,14 @@ export const useCameraStore = create<CameraStore>((set) => ({
   i2cMain: 12,
   i2cSub: 13,
 
+  // for debugging  ================================================
+  // force horizontal outputs for camera mux to svdw/video lines
+  forceHorizontalOutputs: false,
+
+  // ceid grid borders
+  showGridBorders: false,
+  // ==============================================================
+
   setViewMode: (mode) => set({ viewMode: mode }),
 
   addDevice: (device) => set((state) => ({
@@ -195,4 +208,6 @@ export const useCameraStore = create<CameraStore>((set) => ({
 
   setI2cMain: (n) => set({ i2cMain: n }),
   setI2cSub: (n) => set({ i2cSub: n }),
+  setForceHorizontalOutputs: (v) => set({ forceHorizontalOutputs: v }),
+  setShowGridBorders: (v) => set({ showGridBorders: v }),
 }));

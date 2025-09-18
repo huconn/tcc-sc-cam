@@ -84,7 +84,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
   const [chToIspLines, setChToIspLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string}>>([]);
   const [ispToLLines, setIspToLLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string}>>([]);
   const [selectorTopOverrides, setSelectorTopOverrides] = useState<Record<number, number>>({});
-  const [forceHorizontalOutputs, setForceHorizontalOutputs] = useState<boolean>(false);
+  const forceHorizontalOutputs = useCameraStore(s => s.forceHorizontalOutputs ?? false);
   // Read each field separately to avoid creating a new snapshot object every render
   const i2cMain = useCameraStore((s: any) => s.i2cMain ?? 12);
   const i2cSub = useCameraStore((s: any) => s.i2cSub ?? 13);
@@ -337,10 +337,19 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
     // Also watch the entire document body since overlay uses viewport coords
     ro.observe(document.body as Element);
     window.addEventListener('resize', update);
+    // Recompute on scroll so lines follow when the view is reduced or scrolled
+    window.addEventListener('scroll', update, true);
+    if (mainRef.current) {
+      mainRef.current.addEventListener('scroll', update, { passive: true } as any);
+    }
     return () => {
       ro.disconnect();
       mo.disconnect();
       window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', update, true);
+      if (mainRef.current) {
+        try { mainRef.current.removeEventListener('scroll', update as any); } catch {}
+      }
     };
   }, []);
 
@@ -468,18 +477,6 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
         {/* Main Horizontal Layout */}
         <div ref={mainRef} className="relative bg-gray-900 rounded-lg p-8 flex flex-col" style={{ paddingBottom: '250px' }}>
           <div className="flex items-start gap-12 relative">
-            {/* Options Bar */}
-            <div className="absolute right-8 top-2 z-20 flex items-center gap-4 text-xs text-gray-200">
-              <label className="inline-flex items-center gap-2 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  className="accent-purple-500 cursor-pointer"
-                  checked={forceHorizontalOutputs}
-                  onChange={(e) => setForceHorizontalOutputs(e.target.checked)}
-                />
-                <span>Force horizontal OUT → SVDW/Video</span>
-              </label>
-            </div>
 
             {/* Column 1: External Devices */}
             <div ref={extColRef} className="flex flex-col gap-8">
