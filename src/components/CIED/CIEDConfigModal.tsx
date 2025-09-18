@@ -1,6 +1,5 @@
 import React from 'react';
-
-type SelectOption = { label: string; value: string };
+import { Settings, X } from 'lucide-react';
 
 interface CIEDConfigModalProps {
   open: boolean;
@@ -20,13 +19,6 @@ const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title
   </div>
 );
 
-const Labeled: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
-  <div className="grid grid-cols-[180px_1fr] items-center gap-3">
-    <label className="text-sm text-gray-300">{label}</label>
-    {children}
-  </div>
-);
-
 export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose, onSave, initialWindow }) => {
   const [status, setStatus] = React.useState<'okay' | 'disabled'>('okay');
   const [inputFormat, setInputFormat] = React.useState('RGB');
@@ -38,17 +30,9 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
   const [imgWidth, setImgWidth] = React.useState('1280');
   const [imgHeight, setImgHeight] = React.useState('720');
 
-  const [enabledWindows, setEnabledWindows] = React.useState<Record<string, boolean>>(
-    Object.fromEntries(windows.map(w => [w, false])) as Record<string, boolean>
-  );
-
-  const highlightWin = typeof initialWindow === 'number' ? `window${initialWindow}` : null;
-
   if (!open) return null;
 
-  const toggleWin = (w: string) => setEnabledWindows(prev => ({ ...prev, [w]: !prev[w] }));
-
-  const selectCls = 'bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm';
+  const selectCls = 'bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500 transition-colors';
   const inputCls = 'bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm w-full';
   const boxCls = 'w-4 h-4 text-primary-600 bg-gray-800 border-gray-600 rounded focus:ring-primary-500';
 
@@ -61,18 +45,20 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
   }`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative z-10 bg-gray-800 text-gray-100 border border-gray-600 rounded-lg shadow-xl w-[90vw] h-[90vh] flex flex-col">
-        <div className="px-5 py-3 border-b border-gray-700 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1000]">
+      <div className="relative bg-gray-800 text-gray-100 border border-gray-700 rounded-lg shadow-xl w-[90vw] h-[90vh] flex flex-col p-6 pointer-events-auto" role="dialog" aria-modal="true">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Settings className="w-5 h-5 text-purple-500" />
             <h3 className="text-lg font-semibold">{headerTitle}</h3>
             <select value={status} onChange={(e) => setStatus(e.target.value as 'okay' | 'disabled')} className={statusSelectClass}>
               <option value="okay">OK</option>
               <option value="disabled">Disabled</option>
             </select>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">✕</button>
+          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         <div className="p-6 space-y-6 flex-1 overflow-auto">
@@ -457,7 +443,7 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
           </div>
         </div>
 
-        <div className="px-5 py-3 border-t border-gray-700 flex items-center justify-end gap-2">
+        <div className="mt-4 flex items-center justify-end gap-2">
           <button onClick={onClose} className="px-3 py-1.5 text-sm rounded bg-gray-700 border border-gray-600 hover:bg-gray-600">Cancel</button>
           <button onClick={() => onSave({})} className="px-3 py-1.5 text-sm rounded bg-primary-600 hover:bg-primary-500 text-white">Save</button>
         </div>

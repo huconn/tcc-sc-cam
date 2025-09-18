@@ -1,5 +1,5 @@
 import React from 'react';
-import { VideoOutputConfigModal, VideoOutputStatus, ToggleOption } from './VideoOutputConfigModal';
+import { VideoSimpleStatusModal } from './VideoSimpleStatusModal';
 
 type RowProps = {
   label: string;
@@ -32,14 +32,12 @@ const OutputRow: React.FC<RowProps> = ({ label, colorTop, colorBottom, onClick, 
 };
 
 export const VideoOutputsSection: React.FC = () => {
-  const [open, setOpen] = React.useState(false);
+  const [openSimple, setOpenSimple] = React.useState(false);
   const [title, setTitle] = React.useState('');
-  const [initial, setInitial] = React.useState<{ status?: VideoOutputStatus; receiveIr?: ToggleOption; irEncoding?: ToggleOption }>({});
 
   const handleOpen = (t: string) => {
     setTitle(t);
-    setInitial({ status: 'okay', receiveIr: 'enable', irEncoding: 'enable' });
-    setOpen(true);
+    setOpenSimple(true);
   };
 
   return (
@@ -50,12 +48,22 @@ export const VideoOutputsSection: React.FC = () => {
       <OutputRow label="VIN1" colorTop="#db2777" onClick={() => handleOpen('VIN1')} connectionId="video-out-vin1" />
       <OutputRow label="MDW" onClick={() => handleOpen('MDW')} connectionId="video-out-mdw" />
 
-      <VideoOutputConfigModal
-        open={open}
+      <VideoSimpleStatusModal
+        open={openSimple}
         title={title}
-        initial={initial}
-        onSave={() => setOpen(false)}
-        onClose={() => setOpen(false)}
+        status={title === 'VWDMA0' || title === 'VWDMA1' ? 'disabled' : 'okay'}
+        receiveIr={'enable'}
+        irEncoding={'enable'}
+        interruptDelay={'0x100'}
+        axiMaxRo={'0xf'}
+        axiMaxWo={'0xf'}
+        defaultColor={'0x80808080'}
+        fisheye={'disable'}
+        colorEnable={'enable'}
+        irEnable={'enable'}
+        yuvStandard={'BT.601 JPEG'}
+        onSave={() => setOpenSimple(false)}
+        onClose={() => setOpenSimple(false)}
       />
     </div>
   );

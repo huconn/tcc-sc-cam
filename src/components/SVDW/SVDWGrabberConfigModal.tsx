@@ -1,4 +1,5 @@
 import React from 'react';
+import { Settings, X } from 'lucide-react';
 
 export type SVDWGrabberStatus = 'okay' | 'disabled';
 
@@ -23,26 +24,25 @@ export const SVDWGrabberConfigModal: React.FC<SVDWGrabberConfigModalProps> = ({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-
-      {/* Modal */}
-      <div className="relative z-10 w-[520px] bg-gray-800 text-gray-100 border border-gray-600 rounded-lg shadow-xl">
-        {/* Header */}
-        <div className="px-5 py-3 border-b border-gray-700 flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Grabber {grabberIndex} Configuration</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">✕</button>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1000]">
+      <div className="relative bg-gray-800 rounded-lg p-6 w-[520px] text-gray-100 border border-gray-700 pointer-events-auto" role="dialog" aria-modal="true">
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center gap-2">
+            <Settings className="w-5 h-5 text-purple-500" />
+            <h3 className="text-lg font-semibold">Grabber {grabberIndex} Configuration</h3>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
-        {/* Body */}
-        <div className="p-6 space-y-6">
+        <div className="space-y-6">
           <div className="grid grid-cols-[120px_1fr] items-center gap-4">
             <label className="text-sm font-medium text-gray-300">Status</label>
             <select
               value={localStatus}
               onChange={(e) => setLocalStatus(e.target.value as SVDWGrabberStatus)}
-              className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500 transition-colors"
             >
               <option value="okay">Okay</option>
               <option value="disabled">Disabled</option>
@@ -50,8 +50,7 @@ export const SVDWGrabberConfigModal: React.FC<SVDWGrabberConfigModalProps> = ({
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="px-5 py-3 border-t border-gray-700 flex items-center justify-end gap-2">
+        <div className="mt-6 flex items-center justify-end gap-2">
           <button onClick={onClose} className="px-3 py-1.5 text-sm rounded bg-gray-700 border border-gray-600 hover:bg-gray-600">Cancel</button>
           <button
             onClick={() => onSave({ status: localStatus })}
