@@ -139,7 +139,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
         const camRectBase = (camBox?.getBoundingClientRect()) || camEl.getBoundingClientRect();
         const svdwRect = svdw.getBoundingClientRect();
         const x1 = camRectBase.left + camRectBase.width; // right edge
-        const y1 = camRectBase.top + camRectBase.height / 2;
+        let y1 = camRectBase.top + camRectBase.height / 2;
         const x2 = svdwRect.left;
         let y2 = svdwRect.top + svdwRect.height / 2;
         
