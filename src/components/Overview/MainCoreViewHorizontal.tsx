@@ -69,6 +69,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
 }) => {
   const viewMode = useCameraStore(state => state.viewMode);
   const rightColRef = useRef<HTMLDivElement>(null);
+  const camMuxRef = useRef<HTMLDivElement>(null);
   const [ciedTopOffset, setCiedTopOffset] = useState<number>(0);
   const ciedRef = useRef<HTMLDivElement>(null);
   const [paddingBottom, setPaddingBottom] = useState<number>(0);
@@ -77,6 +78,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
   const selectorsRef = useRef<HTMLDivElement>(null);
   const extColRef = useRef<HTMLDivElement>(null);
   const [extMipi1Top, setExtMipi1Top] = useState<number | null>(null);
+  const [selectorsHeight, setSelectorsHeight] = useState<number>(400);
   const [camToSvdw, setCamToSvdw] = useState<{x1:number;y1:number;x2:number;y2:number}|null>(null);
   const [camToSvdwLines, setCamToSvdwLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string;arrow?:boolean}>>([]);
   const [camToCiedLines, setCamToCiedLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string;hasStartDot?:boolean}>>([]);
@@ -84,7 +86,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
   const [chToIspLines, setChToIspLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string}>>([]);
   const [ispToLLines, setIspToLLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string}>>([]);
   const [selectorTopOverrides, setSelectorTopOverrides] = useState<Record<number, number>>({});
-  const forceHorizontalOutputs = useCameraStore(s => s.forceHorizontalOutputs ?? false);
+  const forceHorizontalOutputs = useCameraStore(s => s.debugMainCoreViewHorizontalForceOutputs ?? false);
   // Read each field separately to avoid creating a new snapshot object every render
   const i2cMain = useCameraStore((s: any) => s.i2cMain ?? 12);
   const i2cSub = useCameraStore((s: any) => s.i2cSub ?? 13);
@@ -273,6 +275,11 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
       const h = rightColRef.current?.getBoundingClientRect().height || 0;
       const top = h + 8;
       setCiedTopOffset(top);
+      // Match selectors container (4) height to CameraMux (5)
+      try {
+        const camMuxH = camMuxRef.current?.getBoundingClientRect().height;
+        if (camMuxH && camMuxH > 0) setSelectorsHeight(Math.round(camMuxH));
+      } catch {}
       const legendH = legendRef.current?.getBoundingClientRect().height || 80;
       setPaddingBottom(legendH + 8);
 
@@ -476,10 +483,16 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
       <div className="min-w-[1600px]">
         {/* Main Horizontal Layout */}
         <div ref={mainRef} className="relative bg-gray-900 rounded-lg p-8 flex flex-col" style={{ paddingBottom: '250px' }}>
-          <div className="flex items-start gap-12 relative">
+          <div className={`flex items-stretch gap-12 relative ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? 'debug-purple' : '')}`}>
+            {useCameraStore(s => s.debugMainCoreViewHorizontalLayout) && (
+              <span className="absolute -top-3 -left-3 bg-purple-600 text-white text-[10px] px-1.5 py-0.5 rounded">1</span>
+            )}
 
             {/* Column 1: External Devices */}
-            <div ref={extColRef} className="flex flex-col gap-8">
+            <div ref={extColRef} className={`flex flex-col justify-between relative ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? 'debug-green' : '')}`} style={{ height: `${selectorsHeight}px` }}>
+              {useCameraStore(s => s.debugMainCoreViewHorizontalLayout) && (
+                <span className="absolute -top-3 -left-3 bg-green-600 text-white text-[10px] px-1.5 py-0.5 rounded">2</span>
+              )}
               {shouldShowMipi0 && (
                 <div
                   className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 cursor-pointer hover:bg-gray-600 transition-colors w-[140px]"
@@ -541,7 +554,10 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
             </div>
 
             {/* Column 2: MIPI Blocks */}
-            <div className="flex flex-col gap-8" id="mipi-column">
+            <div className={`flex flex-col gap-8 relative self-stretch ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? 'debug-green' : '')}`} id="mipi-column" style={{ height: `${selectorsHeight}px` }}>
+              {useCameraStore(s => s.debugMainCoreViewHorizontalLayout) && (
+                <span className="absolute -top-3 -left-3 bg-green-600 text-white text-[10px] px-1.5 py-0.5 rounded">3</span>
+              )}
               {shouldShowMipi0 && (
                 <div className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 w-[140px] relative" id="mipi0-block">
                   <div className="text-center font-semibold text-sm text-purple-400">MIPI0</div>
@@ -574,7 +590,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
               )}
 
               {shouldShowMipi1 && (
-                <div className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 w-[140px] relative" id="mipi1-block" style={{ marginTop: '100px' }}>
+                <div className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 w-[140px] relative mt-auto" id="mipi1-block">
                   <div className="text-center font-semibold text-sm text-purple-400">MIPI1</div>
                   <div className="text-center text-xs text-gray-400 mb-2">SUB</div>
                   <select
@@ -606,7 +622,10 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
             </div>
 
             {/* Column 3: ISP/Bypass Selectors (positioned on lines) */}
-            <div ref={selectorsRef} className="relative w-[300px]" style={{ height: '400px' }}>
+            <div ref={selectorsRef} className={`relative w-[300px] ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? 'debug-yellow' : '')}`} style={{ height: `${selectorsHeight}px` }}>
+              {useCameraStore(s => s.debugMainCoreViewHorizontalLayout) && (
+                <span className="absolute -top-3 -left-3 bg-yellow-600 text-white text-[10px] px-1.5 py-0.5 rounded">4</span>
+              )}
               {/* Connection lines will be drawn here */}
               <svg className="absolute inset-0" style={{ width: '100%', height: '100%', overflow: 'visible' }}></svg>
 
@@ -658,12 +677,17 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
             </div>
 
             {/* Column 4: Camera Mux */}
+            <div ref={camMuxRef} className={`relative h-full ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? 'debug-red' : '')}`}>
+              {useCameraStore(s => s.debugMainCoreViewHorizontalLayout) && (
+                <span className="absolute -top-3 -left-3 bg-red-600 text-white text-[10px] px-1.5 py-0.5 rounded">5</span>
+              )}
             <CameraMuxBlock
               activeChannels={activeChannels}
               cameraMuxConfig={cameraMuxConfig}
               channelColorClasses={channelColorClasses}
               onOpen={() => setShowCameraMuxConfig(true)}
             />
+            </div>
           
           {/* Overlay lines: Camera Mux R0..R3 -> SVDW 1-1..4-1 */}
           {camToSvdwLines.length > 0 && (
@@ -750,7 +774,10 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
 
 
             {/* Right group: CIED (left) — 20px spacer — SVDW/VideoPipeline (right) */}
-            <div className="ml-auto flex items-start relative">
+            <div className={`ml-auto flex items-start relative ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? 'debug-blue' : '')}`}>
+              {useCameraStore(s => s.debugMainCoreViewHorizontalLayout) && (
+                <span className="absolute -top-3 -left-3 bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded">6</span>
+              )}
               <div ref={ciedRef} className="absolute" style={{ top: `${ciedTopOffset + 100}px`, left: '-400px' }}>
                 <CIEDBar />
               </div>
