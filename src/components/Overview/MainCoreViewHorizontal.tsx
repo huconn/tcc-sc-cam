@@ -79,11 +79,12 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
   const [extMipi1Top, setExtMipi1Top] = useState<number | null>(null);
   const [camToSvdw, setCamToSvdw] = useState<{x1:number;y1:number;x2:number;y2:number}|null>(null);
   const [camToSvdwLines, setCamToSvdwLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string;arrow?:boolean}>>([]);
-  const [camToCiedLines, setCamToCiedLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string}>>([]);
+  const [camToCiedLines, setCamToCiedLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string;hasStartDot?:boolean}>>([]);
   const [muxToMipi, setMuxToMipi] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string}>>([]);
   const [chToIspLines, setChToIspLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string}>>([]);
   const [ispToLLines, setIspToLLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string}>>([]);
   const [selectorTopOverrides, setSelectorTopOverrides] = useState<Record<number, number>>({});
+  const [forceHorizontalOutputs, setForceHorizontalOutputs] = useState<boolean>(false);
   // Read each field separately to avoid creating a new snapshot object every render
   const i2cMain = useCameraStore((s: any) => s.i2cMain ?? 12);
   const i2cSub = useCameraStore((s: any) => s.i2cSub ?? 13);
@@ -115,7 +116,11 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
         const x1 = camRectBase.left + camRectBase.width; // right edge
         const y1 = camRectBase.top + camRectBase.height / 2;
         const x2 = svdwRect.left;
-        const y2 = svdwRect.top + svdwRect.height / 2;
+        let y2 = svdwRect.top + svdwRect.height / 2;
+        if (forceHorizontalOutputs) {
+          // Force horizontal by aligning destination Y to source Y
+          y2 = y1;
+        }
         const match = p.from.match(/mux-right-(\d+)/);
         const idx = match ? parseInt(match[1], 10) : 0;
         const color = channelColors[idx] || '#93c5fd';
@@ -128,20 +133,57 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
   };
 
   // Camera Mux R0..R7 -> CIED 0..7 (slot buttons)
+  // Start from the MIDPOINT of the corresponding SVDW/Video line, then go vertically to CIED
   const computeCamMuxToCied = () => {
-    const lines: Array<{x1:number;y1:number;x2:number;y2:number;color:string}> = [];
+    const lines: Array<{x1:number;y1:number;x2:number;y2:number;color:string;hasStartDot?:boolean}> = [];
+    const targetByIndex: Record<number, string> = {
+      0: 'svdw-left-0',
+      1: 'svdw-left-1',
+      2: 'svdw-left-2',
+      3: 'svdw-left-3',
+      4: 'video-out-vwdma0',
+      5: 'video-out-vwdma1',
+      6: 'video-out-vin0',
+      7: 'video-out-vin1'
+    };
     for (let i = 0; i < 8; i += 1) {
-      //console.log(`mux-right-${i}-target`, `cied-slot-${i}`);
-      const from = document.querySelector(`[data-connection-point="mux-right-${i}-target"]`) as HTMLElement | null;
-      const to = document.querySelector(`[data-connection-point="cied-slot-${i}"]`) as HTMLElement | null;
-      if (!from || !to) continue;
-      const a = from.getBoundingClientRect();
-      const b = to.getBoundingClientRect();
-      const x1 = a.left + a.width; // start at right edge of R- box
-      const y1 = a.top + a.height / 2;
-      const x2 = b.left + b.width / 2; // align to horizontal center
-      const y2 = b.top; // snap to top edge of the CIED slot bar
-      lines.push({ x1, y1, x2, y2, color: channelColors[i] });
+      const fromTarget = document.querySelector(`[data-connection-point="mux-right-${i}-target"]`) as HTMLElement | null;
+      const fromFallback = document.querySelector(`[data-connection-point="mux-right-${i}"]`) as HTMLElement | null;
+      const fromEl = fromTarget || fromFallback;
+      const toCied = document.querySelector(`[data-connection-point="cied-slot-${i}"]`) as HTMLElement | null;
+      const toRight = document.querySelector(`[data-connection-point="${targetByIndex[i]}"]`) as HTMLElement | null;
+      if (!fromEl || !toCied || !toRight) continue;
+
+      const a = (fromFallback?.getBoundingClientRect()) || fromEl.getBoundingClientRect();
+      const r = toRight.getBoundingClientRect();
+      const b = toCied.getBoundingClientRect();
+
+      // Line from R{i} right edge to target left center (optionally forced horizontal)
+      const xStart = a.left + a.width;
+      let yStart = a.top + a.height / 2;
+      const xEnd = r.left;
+      let yEnd = r.top + r.height / 2;
+      if (forceHorizontalOutputs) {
+        yEnd = yStart; // force horizontal baseline for OUT -> target
+      }
+
+      // Align X to the CIED slot center so each channel has unique x and doesn't overlap
+      const ciedCenterX = b.left + b.width / 2;
+
+      // Compute intersection Y at x=ciedCenterX along the R{i}->target segment (clamped)
+      let yIntersect = (yStart + yEnd) / 2; // fallback
+      if (xEnd !== xStart) {
+        const t = (ciedCenterX - xStart) / (xEnd - xStart);
+        const tClamped = Math.max(0, Math.min(1, t));
+        yIntersect = yStart + tClamped * (yEnd - yStart);
+      }
+
+      const x1 = ciedCenterX; // start aligned to CIED x
+      const y1 = yIntersect;  // start on the actual line at that x
+      const x2 = ciedCenterX; // vertical up to CIED top
+      const y2 = b.top;
+
+      lines.push({ x1, y1, x2, y2, color: channelColors[i], hasStartDot: true });
     }
     setCamToCiedLines(lines);
   };
@@ -426,6 +468,18 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
         {/* Main Horizontal Layout */}
         <div ref={mainRef} className="relative bg-gray-900 rounded-lg p-8 flex flex-col" style={{ paddingBottom: '250px' }}>
           <div className="flex items-start gap-12 relative">
+            {/* Options Bar */}
+            <div className="absolute right-8 top-2 z-20 flex items-center gap-4 text-xs text-gray-200">
+              <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  className="accent-purple-500 cursor-pointer"
+                  checked={forceHorizontalOutputs}
+                  onChange={(e) => setForceHorizontalOutputs(e.target.checked)}
+                />
+                <span>Force horizontal OUT → SVDW/Video</span>
+              </label>
+            </div>
 
             {/* Column 1: External Devices */}
             <div ref={extColRef} className="flex flex-col gap-8">
@@ -650,7 +704,12 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                 </marker>
               </defs>
               {camToCiedLines.map((l, i) => (
-                <line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke={l.color} strokeWidth="3" strokeOpacity="0.9" markerEnd="url(#arrowhead-cied)" />
+                <g key={i}>
+                  <line x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke={l.color} strokeWidth="3" strokeOpacity="0.9" markerEnd="url(#arrowhead-cied)" />
+                  {l.hasStartDot && (
+                    <circle cx={l.x1} cy={l.y1} r="4" fill={l.color} stroke="white" strokeWidth="1" />
+                  )}
+                </g>
               ))}
             </svg>
           )}

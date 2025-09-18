@@ -10,14 +10,31 @@ interface CIEDConfigModalProps {
 
 const windows = Array.from({ length: 9 }, (_, i) => `window${i}`);
 
-const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-  <div className="border border-gray-600 rounded-lg p-4">
-    <div className="-mt-6 mb-2">
-      <span className="px-2 bg-purple-900/40 text-purple-200 text-xs font-semibold border border-purple-400/70 rounded">{title}</span>
+const Section: React.FC<{ title: string; children: React.ReactNode; smallTitle?: boolean; variant?: 'default' | 'small' }> = ({ title, children, smallTitle = false, variant = 'default' }) => {
+  const getSectionStyles = () => {
+    if (variant === 'small') {
+      return {
+        container: 'border border-sky-400 rounded-lg p-4',
+        title: `px-3 py-1 bg-sky-100 text-sky-800 font-semibold border border-sky-400 rounded ${smallTitle ? 'text-sm' : 'text-lg'}`
+      };
+    }
+    return {
+      container: 'border border-gray-600 rounded-lg p-6',
+      title: `px-3 py-1 bg-purple-900/40 text-purple-200 font-semibold border border-purple-400/70 rounded ${smallTitle ? 'text-sm' : 'text-lg'}`
+    };
+  };
+
+  const styles = getSectionStyles();
+
+  return (
+    <div className={styles.container}>
+      <div className="-mt-6 mb-3">
+        <span className={styles.title}>{title}</span>
+      </div>
+      {children}
     </div>
-    {children}
-  </div>
-);
+  );
+};
 
 export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose, onSave, initialWindow }) => {
   const [status, setStatus] = React.useState<'okay' | 'disabled'>('okay');
@@ -30,42 +47,41 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
   const [imgWidth, setImgWidth] = React.useState('1280');
   const [imgHeight, setImgHeight] = React.useState('720');
 
+  // 그리드 테두리 표시 제어 변수
+  const showGridBorders = false; // true로 설정하면 모든 그리드 테두리가 표시됨
+
   if (!open) return null;
 
-  const selectCls = 'bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500 transition-colors';
-  const inputCls = 'bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm w-full';
-  const boxCls = 'w-4 h-4 text-primary-600 bg-gray-800 border-gray-600 rounded focus:ring-primary-500';
+  const selectCls = 'w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500 transition-colors';
+  const inputCls = 'w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500';
+  const boxCls = 'w-4 h-4 text-sky-600 bg-sky-100 border-sky-400 rounded focus:ring-sky-500';
 
   const headerTitle = typeof initialWindow === 'number' ? `CIED ${initialWindow} Status` : 'CIED';
 
-  const statusSelectClass = `${selectCls} ${
-    status === 'okay'
-      ? 'bg-sky-700/30 border-sky-500 text-sky-100'
-      : 'bg-orange-700/30 border-orange-500 text-orange-100'
-  }`;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1000]">
-      <div className="relative bg-gray-800 text-gray-100 border border-gray-700 rounded-lg shadow-xl w-[90vw] h-[90vh] flex flex-col p-6 pointer-events-auto" role="dialog" aria-modal="true">
+      <div className="relative bg-gray-800 text-gray-100 border border-gray-700 rounded-lg shadow-xl w-[90vw] h-[90vh] flex flex-col p-6" role="dialog" aria-modal="true">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Settings className="w-5 h-5 text-purple-500" />
-            <h3 className="text-lg font-semibold">{headerTitle}</h3>
-            <select value={status} onChange={(e) => setStatus(e.target.value as 'okay' | 'disabled')} className={statusSelectClass}>
+          <div className="flex items-center gap-3">
+            <Settings className="w-6 h-6 text-purple-500" />
+            <h3 className="text-xl font-semibold">{headerTitle}</h3>
+            <select value={status} onChange={(e) => setStatus(e.target.value as 'okay' | 'disabled')} className={`${selectCls} w-32`}>
               <option value="okay">OK</option>
               <option value="disabled">Disabled</option>
             </select>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
-            <X className="w-5 h-5" />
+            <X className="w-6 h-6" />
           </button>
         </div>
 
-        <div className="p-6 space-y-6 flex-1 overflow-auto">
+        <div className="p-6 space-y-10 flex-1 overflow-auto">
           {/* Common */}
-          <Section title="Common">
-            <div className="grid gap-6" style={{ gridTemplateColumns: 'minmax(0, calc(50% - 200px)) minmax(0, calc(50% + 200px))' }}>
-              <Section title="Windows size">
+          <div className={showGridBorders ? 'border-2 border-orange-500' : ''}>
+            <Section title="Common">
+            <div className={`grid gap-6 ${showGridBorders ? 'border-2 border-red-500' : ''}`} style={{ gridTemplateColumns: 'minmax(0, calc(50% - 200px)) minmax(0, calc(50% + 200px))' }}>
+              <Section title="Windows size" smallTitle={true} variant="small">
                 <div className="space-y-2">
                   {windows.map((w, i) => (
                     <div
@@ -87,10 +103,10 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
               </Section>
 
               {/* Right: 2x3 grid per reference */}
-              <div className="grid grid-rows-2 gap-6">
-                <div className="grid grid-cols-3 gap-6">
+              <div className={`grid grid-rows-2 gap-6 ${showGridBorders ? 'border-2 border-green-500' : ''}`}>
+                <div className={`grid grid-cols-3 gap-6 ${showGridBorders ? 'border-2 border-yellow-500' : ''}`}>
                   {/* Input image size - compact inline fields */}
-                  <Section title="Input image size">
+                  <Section title="Input image size" smallTitle={true} variant="small">
                     <div className="grid items-center" style={{ gridTemplateColumns: '80px 64px 80px 64px', columnGap: '6px' }}>
                       <span className="text-gray-300">Width :</span>
                       <input
@@ -108,7 +124,7 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
                   </Section>
 
                   {/* Input Format - single select */}
-                  <Section title="Input Format">
+                  <Section title="Input Format" smallTitle={true} variant="small">
                     <select
                       value={inputFormat}
                       onChange={(e) => setInputFormat(e.target.value)}
@@ -121,7 +137,7 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
                   </Section>
 
                   {/* BSWA - single select */}
-                  <Section title="BSWA">
+                  <Section title="BSWA" smallTitle={true} variant="small">
                     <select
                       value={bswa}
                       onChange={(e) => setBswa(e.target.value)}
@@ -133,9 +149,9 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
                   </Section>
                 </div>
 
-                <div className="grid grid-cols-3 gap-6">
+                <div className={`grid grid-cols-3 gap-6 ${showGridBorders ? 'border-2 border-purple-500' : ''}`}>
                   {/* Window calculate left as-is */}
-                  <Section title="Window calculate">
+                  <Section title="Window calculate" smallTitle={true} variant="small">
                     <div className="grid grid-cols-2 gap-x-10 gap-y-3 text-sm">
                       {windows.map((w, idx) => (
                         <label key={w} className="inline-flex items-center gap-3">
@@ -147,7 +163,7 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
                   </Section>
 
                   {/* Sync Polarity - compact inline fields */}
-                  <Section title="Sync Polarity">
+                  <Section title="Sync Polarity" smallTitle={true} variant="small">
                     <div className="grid items-center" style={{ gridTemplateColumns: '90px 1fr', rowGap: '8px', columnGap: '6px' }}>
                       <span className="text-gray-300">Vsync :</span>
                       <select value={syncV} onChange={(e) => setSyncV(e.target.value)} className={selectCls}>
@@ -163,7 +179,7 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
                   </Section>
 
                   {/* Byte swap - single select */}
-                  <Section title="Byte swap">
+                  <Section title="Byte swap" smallTitle={true} variant="small">
                     <select
                       value={byteSwap}
                       onChange={(e) => setByteSwap(e.target.value)}
@@ -179,23 +195,24 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
               </div>
             </div>
           </Section>
+          </div>
 
           {/* Status groups */}
-          <div className="grid grid-cols-5 gap-4 items-start">
+          <div className={`grid grid-cols-5 gap-4 items-start ${showGridBorders ? 'border-2 border-blue-500' : ''}`}>
             <div className="transform scale-90 origin-top-left">
             <Section title="Dark status :">
               <div className="space-y-6">
                 {/* Header row with status select */}
-                <div className="flex items-center gap-3">
-                  <span className="text-sm text-gray-300">Dark status :</span>
-                  <select className={selectCls} defaultValue="okay">
+                <div className="flex items-center gap-5">
+                  <span className="text-lg text-gray-300 flex-1">Dark status :</span>
+                  <select className={`${selectCls} flex-1`} defaultValue="okay">
                     <option value="okay">OK</option>
                     <option value="disabled">Disabled</option>
                   </select>
                 </div>
 
                 {/* Enable window panel */}
-                <Section title="Enable window">
+                <Section title="Enable window" smallTitle={true} variant="small">
                   <div className="grid grid-cols-2 gap-x-10 gap-y-3 text-sm">
                     {windows.map((w, idx) => (
                       <label key={w} className="inline-flex items-center gap-3">
@@ -207,9 +224,9 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
                 </Section>
 
                 {/* Window count threshold */}
-                <Section title="Window count threshold">
-                  <div className="flex justify-center" style={{ width: '220px', margin: '0 auto' }}>
-                    <select className={`${selectCls} w-full`} defaultValue="2">
+                <Section title="Window count threshold" smallTitle={true} variant="small">
+                  <div className="flex justify-center">
+                    <select className={selectCls} defaultValue="2">
                       {[1,2,3,4,5].map(n => (
                         <option key={n} value={n}>{n}</option>
                       ))}
@@ -218,14 +235,14 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
                 </Section>
 
                 {/* Frame count threshold */}
-                <Section title="Frame count threshold">
+                <Section title="Frame count threshold" smallTitle={true} variant="small">
                   <div className="flex justify-center">
                     <input className={inputCls} defaultValue="10" />
                   </div>
                 </Section>
 
                 {/* Luminance average value threshold */}
-                <Section title="Luminance average value threshold">
+                <Section title="Luminance average value threshold" smallTitle={true} variant="small">
                   <div className="flex justify-center">
                     <input className={inputCls} defaultValue="2" />
                   </div>
@@ -240,15 +257,15 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
             <div className="transform scale-90 origin-top-left">
             <Section title="Bright status :">
               <div className="space-y-6">
-                <div className="flex items-center gap-3">
-                  <span className="text-sm text-gray-300">Bright status :</span>
-                  <select className={selectCls} defaultValue="okay">
+                <div className="flex items-center gap-5">
+                  <span className="text-lg text-gray-300 flex-1">Bright status :</span>
+                  <select className={`${selectCls} flex-1`} defaultValue="okay">
                     <option value="okay">OK</option>
                     <option value="disabled">Disabled</option>
                   </select>
                 </div>
 
-                <Section title="Enable window">
+                <Section title="Enable window" smallTitle={true} variant="small">
                   <div className="grid grid-cols-2 gap-x-10 gap-y-3 text-sm">
                     {windows.map((w, idx) => (
                       <label key={w} className="inline-flex items-center gap-3">
@@ -259,9 +276,9 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
                   </div>
                 </Section>
 
-                <Section title="Window count threshold">
-                  <div className="flex justify-center" style={{ width: '220px', margin: '0 auto' }}>
-                    <select className={`${selectCls} w-full`} defaultValue="2">
+                <Section title="Window count threshold" smallTitle={true} variant="small">
+                  <div className="flex justify-center">
+                    <select className={selectCls} defaultValue="2">
                       {[1,2,3,4,5].map(n => (
                         <option key={n} value={n}>{n}</option>
                       ))}
@@ -269,13 +286,13 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
                   </div>
                 </Section>
 
-                <Section title="Frame count threshold">
+                <Section title="Frame count threshold" smallTitle={true} variant="small">
                   <div className="flex justify-center">
                     <input className={inputCls} defaultValue="100" />
                   </div>
                 </Section>
 
-                <Section title="Luminance average value threshold">
+                <Section title="Luminance average value threshold" smallTitle={true} variant="small">
                   <div className="flex justify-center">
                     <input className={inputCls} defaultValue="2" />
                   </div>
@@ -291,15 +308,15 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
             <div className="transform scale-90 origin-top-left">
             <Section title="Solid status :">
               <div className="space-y-6">
-                <div className="flex items-center gap-3">
-                  <span className="text-sm text-gray-300">Solid status :</span>
-                  <select className={selectCls} defaultValue="okay">
+                <div className="flex items-center gap-5">
+                  <span className="text-lg text-gray-300 flex-1">Solid status :</span>
+                  <select className={`${selectCls} flex-1`} defaultValue="okay">
                     <option value="okay">OK</option>
                     <option value="disabled">Disabled</option>
                   </select>
                 </div>
 
-                <Section title="Enable window">
+                <Section title="Enable window" smallTitle={true} variant="small">
                   <div className="grid grid-cols-2 gap-x-10 gap-y-3 text-sm">
                     {windows.map((w, idx) => (
                       <label key={w} className="inline-flex items-center gap-3">
@@ -310,9 +327,9 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
                   </div>
                 </Section>
 
-                <Section title="Window count threshold">
-                  <div className="flex justify-center" style={{ width: '220px', margin: '0 auto' }}>
-                    <select className={`${selectCls} w-full`} defaultValue="2">
+                <Section title="Window count threshold" smallTitle={true} variant="small">
+                  <div className="flex justify-center">
+                    <select className={selectCls} defaultValue="2">
                       {[1,2,3,4,5].map(n => (
                         <option key={n} value={n}>{n}</option>
                       ))}
@@ -320,13 +337,13 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
                   </div>
                 </Section>
 
-                <Section title="Frame count threshold">
+                <Section title="Frame count threshold" smallTitle={true} variant="small">
                   <div className="flex justify-center">
                     <input className={inputCls} defaultValue="100" />
                   </div>
                 </Section>
 
-                <Section title="G/B threshold">
+                <Section title="G/B threshold" smallTitle={true} variant="small">
                   <div className="grid items-center" style={{ gridTemplateColumns: '60px 64px 60px 64px', columnGap: '8px' }}>
                     <span className="text-gray-300 font-semibold">MAX :</span>
                     <input className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm w-16" defaultValue="2" />
@@ -335,7 +352,7 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
                   </div>
                 </Section>
 
-                <Section title="G/R threshold">
+                <Section title="G/R threshold" smallTitle={true} variant="small">
                   <div className="grid items-center" style={{ gridTemplateColumns: '60px 64px 60px 64px', columnGap: '8px' }}>
                     <span className="text-gray-300 font-semibold">MAX :</span>
                     <input className="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm w-16" defaultValue="2" />
@@ -355,16 +372,16 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
               <div className="transform scale-90 origin-top-left">
                 <Section title="Phase status :">
                   <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-gray-300">Phase status :</span>
-                      <select className={selectCls} defaultValue="okay">
+                    <div className="flex items-center gap-5">
+                      <span className="text-lg text-gray-300 flex-1">Phase status :</span>
+                      <select className={`${selectCls} flex-1`} defaultValue="okay">
                         <option value="okay">OK</option>
                         <option value="disabled">Disabled</option>
                       </select>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                      <Section title="Enable window">
+                      <Section title="Enable window" smallTitle={true} variant="small">
                         <div className="grid grid-cols-2 gap-x-10 gap-y-3 text-sm">
                           {windows.map((w, idx) => (
                             <label key={w} className="inline-flex items-center gap-3">
@@ -374,7 +391,7 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
                           ))}
                         </div>
                       </Section>
-                      <Section title="Phase threshold for window">
+                      <Section title="Phase threshold for window" smallTitle={true} variant="small">
                         <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
                           {windows.map((w) => (
                             <div key={w} className="flex items-center gap-3">
@@ -387,29 +404,29 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                      <Section title="Window count threshold">
-                        <div className="flex justify-center" style={{ width: '220px', margin: '0 auto' }}>
-                          <select className={`${selectCls} w-full`} defaultValue="2">
+                      <Section title="Window count threshold" smallTitle={true} variant="small">
+                        <div className="flex justify-center">
+                          <select className={selectCls} defaultValue="2">
                             {[1,2,3,4,5].map(n => (
                               <option key={n} value={n}>{n}</option>
                             ))}
                           </select>
                         </div>
                       </Section>
-                      <Section title="Phase scale">
-                        <div className="flex justify-center" style={{ width: '220px', margin: '0 auto' }}>
-                          <select className={`${selectCls} w-full`} defaultValue="x1">
+                      <Section title="Phase scale" smallTitle={true} variant="small">
+                        <div className="flex justify-center">
+                          <select className={selectCls} defaultValue="x1">
                             <option value="x1">x1</option>
                             <option value="x2">x2</option>
                           </select>
                         </div>
                       </Section>
-                      <Section title="Frame count threshold">
+                      <Section title="Frame count threshold" smallTitle={true} variant="small">
                         <div className="flex justify-center">
                           <input className={inputCls} defaultValue="100" />
                         </div>
                       </Section>
-                      <Section title="Frame Stride">
+                      <Section title="Frame Stride" smallTitle={true} variant="small">
                         <div className="flex justify-center">
                           <input className={inputCls} defaultValue="6" />
                         </div>
@@ -421,15 +438,15 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
 
               <div className="transform scale-90 origin-top-left">
                 <Section title="Frozen status :">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-gray-300">Frozen status :</span>
-                      <select className={selectCls} defaultValue="okay">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-5">
+                      <span className="text-lg text-gray-300 flex-1">Frozen status :</span>
+                      <select className={`${selectCls} flex-1`} defaultValue="okay">
                         <option value="okay">OK</option>
                         <option value="disabled">Disabled</option>
                       </select>
                     </div>
-                    <Section title="Frame count threshold">
+                    <Section title="Frame count threshold" smallTitle={true} variant="small">
                       <div className="flex justify-center">
                         <input className={inputCls} defaultValue="2" />
                       </div>
@@ -444,8 +461,8 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
         </div>
 
         <div className="mt-4 flex items-center justify-end gap-2">
-          <button onClick={onClose} className="px-3 py-1.5 text-sm rounded bg-gray-700 border border-gray-600 hover:bg-gray-600">Cancel</button>
-          <button onClick={() => onSave({})} className="px-3 py-1.5 text-sm rounded bg-primary-600 hover:bg-primary-500 text-white">Save</button>
+          <button onClick={onClose} className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">Cancel</button>
+          <button onClick={() => onSave({})} className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">Save</button>
         </div>
       </div>
     </div>
