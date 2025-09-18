@@ -14,7 +14,7 @@ const OutputRow: React.FC<RowProps> = ({ label, colorTop, colorBottom, onClick, 
     <button
       type="button"
       onClick={onClick}
-      className="relative flex items-center bg-gray-700 text-gray-200 border-2 border-gray-500 rounded px-4 py-2 w-[460px] shadow-sm text-xs font-semibold hover:border-white hover:ring-1 hover:ring-white focus:outline-none focus:ring-1 focus:ring-primary-500 transition-colors transform transition-transform hover:scale-105"
+      className="relative flex items-center bg-gray-700 text-gray-200 border-2 border-gray-500 rounded px-4 py-2 w-full shadow-sm text-xs font-semibold hover:border-white hover:ring-1 hover:ring-white focus:outline-none focus:ring-1 focus:ring-primary-500 transition-colors transform transition-transform hover:scale-105"
       title={`Configure ${label}`}
       data-connection-point={connectionId}
     >
