@@ -31,7 +31,11 @@ const OutputRow: React.FC<RowProps> = ({ label, colorTop, colorBottom, onClick, 
   );
 };
 
-export const VideoOutputsSection: React.FC = () => {
+interface VideoOutputsSectionProps {
+  heightPx?: number;
+}
+
+export const VideoOutputsSection: React.FC<VideoOutputsSectionProps> = ({ heightPx }) => {
   const [openSimple, setOpenSimple] = React.useState(false);
   const [title, setTitle] = React.useState('');
 
@@ -41,7 +45,10 @@ export const VideoOutputsSection: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col items-start gap-9">
+    <div 
+      className="flex flex-col items-start justify-between h-full"
+      style={{ gap: heightPx ? `${Math.max(8, heightPx * 0.15)}px` : '36px' }}
+    >
       <OutputRow label="VWDMA0" colorTop="#6d28d9" colorBottom="#4d7c57" onClick={() => handleOpen('VWDMA0')} connectionId="video-out-vwdma0" />
       <OutputRow label="VWDMA1" colorTop="#65a30d" colorBottom="#92400e" onClick={() => handleOpen('VWDMA1')} connectionId="video-out-vwdma1" />
       <OutputRow label="VIN0" colorTop="#2563eb" onClick={() => handleOpen('VIN0')} connectionId="video-out-vin0" />

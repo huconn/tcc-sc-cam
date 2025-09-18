@@ -3,7 +3,11 @@ import { getChannelHex } from '@/utils/channelPalette';
 import { SVDWGrabberConfigModal, SVDWGrabberStatus } from './SVDWGrabberConfigModal';
 import { SVDWBlenderConfigModal, SVDWBlenderStatus } from './SVDWBlenderConfigModal';
 
-export const SVDWBlock: React.FC = () => {
+interface SVDWBlockProps {
+  heightPx?: number;
+}
+
+export const SVDWBlock: React.FC<SVDWBlockProps> = ({ heightPx }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Distinct colors per Grabber from shared palette (channels 0..3)
@@ -62,12 +66,15 @@ export const SVDWBlock: React.FC = () => {
   }, []);
 
   return (
-    <div className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 relative w-full overflow-visible text-gray-200">
+    <div 
+      className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 relative w-full overflow-visible text-gray-200"
+      style={heightPx ? { height: `${heightPx}px` } : {}}
+    >
       {/* SVDW Title */}
       <div className="text-center font-semibold text-sm mb-3 text-purple-400">SVDW</div>
       
       {/* Two-column layout: left Grabbers, right Blender */}
-      <div ref={containerRef} className="relative pr-[200px]">
+      <div ref={containerRef} className="relative pr-[200px] h-full">
         {/* Right Blender spanning full stack height */}
         <div className="absolute top-0 bottom-0 right-0 flex items-center">
           <button
@@ -95,7 +102,7 @@ export const SVDWBlock: React.FC = () => {
         </div>
 
         {/* Left column: 4 Grabbers stacked */}
-        <div className="flex flex-col items-start gap-9">
+        <div className="flex flex-col items-start justify-between h-full" style={{ gap: heightPx ? `${Math.max(8, heightPx * 0.15)}px` : '36px' }}>
           {[0,1,2,3].map((idx) => (
             <div key={idx} className="relative grid grid-cols-[auto_2rem] items-center gap-0 h-10">
               {/* Left number indicator (x-1) */}

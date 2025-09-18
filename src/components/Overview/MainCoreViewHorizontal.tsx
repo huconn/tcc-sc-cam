@@ -895,7 +895,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                   )}
                   <div ref={svdwRef} className="w-full">
                     <div className="w-full">
-                      <SVDWBlock />
+                      <SVDWBlock heightPx={Math.round(selectorsHeight / 2 - 10)} />
                     </div>
                   </div>
                 </div>
@@ -906,7 +906,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                   {useCameraStore(s => s.debugMainCoreViewHorizontalLayout) && (
                     <span className="absolute -top-3 -left-3 bg-orange-600 text-white text-[10px] px-1.5 py-0.5 rounded">6-3</span>
                   )}
-                  <VideoOutputsSection />
+                  <VideoOutputsSection heightPx={Math.round(selectorsHeight / 2 - 10)} />
                 </div>
               </div>
             </div>
