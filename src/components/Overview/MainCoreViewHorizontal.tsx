@@ -84,6 +84,8 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
   const svdwRef = useRef<HTMLDivElement>(null);
   const [extMipi1Top, setExtMipi1Top] = useState<number | null>(null);
   const [selectorsHeight, setSelectorsHeight] = useState<number>(400);
+  // Snapshot the initial selectors/camera-mux height as baseline to avoid growing beyond original size
+  const baselineSelectorsHeightRef = useRef<number | null>(null);
   const [camToSvdw, setCamToSvdw] = useState<{x1:number;y1:number;x2:number;y2:number}|null>(null);
   const [camToSvdwLines, setCamToSvdwLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string;arrow?:boolean}>>([]);
   const [camToCiedLines, setCamToCiedLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string;hasStartDot?:boolean}>>([]);
@@ -318,7 +320,14 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
       // Match selectors container (4) height to CameraMux (5)
       try {
         const camMuxH = camMuxRef.current?.getBoundingClientRect().height;
-        if (camMuxH && camMuxH > 0) setSelectorsHeight(Math.round(camMuxH));
+        if (camMuxH && camMuxH > 0) {
+          const hRounded = Math.round(camMuxH);
+          if (baselineSelectorsHeightRef.current == null) {
+            // Capture the initial baseline height (before any shrinking)
+            baselineSelectorsHeightRef.current = hRounded;
+          }
+          setSelectorsHeight(hRounded);
+        }
       } catch {}
       const legendH = legendRef.current?.getBoundingClientRect().height || 80;
       setPaddingBottom(legendH + 8);
@@ -887,26 +896,26 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                 <CIEDBar />
               </div>
               <div style={{ width: '20px' }} />
-              <div ref={rightColRef} className={`flex flex-col ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? '' : '')}`} style={{ marginTop: `${rightColTopOffset}px`, height: `${selectorsHeight}px` }}>
+              <div ref={rightColRef} className={`flex flex-col ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? '' : '')}`} style={{ marginTop: `${rightColTopOffset}px`, height: `${Math.min(selectorsHeight, baselineSelectorsHeightRef.current ?? selectorsHeight)}px` }}>
                 {/* Top half: SVDW bottom-aligned */}
-                <div className={`relative w-full ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? 'debug-orange' : '')}`} style={{ height: `${Math.max(0, Math.round(selectorsHeight/2) - 10)}px`, display: 'flex', alignItems: 'flex-end' }}>
+                <div className={`relative w-full ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? 'debug-orange' : '')}`} style={{ height: `${Math.max(0, Math.round(Math.min(selectorsHeight, baselineSelectorsHeightRef.current ?? selectorsHeight)/2) - 10)}px`, display: 'flex', alignItems: 'flex-end' }}>
                   {useCameraStore(s => s.debugMainCoreViewHorizontalLayout) && (
                     <span className="absolute -top-3 -left-3 bg-orange-600 text-white text-[10px] px-1.5 py-0.5 rounded">6-1</span>
                   )}
                   <div ref={svdwRef} className="w-full">
                     <div className="w-full">
-                      <SVDWBlock heightPx={Math.round(selectorsHeight / 2 - 10)} />
+                      <SVDWBlock heightPx={Math.round(Math.min(selectorsHeight, baselineSelectorsHeightRef.current ?? selectorsHeight) / 2 - 10)} />
                     </div>
                   </div>
                 </div>
                 {/* Gap 20px */}
                 <div style={{ height: '20px' }} />
                 {/* Bottom half: Video group top-aligned */}
-                <div ref={videoGroupRef} className={`relative ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? 'debug-orange' : '')}`} style={{ height: `${Math.max(0, Math.round(selectorsHeight/2) - 10)}px`, display: 'flex', alignItems: 'flex-start' }}>
+                <div ref={videoGroupRef} className={`relative ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? 'debug-orange' : '')}`} style={{ height: `${Math.max(0, Math.round(Math.min(selectorsHeight, baselineSelectorsHeightRef.current ?? selectorsHeight)/2) - 10)}px`, display: 'flex', alignItems: 'flex-start' }}>
                   {useCameraStore(s => s.debugMainCoreViewHorizontalLayout) && (
                     <span className="absolute -top-3 -left-3 bg-orange-600 text-white text-[10px] px-1.5 py-0.5 rounded">6-3</span>
                   )}
-                  <VideoOutputsSection heightPx={Math.round(selectorsHeight / 2 - 10)} />
+                  <VideoOutputsSection heightPx={Math.round(Math.min(selectorsHeight, baselineSelectorsHeightRef.current ?? selectorsHeight) / 2 - 10)} />
                 </div>
               </div>
             </div>
