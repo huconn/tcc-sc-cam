@@ -84,8 +84,6 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
   const svdwRef = useRef<HTMLDivElement>(null);
   const [extMipi1Top, setExtMipi1Top] = useState<number | null>(null);
   const [selectorsHeight, setSelectorsHeight] = useState<number>(400);
-  // Snapshot the initial selectors/camera-mux height as baseline to avoid growing beyond original size
-  const baselineSelectorsHeightRef = useRef<number | null>(null);
   const [camToSvdw, setCamToSvdw] = useState<{x1:number;y1:number;x2:number;y2:number}|null>(null);
   const [camToSvdwLines, setCamToSvdwLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string;arrow?:boolean}>>([]);
   const [camToCiedLines, setCamToCiedLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string;hasStartDot?:boolean}>>([]);
@@ -113,22 +111,6 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
       { from: 'mux-right-7-target', fallback: 'mux-right-7', to: 'video-out-vin1', arrow: true }, // R7 -> VIN1 (arrow)
     ];
     const collected: Array<{x1:number;y1:number;x2:number;y2:number;color:string;arrow?:boolean}> = [];
-    
-    // When forceHorizontalOutputs is true, we need to ensure all lines are perfectly horizontal
-    // by using a consistent Y coordinate for all connections
-    let horizontalY: number | null = null;
-    
-    if (forceHorizontalOutputs) {
-      // Get the Y coordinate from the first Camera Mux output (R0) as the baseline
-      const firstCamTarget = document.querySelector(`[data-connection-point="mux-right-0-target"]`) as HTMLElement | null;
-      const firstCamBox = document.querySelector(`[data-connection-point="mux-right-0"]`) as HTMLElement | null;
-      const firstCamEl = firstCamTarget || firstCamBox;
-      if (firstCamEl) {
-        const firstCamRect = firstCamEl.getBoundingClientRect();
-        horizontalY = firstCamRect.top + firstCamRect.height / 2;
-      }
-    }
-    
     pairs.forEach(p => {
       const camTarget = document.querySelector(`[data-connection-point="${p.from}"]`) as HTMLElement | null;
       const camBox = document.querySelector(`[data-connection-point="${p.fallback}"]`) as HTMLElement | null;
@@ -139,16 +121,13 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
         const camRectBase = (camBox?.getBoundingClientRect()) || camEl.getBoundingClientRect();
         const svdwRect = svdw.getBoundingClientRect();
         const x1 = camRectBase.left + camRectBase.width; // right edge
-        let y1 = camRectBase.top + camRectBase.height / 2;
+        const y1 = camRectBase.top + camRectBase.height / 2;
         const x2 = svdwRect.left;
         let y2 = svdwRect.top + svdwRect.height / 2;
-        
-        if (forceHorizontalOutputs && horizontalY !== null) {
-          // Force all lines to be perfectly horizontal using the baseline Y
-          y1 = horizontalY;
-          y2 = horizontalY;
+        if (forceHorizontalOutputs) {
+          // Force horizontal by aligning destination Y to source Y
+          y2 = y1;
         }
-        
         const match = p.from.match(/mux-right-(\d+)/);
         const idx = match ? parseInt(match[1], 10) : 0;
         const color = channelColors[idx] || '#93c5fd';
@@ -174,19 +153,6 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
       6: 'video-out-vin0',
       7: 'video-out-vin1'
     };
-    
-    // When forceHorizontalOutputs is true, get the baseline Y coordinate
-    let horizontalY: number | null = null;
-    if (forceHorizontalOutputs) {
-      const firstCamTarget = document.querySelector(`[data-connection-point="mux-right-0-target"]`) as HTMLElement | null;
-      const firstCamBox = document.querySelector(`[data-connection-point="mux-right-0"]`) as HTMLElement | null;
-      const firstCamEl = firstCamTarget || firstCamBox;
-      if (firstCamEl) {
-        const firstCamRect = firstCamEl.getBoundingClientRect();
-        horizontalY = firstCamRect.top + firstCamRect.height / 2;
-      }
-    }
-    
     for (let i = 0; i < 8; i += 1) {
       const fromTarget = document.querySelector(`[data-connection-point="mux-right-${i}-target"]`) as HTMLElement | null;
       const fromFallback = document.querySelector(`[data-connection-point="mux-right-${i}"]`) as HTMLElement | null;
@@ -204,11 +170,8 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
       let yStart = a.top + a.height / 2;
       const xEnd = r.left;
       let yEnd = r.top + r.height / 2;
-      
-      if (forceHorizontalOutputs && horizontalY !== null) {
-        // Use the consistent horizontal baseline for all connections
-        yStart = horizontalY;
-        yEnd = horizontalY;
+      if (forceHorizontalOutputs) {
+        yEnd = yStart; // force horizontal baseline for OUT -> target
       }
 
       // Align X to the CIED slot center so each channel has unique x and doesn't overlap
@@ -320,14 +283,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
       // Match selectors container (4) height to CameraMux (5)
       try {
         const camMuxH = camMuxRef.current?.getBoundingClientRect().height;
-        if (camMuxH && camMuxH > 0) {
-          const hRounded = Math.round(camMuxH);
-          if (baselineSelectorsHeightRef.current == null) {
-            // Capture the initial baseline height (before any shrinking)
-            baselineSelectorsHeightRef.current = hRounded;
-          }
-          setSelectorsHeight(hRounded);
-        }
+        if (camMuxH && camMuxH > 0) setSelectorsHeight(Math.round(camMuxH));
       } catch {}
       const legendH = legendRef.current?.getBoundingClientRect().height || 80;
       setPaddingBottom(legendH + 8);
@@ -896,26 +852,26 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                 <CIEDBar />
               </div>
               <div style={{ width: '20px' }} />
-              <div ref={rightColRef} className={`flex flex-col ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? '' : '')}`} style={{ marginTop: `${rightColTopOffset}px`, height: `${Math.min(selectorsHeight, baselineSelectorsHeightRef.current ?? selectorsHeight)}px` }}>
+              <div ref={rightColRef} className={`flex flex-col ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? '' : '')}`} style={{ marginTop: `${rightColTopOffset}px`, height: `${selectorsHeight}px` }}>
                 {/* Top half: SVDW bottom-aligned */}
-                <div className={`relative w-full ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? 'debug-orange' : '')}`} style={{ height: `${Math.max(0, Math.round(Math.min(selectorsHeight, baselineSelectorsHeightRef.current ?? selectorsHeight)/2) - 10)}px`, display: 'flex', alignItems: 'flex-end' }}>
+                <div className={`relative w-full ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? 'debug-orange' : '')}`} style={{ height: `${Math.max(0, Math.round(selectorsHeight/2) - 10)}px`, display: 'flex', alignItems: 'flex-end' }}>
                   {useCameraStore(s => s.debugMainCoreViewHorizontalLayout) && (
                     <span className="absolute -top-3 -left-3 bg-orange-600 text-white text-[10px] px-1.5 py-0.5 rounded">6-1</span>
                   )}
                   <div ref={svdwRef} className="w-full">
                     <div className="w-full">
-                      <SVDWBlock heightPx={Math.round(Math.min(selectorsHeight, baselineSelectorsHeightRef.current ?? selectorsHeight) / 2 - 10)} />
+                      <SVDWBlock />
                     </div>
                   </div>
                 </div>
                 {/* Gap 20px */}
                 <div style={{ height: '20px' }} />
                 {/* Bottom half: Video group top-aligned */}
-                <div ref={videoGroupRef} className={`relative ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? 'debug-orange' : '')}`} style={{ height: `${Math.max(0, Math.round(Math.min(selectorsHeight, baselineSelectorsHeightRef.current ?? selectorsHeight)/2) - 10)}px`, display: 'flex', alignItems: 'flex-start' }}>
+                <div ref={videoGroupRef} className={`relative ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? 'debug-orange' : '')}`} style={{ height: `${Math.max(0, Math.round(selectorsHeight/2) - 10)}px`, display: 'flex', alignItems: 'flex-start' }}>
                   {useCameraStore(s => s.debugMainCoreViewHorizontalLayout) && (
                     <span className="absolute -top-3 -left-3 bg-orange-600 text-white text-[10px] px-1.5 py-0.5 rounded">6-3</span>
                   )}
-                  <VideoOutputsSection heightPx={Math.round(Math.min(selectorsHeight, baselineSelectorsHeightRef.current ?? selectorsHeight) / 2 - 10)} />
+                  <VideoOutputsSection />
                 </div>
               </div>
             </div>
