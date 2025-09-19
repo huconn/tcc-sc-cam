@@ -157,16 +157,29 @@ npm test
 
 ## Building for Production
 
+### Using Electron Builder
+
 ```bash
-# Build the application
+# Build the application only
 npm run build
 
-# Package for current platform
-npm run package
+# Build installer for Windows
+npm run build:win
 
-# Create distributable
-npm run make
+# Build installer for macOS
+npm run build:mac
+
+# Build installer for Linux
+npm run build:linux
+
+# Build installer for current platform
+npm run dist
 ```
+
+The installer files will be generated in the `dist` directory:
+- Windows: `Telechips SOC Configuration Tool Setup {version}.exe`
+- macOS: `.dmg` and `.zip` files
+- Linux: `.AppImage`, `.deb`, and `.rpm` files
 
 ## Troubleshooting
 

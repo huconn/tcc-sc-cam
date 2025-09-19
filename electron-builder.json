@@ -1,0 +1,47 @@
+{
+  "appId": "com.telechips.soc.configuration.tool",
+  "productName": "Telechips SOC Configuration Tool",
+  "directories": {
+    "output": "dist"
+  },
+  "files": [
+    "dist-electron/**/*",
+    "dist/**/*",
+    "main.js",
+    "package.json",
+    "assets/**/*",
+    "!**/*.ts",
+    "!**/node_modules/{.cache,**/test,**/tests,**/*.md,**/*.markdown}",
+    "!src/**/*"
+  ],
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      }
+    ],
+    "icon": "assets/telechips.ico",
+    "signAndEditExecutable": false,
+    "forceCodeSigning": false
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": true,
+    "deleteAppDataOnUninstall": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "Telechips SOC Tool"
+  },
+  "mac": {
+    "target": ["dmg", "zip"],
+    "icon": "assets/telechips.icns",
+    "category": "public.app-category.developer-tools"
+  },
+  "linux": {
+    "target": ["AppImage", "deb", "rpm"],
+    "icon": "assets/telechips.png",
+    "category": "Development"
+  }
+}

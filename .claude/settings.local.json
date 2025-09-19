@@ -9,7 +9,10 @@
       "Bash(taskkill:*)",
       "Bash(git commit:*)",
       "WebSearch",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(npm run build:*)",
+      "Bash(dir:*)",
+      "Bash(cmd /c dir:*)"
     ],
     "deny": [],
     "ask": []
