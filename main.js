@@ -62,5 +62,20 @@ app.on('window-all-closed', () => {
 
 // Handle IPC for getting app version
 ipcMain.handle('get-app-version', () => {
-  return app.getVersion()
+  const version = app.getVersion()
+
+  // In development, add git hash
+  if (isDev) {
+    try {
+      const { execSync } = require('child_process')
+      const gitHash = execSync('git rev-parse --short HEAD', { encoding: 'utf-8' }).trim()
+      return `${version}-${gitHash}-dev`
+    } catch (error) {
+      // If git is not available or not a git repo
+      return `${version}-dev`
+    }
+  }
+
+  // In production, return clean version
+  return version
 })

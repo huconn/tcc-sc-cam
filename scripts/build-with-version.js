@@ -58,27 +58,29 @@ switch (strategy) {
     process.exit(1);
 }
 
-// Create full version string
-const fullVersion = packageJson.version + versionSuffix;
+// Create full version string for file naming ONLY
+const fileVersion = packageJson.version + versionSuffix;
 
 // Update electron-builder config
 const builderConfigPath = path.join(projectRoot, 'electron-builder.json');
 const builderConfig = JSON.parse(fs.readFileSync(builderConfigPath, 'utf-8'));
 
-// Set custom version for build artifacts
+// DO NOT change the app version - keep it clean
+// Only use the version suffix for the installer file name
 builderConfig.extraMetadata = {
   ...builderConfig.extraMetadata,
-  version: fullVersion
+  version: packageJson.version  // Use clean version for the app
 };
 
-// Optionally customize artifact names
-builderConfig.artifactName = '${productName} Setup ${version}.${ext}';
+// Customize artifact names to include git hash or build number
+builderConfig.artifactName = `\${productName} Setup ${fileVersion}.\${ext}`;
 
 // Write updated config to temporary file
 const tempConfigPath = path.join(projectRoot, 'electron-builder-temp.json');
 fs.writeFileSync(tempConfigPath, JSON.stringify(builderConfig, null, 2));
 
-console.log(`Building version: ${fullVersion}`);
+console.log(`Building installer with file name version: ${fileVersion}`);
+console.log(`App will display version: ${packageJson.version}`);
 
 // Get platform from command line or use current platform
 const platform = process.argv[3] || process.platform;
@@ -96,7 +98,9 @@ try {
     cwd: projectRoot
   });
 
-  console.log(`✅ Build completed successfully! Version: ${fullVersion}`);
+  console.log(`✅ Build completed successfully!`);
+  console.log(`   Installer file: ${fileVersion}`);
+  console.log(`   App version: ${packageJson.version}`);
 } catch (error) {
   console.error('Build failed:', error);
   process.exit(1);

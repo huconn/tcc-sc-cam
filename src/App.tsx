@@ -18,15 +18,13 @@ export const App: React.FC = () => {
         try {
           const version = await electronAPI.getAppVersion();
           setAppVersion(version);
-          console.log('App version from Electron:', version);
         } catch (error) {
           console.error('Failed to get app version:', error);
-          setAppVersion('0.9.0'); // Fallback version
+          setAppVersion('0.0.0'); // Fallback to base version
         }
       } else {
-        // If electronAPI is not available
-        console.warn('ElectronAPI not available, using fallback version');
-        setAppVersion('0.9.0-dev');
+        // Running in browser or electronAPI not available
+        setAppVersion('0.0.0'); // Use base version for dev
       }
     };
 
