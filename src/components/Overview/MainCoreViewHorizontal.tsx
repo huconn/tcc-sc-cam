@@ -90,6 +90,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
   const [muxToMipi, setMuxToMipi] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string}>>([]);
   const [chToIspLines, setChToIspLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string}>>([]);
   const [ispToLLines, setIspToLLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string}>>([]);
+  const [externalToMipiLines, setExternalToMipiLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string}>>([]);
   const [selectorTopOverrides, setSelectorTopOverrides] = useState<Record<number, number>>({});
   const forceHorizontalOutputs = useCameraStore(s => s.debugMainCoreViewHorizontalForceOutputs ?? false);
   // Read each field separately to avoid creating a new snapshot object every render
@@ -280,6 +281,57 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
     setIspToLLines(lines);
   };
 
+  // External devices to MIPI connection lines
+  const computeExternalToMipi = () => {
+    const lines: Array<{x1:number;y1:number;x2:number;y2:number;color:string}> = [];
+    
+    // Find MIPI0 and MIPI1 boxes
+    const mipi0Box = document.querySelector('#mipi0-block') as HTMLElement | null;
+    const mipi1Box = document.querySelector('#mipi1-block') as HTMLElement | null;
+    
+    // MIPI0 line: from top External Devices block
+    if (mipi0Box) {
+      const topExtDevice = document.querySelector('[data-connection-point="ext-device-top"]') as HTMLElement | null;
+      if (topExtDevice) {
+        const extRect = topExtDevice.getBoundingClientRect();
+        const extRightEdge = extRect.left + extRect.width;
+        const extCenterY = extRect.top + extRect.height / 2;
+        
+        const mipi0Rect = mipi0Box.getBoundingClientRect();
+        // Keep horizontal line - use same Y as External device
+        lines.push({
+          x1: extRightEdge,
+          y1: extCenterY,
+          x2: mipi0Rect.left,
+          y2: extCenterY, // Keep horizontal - same Y as start point
+          color: '#93c5fd' // light blue
+        });
+      }
+    }
+    
+    // MIPI1 line: from bottom External Devices block
+    if (mipi1Box) {
+      const bottomExtDevice = document.querySelector('[data-connection-point="ext-device-bottom"]') as HTMLElement | null;
+      if (bottomExtDevice) {
+        const extRect = bottomExtDevice.getBoundingClientRect();
+        const extRightEdge = extRect.left + extRect.width;
+        const extCenterY = extRect.top + extRect.height / 2;
+        
+        const mipi1Rect = mipi1Box.getBoundingClientRect();
+        // Keep horizontal line - use same Y as External device
+        lines.push({
+          x1: extRightEdge,
+          y1: extCenterY,
+          x2: mipi1Rect.left,
+          y2: extCenterY, // Keep horizontal - same Y as start point
+          color: '#86efac' // light green
+        });
+      }
+    }
+    
+    setExternalToMipiLines(lines);
+  };
+
   useEffect(() => {
     const updateOnce = () => {
       const h = rightColRef.current?.getBoundingClientRect().height || 0;
@@ -304,6 +356,9 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
 
       //cam mux0..7 to cied0..7
       computeCamMuxToCied();
+
+      //external devices to mipi0, mipi1
+      computeExternalToMipi();
 
       // Align ISP0 selector center with Camera Mux IN-0 (mux-left-0) center
       try {
@@ -562,7 +617,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
             )}
 
             {/* Column 1: External Devices */}
-            <div ref={extColRef} className={`flex flex-col relative ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? 'debug-green' : '')}`} style={{ height: `${selectorsHeight}px` }}>
+            <div ref={extColRef} className={`flex flex-col relative ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? 'debug-green' : '')}`} style={{ height: `${selectorsHeight}px` }} data-connection-point="ext-col">
               {useCameraStore(s => s.debugMainCoreViewHorizontalLayout) && (
                 <span className="absolute -top-3 -left-3 bg-green-600 text-white text-[10px] px-1.5 py-0.5 rounded">2</span>
               )}
@@ -572,6 +627,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                 <div
                     className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 cursor-pointer hover:bg-gray-600 transition-colors w-[140px]"
                   onClick={() => onDeviceClick('mipi0')}
+                  data-connection-point="ext-device-top"
                 >
                     <div className="text-center font-semibold text-sm mb-4 text-purple-400">External Devices</div>
                   <div className="flex gap-1 justify-center">
@@ -601,6 +657,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                 <div
                     className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 cursor-pointer hover:bg-gray-600 transition-colors w-[140px]"
                   onClick={() => onDeviceClick('mipi1')}
+                  data-connection-point="ext-device-bottom"
                 >
                     <div className="text-center font-semibold text-sm mb-4 text-purple-400">External Devices</div>
                   <div className="flex gap-1 justify-center">
@@ -849,6 +906,20 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
               </defs>
               {ispToLLines.map((l, i) => (
                 <line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke={l.color} strokeWidth="3" strokeOpacity="0.9" markerEnd="url(#arrowhead-l-isp)" />
+              ))}
+            </svg>
+          )}
+
+          {/* Overlay lines: External Devices -> MIPI0, MIPI1 */}
+          {externalToMipiLines.length > 0 && (
+            <svg className="fixed top-0 left-0 w-screen h-screen pointer-events-none z-10" style={{ overflow: 'visible' }}>
+              <defs>
+                <marker id="arrowhead-ext-mipi" markerWidth="5" markerHeight="3.5" refX="4.5" refY="1.75" orient="auto">
+                  <polygon points="0 0, 5 1.75, 0 3.5" fill="context-stroke" />
+                </marker>
+              </defs>
+              {externalToMipiLines.map((l, i) => (
+                <line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke={l.color} strokeWidth="3" strokeOpacity="0.9" markerEnd="url(#arrowhead-ext-mipi)" />
               ))}
             </svg>
           )}
