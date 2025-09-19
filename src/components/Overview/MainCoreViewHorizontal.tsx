@@ -635,13 +635,16 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                 <span className="absolute -top-3 -left-3 bg-green-600 text-white text-[10px] px-1.5 py-0.5 rounded">3</span>
               )}
               <div style={{ height: '20%' }} />
-              <div className="flex flex-col justify-between flex-1">
-                {shouldShowMipi0 && (
-                  <div className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 w-[140px] relative" id="mipi0-block">
-                    <div className="text-center font-semibold text-sm text-purple-400">MIPI0</div>
-                    <div className="text-center text-xs text-gray-400 mb-2">MAIN</div>
+              <div className="flex flex-col justify-start flex-1">
+              {shouldShowMipi0 && (
+                  <div className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 w-[140px] relative mb-4" id="mipi0-block" style={{ minHeight: '280px' }}>
+                    <div className="flex items-center justify-center mb-4">
+                      <input type="checkbox" className="mr-2 w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 focus:ring-2" />
+                      <div className="text-center font-semibold text-sm text-purple-400">MIPI0</div>
+                    </div>
+                    <div className="text-center text-xs text-gray-400 mb-4">MAIN</div>
                     <select
-                      className="w-full text-xs bg-gray-600 text-gray-200 border border-gray-500 rounded px-1 py-0.5 mb-2 font-bold"
+                      className="w-full text-xs bg-gray-600 text-gray-200 border border-gray-500 rounded px-1 py-0.5 mb-8 font-bold"
                       value={i2cMain}
                       onChange={(e) => setI2cMain(parseInt(e.target.value))}
                     >
@@ -651,28 +654,31 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                         </option>
                       ))}
                     </select>
-                    <div className="space-y-2">
+                    <div className="space-y-4">
                       {[0, 1, 2, 3].map(i => (
                         <div key={i} className="flex items-center justify-between" data-channel={`mipi0-${i}`}>
                           <span className="text-xs font-bold text-gray-200">CH{i}</span>
-                          <div
-                            className={`w-4 h-4 rounded ${channelColorClasses[i]} cursor-pointer hover:ring-2 hover:ring-white transition-all`}
-                            onClick={() => setShowMIPIConfig({ mipi: 'mipi0', channel: i })}
-                            title={`Configure MIPI0 CH${i}`}
-                            data-anchor={`mipi0-ch${i}`}
-                          ></div>
-                        </div>
-                      ))}
-                    </div>
+                        <div
+                          className={`w-4 h-4 rounded ${channelColorClasses[i]} cursor-pointer hover:ring-2 hover:ring-white transition-all`}
+                          onClick={() => setShowMIPIConfig({ mipi: 'mipi0', channel: i })}
+                          title={`Configure MIPI0 CH${i}`}
+                          data-anchor={`mipi0-ch${i}`}
+                        ></div>
+                      </div>
+                    ))}
                   </div>
-                )}
+                </div>
+              )}
 
-                {shouldShowMipi1 && (
-                  <div className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 w-[140px] relative" id="mipi1-block">
-                    <div className="text-center font-semibold text-sm text-purple-400">MIPI1</div>
-                    <div className="text-center text-xs text-gray-400 mb-2">SUB</div>
+              {shouldShowMipi1 && (
+                  <div className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 w-[140px] relative mt-auto" id="mipi1-block" style={{ minHeight: '280px' }}>
+                    <div className="flex items-center justify-center mb-4">
+                      <input type="checkbox" className="mr-2 w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 focus:ring-2" />
+                      <div className="text-center font-semibold text-sm text-purple-400">MIPI1</div>
+                    </div>
+                    <div className="text-center text-xs text-gray-400 mb-4">SUB</div>
                     <select
-                      className="w-full text-xs bg-gray-600 text-gray-200 border border-gray-500 rounded px-1 py-0.5 mb-2 font-bold"
+                      className="w-full text-xs bg-gray-600 text-gray-200 border border-gray-500 rounded px-1 py-0.5 mb-8 font-bold"
                       value={i2cSub}
                       onChange={(e) => setI2cSub(parseInt(e.target.value))}
                     >
@@ -682,21 +688,21 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                         </option>
                       ))}
                     </select>
-                    <div className="space-y-2">
+                    <div className="space-y-4">
                       {[0, 1, 2, 3].map(i => (
                         <div key={i} className="flex items-center justify-between" data-channel={`mipi1-${i}`}>
                           <span className="text-xs font-bold text-gray-200">CH{i}</span>
-                          <div
-                            className={`w-4 h-4 rounded ${channelColorClasses[i + 4]} cursor-pointer hover:ring-2 hover:ring-white transition-all`}
-                            onClick={() => setShowMIPIConfig({ mipi: 'mipi1', channel: i })}
-                            title={`Configure MIPI1 CH${i}`}
-                            data-anchor={`mipi1-ch${i}`}
-                          ></div>
-                        </div>
-                      ))}
-                    </div>
+                        <div
+                          className={`w-4 h-4 rounded ${channelColorClasses[i + 4]} cursor-pointer hover:ring-2 hover:ring-white transition-all`}
+                          onClick={() => setShowMIPIConfig({ mipi: 'mipi1', channel: i })}
+                          title={`Configure MIPI1 CH${i}`}
+                          data-anchor={`mipi1-ch${i}`}
+                        ></div>
+                      </div>
+                    ))}
                   </div>
-                )}
+                </div>
+              )}
               </div>
               <div style={{ height: '20%' }} />
             </div>
@@ -865,7 +871,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                   )}
                   <div ref={svdwRef} className="w-full">
                     <div className="w-full">
-                      <SVDWBlock />
+                <SVDWBlock />
                     </div>
                   </div>
                 </div>
