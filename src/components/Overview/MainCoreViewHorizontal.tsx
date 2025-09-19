@@ -973,8 +973,8 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                 );
               })}
               
-              {/* Connection lines will be drawn here */}
-              <svg className="absolute inset-0" style={{ width: '100%', height: '100%', overflow: 'visible' }}></svg>
+              {/* Connection lines will be drawn here (non-interactive) */}
+              <svg className="absolute inset-0 pointer-events-none" style={{ width: '100%', height: '100%', overflow: 'visible' }}></svg>
 
               {/* ISP Selectors */}
               {activeChannels.map((ch, idx) => {
@@ -1009,7 +1009,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                       color={channelColors[ch.globalIndex]}
                       options={getAvailableOptions(ch.mipi as 'mipi0' | 'mipi1', ch.index) as unknown as SelectorChannelMode[]}
                       showConfigButton={String(ch.mode).startsWith('isp')}
-                      onOpenConfig={() => setShowISPConfig(String(ch.mode))}
+                      onOpenConfig={() => setShowISPConfig(`isp${ch.globalIndex}`)}
                       // Add hover scale via wrapper to avoid select width jitter
                     />
                   </div>
@@ -1027,7 +1027,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                     return (
                       <div 
                         key={`ir0-${idx}`} 
-                        className="absolute flex justify-end items-end" 
+                        className="absolute flex justify-end items-end pointer-events-none" 
                         style={{ 
                           left: '0px',
                           right: '0px', 
@@ -1037,7 +1037,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                         }}
                       >
                         <div
-                          className="w-12 h-6 border border-slate-400 rounded flex items-center justify-center cursor-pointer hover:scale-110 transition-transform"
+                          className="w-12 h-6 border border-slate-400 rounded flex items-center justify-center cursor-pointer hover:scale-110 transition-transform pointer-events-auto"
                           style={{ backgroundColor: '#64748b' }} // CIED 8 color
                           data-connection-point="ir0-box"
                           onClick={() => openCiedSlot(8)}
@@ -1061,7 +1061,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                 return (
                   <div
                         key={`ir1-${idx}`} 
-                        className="absolute flex justify-end items-end" 
+                        className="absolute flex justify-end items-end pointer-events-none" 
                     style={{
                           left: '0px',
                           right: '0px', 
@@ -1071,7 +1071,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                     }}
                   >
                         <div
-                          className="w-12 h-6 border border-amber-600 rounded flex items-center justify-center cursor-pointer hover:scale-110 transition-transform"
+                          className="w-12 h-6 border border-amber-600 rounded flex items-center justify-center cursor-pointer hover:scale-110 transition-transform pointer-events-auto"
                           style={{ backgroundColor: '#92400e' }} // CIED 9 color
                           data-connection-point="ir1-box"
                           onClick={() => openCiedSlot(9)}

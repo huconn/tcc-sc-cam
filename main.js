@@ -12,7 +12,10 @@ const createWindow = () => {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      // 프로덕션에서는 개발자 도구 비활성화 / 불필요한 네트워크 사용 최소화
+      devTools: isDev,
+      spellcheck: false
     },
     icon: path.join(__dirname, 'assets/icon.svg'),
     titleBarStyle: 'default',
@@ -31,8 +34,7 @@ const createWindow = () => {
   } else {
     // In production, load the built files
     mainWindow.loadFile(path.join(__dirname, 'dist/index.html'))
-    // Open DevTools in production for debugging
-    mainWindow.webContents.openDevTools()
+    // 프로덕션에서는 개발자 도구를 열지 않음
   }
 
   mainWindow.on('closed', () => {

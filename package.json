@@ -1,7 +1,7 @@
 {
-  "name": "my-electron-app",
+  "name": "Telechips SOC Configuration Tool",
   "version": "1.0.0",
-  "description": "Hello world",
+  "description": "Telechips SOC Configuration Tool",
   "main": "main.js",
   "scripts": {
     "dev": "concurrently \"npm run dev:vite\" \"npm run dev:electron\"",
