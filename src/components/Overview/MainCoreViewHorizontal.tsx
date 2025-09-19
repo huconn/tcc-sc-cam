@@ -91,6 +91,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
   const [chToIspLines, setChToIspLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string}>>([]);
   const [ispToLLines, setIspToLLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string}>>([]);
   const [externalToMipiLines, setExternalToMipiLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string}>>([]);
+  const [ispToCiedLines, setIspToCiedLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string}>>([]);
   const [selectorTopOverrides, setSelectorTopOverrides] = useState<Record<number, number>>({});
   const forceHorizontalOutputs = useCameraStore(s => s.debugMainCoreViewHorizontalForceOutputs ?? false);
   // Read each field separately to avoid creating a new snapshot object every render
@@ -147,7 +148,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
       } else if (viewMode === 'sub' && debugSelectSubCoreOperations === 2) {
         // Sub core with SUB selected
         setMipi0Type('SUB');
-      } else {
+    } else {
         setMipi0Type('MAIN');
       }
     }
@@ -408,6 +409,71 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
     setExternalToMipiLines(lines);
   };
 
+  // ISP to CIED connection lines
+  const computeIspToCied = () => {
+    const lines: Array<{x1:number;y1:number;x2:number;y2:number;color:string}> = [];
+    
+    // ISP1 -> IR0 connection
+    const isp1 = document.querySelector('[data-connection-point="isp-right-1-box"]') as HTMLElement | null;
+    const ir0 = document.querySelector('[data-connection-point="ir0-box"]') as HTMLElement | null;
+    
+    console.log('ISP1 element:', isp1);
+    console.log('IR0 element:', ir0);
+    
+    if (isp1 && ir0) {
+      const isp1Rect = isp1.getBoundingClientRect();
+      const ir0Rect = ir0.getBoundingClientRect();
+      
+      // Create L-shaped line: horizontal then vertical then horizontal to IR0
+      const horizontalEndX = isp1Rect.left + isp1Rect.width + 50; // 50px horizontal extension
+      const verticalY = ir0Rect.top + ir0Rect.height / 2;
+      
+      lines.push({
+        x1: isp1Rect.left + isp1Rect.width,
+        y1: isp1Rect.top + isp1Rect.height / 2,
+        x2: horizontalEndX,
+        y2: isp1Rect.top + isp1Rect.height / 2,
+        color: channelColors[1] // ISP1 color
+      });
+      
+      lines.push({
+        x1: horizontalEndX,
+        y1: isp1Rect.top + isp1Rect.height / 2,
+        x2: horizontalEndX,
+        y2: verticalY,
+        color: channelColors[1] // ISP1 color
+      });
+      
+      lines.push({
+        x1: horizontalEndX,
+        y1: verticalY,
+        x2: ir0Rect.left,
+        y2: verticalY,
+        color: channelColors[1] // ISP1 color
+      });
+    }
+    
+    // ISP3 -> CIED9 connection
+    const isp3 = document.querySelector('[data-connection-point="isp-right-3-box"]') as HTMLElement | null;
+    const cied9 = document.querySelector('[data-connection-point="cied-slot-9"]') as HTMLElement | null;
+    
+    if (isp3 && cied9) {
+      const isp3Rect = isp3.getBoundingClientRect();
+      const cied9Rect = cied9.getBoundingClientRect();
+      
+      lines.push({
+        x1: isp3Rect.left + isp3Rect.width,
+        y1: isp3Rect.top + isp3Rect.height / 2,
+        x2: cied9Rect.left,
+        y2: cied9Rect.top + cied9Rect.height / 2,
+        color: channelColors[3] // ISP3 color
+      });
+    }
+    
+    
+    setIspToCiedLines(lines);
+  };
+
   useEffect(() => {
     const updateOnce = () => {
       const h = rightColRef.current?.getBoundingClientRect().height || 0;
@@ -435,6 +501,9 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
 
       //external devices to mipi0, mipi1
       computeExternalToMipi();
+
+      //isp to cied connections
+      computeIspToCied();
 
       // Align ISP0 selector center with Camera Mux IN-0 (mux-left-0) center
       try {
@@ -786,7 +855,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                     >
                       <option value="MAIN" className="bg-gray-700 text-gray-200">MAIN</option>
                       <option value="SUB" className="bg-gray-700 text-gray-200">SUB</option>
-                    </select>
+                  </select>
                     <select
                       className="w-full text-xs bg-gray-600 text-gray-200 border border-gray-500 rounded px-1 py-0.5 mb-8 font-bold"
                       value={i2cMain}
@@ -830,7 +899,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                     >
                       <option value="MAIN" className="bg-gray-700 text-gray-200">MAIN</option>
                       <option value="SUB" className="bg-gray-700 text-gray-200">SUB</option>
-                    </select>
+                  </select>
                     <select
                       className="w-full text-xs bg-gray-600 text-gray-200 border border-gray-500 rounded px-1 py-0.5 mb-8 font-bold"
                       value={i2cSub}
@@ -866,25 +935,49 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
               {useCameraStore(s => s.debugMainCoreViewHorizontalLayout) && (
                 <span className="absolute -top-3 -left-3 bg-yellow-600 text-white text-[10px] px-1.5 py-0.5 rounded">4</span>
               )}
+              
+              {/* 14 Segment Grid Borders and Numbers */}
+              {useCameraStore(s => s.debugMainCoreViewHorizontalLayout) && Array.from({ length: 14 }).map((_, segmentIndex) => {
+                const segmentHeight = selectorsHeight / 14;
+                const top = segmentHeight * segmentIndex;
+                return (
+                  <div
+                    key={`segment-${segmentIndex}`}
+                    className="absolute border-2 border-blue-400 bg-blue-400/10"
+                    style={{
+                      left: '0px',
+                      top: `${top}px`,
+                      width: '100%',
+                      height: `${segmentHeight}px`,
+                      zIndex: 1
+                    }}
+                  >
+                    <span className="absolute -top-3 -left-3 bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded">
+                      {segmentIndex}
+                    </span>
+                  </div>
+                );
+              })}
+              
               {/* Connection lines will be drawn here */}
               <svg className="absolute inset-0" style={{ width: '100%', height: '100%', overflow: 'visible' }}></svg>
 
               {/* ISP Selectors */}
               {activeChannels.map((ch, idx) => {
-                // Place ISP0..ISP3 in segment 2, ISP4..ISP7 in segment 4 (5 equal vertical segments)
-                const segmentHeight = selectorsHeight / 5;
+                // Place ISP0-3 in segments 4-7, Bypass in segments 8-11 (14 equal vertical segments)
+                const segmentHeight = selectorsHeight / 14;
                 const approxHalfSelector = 12; // approximate half of selector height
                 let baseTop: number;
                 if (ch.globalIndex < 4) {
-                  // Segment index 1 (second segment). Distribute 4 items evenly within the segment
-                  baseTop = (segmentHeight * 1) + (((ch.index + 0.5) * (segmentHeight / 4)) - approxHalfSelector);
+                  // ISP0-3 in segments 4-7 (index 3-6)
+                  baseTop = (segmentHeight * (3 + ch.index)) + (segmentHeight / 2) - approxHalfSelector;
                 } else {
-                  // Segment index 3 (fourth segment)
+                  // Bypass in segments 8-11 (index 7-10)
                   const localIdx = ch.globalIndex - 4;
-                  baseTop = (segmentHeight * 3) + (((localIdx + 0.5) * (segmentHeight / 4)) - approxHalfSelector);
+                  baseTop = (segmentHeight * (7 + localIdx)) + (segmentHeight / 2) - approxHalfSelector;
                 }
                 const topPx = `${baseTop}px`;
-                return (
+                  return (
                   <div
                     key={`selector-${idx}`}
                     className="absolute"
@@ -906,7 +999,73 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                       // Add hover scale via wrapper to avoid select width jitter
                     />
                   </div>
+                  );
+                })}
+
+                {/* IR0 Box - positioned within ISP1 segment (segment 5) with right-bottom alignment */}
+              {activeChannels.map((ch, idx) => {
+                  if (ch.globalIndex === 1) { // ISP1
+                    const segmentHeight = selectorsHeight / 14;
+                    const segmentIndex = 4; // ISP1 is in segment 5 (index 4)
+                    const segmentTop = segmentHeight * segmentIndex;
+                    const segmentBottom = segmentTop + segmentHeight;
+                    
+                    return (
+                      <div 
+                        key={`ir0-${idx}`} 
+                        className="absolute flex justify-end items-end" 
+                        style={{ 
+                          left: '0px',
+                          right: '0px', 
+                          top: `${segmentTop}px`,
+                          height: `${segmentHeight}px`,
+                          zIndex: 10 
+                        }}
+                      >
+                        <div
+                          className="w-12 h-6 border border-slate-400 rounded flex items-center justify-center"
+                          style={{ backgroundColor: '#64748b' }} // CIED 8 color
+                          data-connection-point="ir0-box"
+                        >
+                          <span className="text-white text-xs font-bold">IR0</span>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })}
+                
+                {/* IR1 Box - positioned within ISP3 segment (segment 7) with right-bottom alignment */}
+                {activeChannels.map((ch, idx) => {
+                  if (ch.globalIndex === 3) { // ISP3
+                    const segmentHeight = selectorsHeight / 14;
+                    const segmentIndex = 6; // ISP3 is in segment 7 (index 6)
+                    const segmentTop = segmentHeight * segmentIndex;
+                    const segmentBottom = segmentTop + segmentHeight;
+
+                return (
+                  <div
+                        key={`ir1-${idx}`} 
+                        className="absolute flex justify-end items-end" 
+                    style={{
+                          left: '0px',
+                          right: '0px', 
+                          top: `${segmentTop}px`,
+                          height: `${segmentHeight}px`,
+                      zIndex: 10
+                    }}
+                  >
+                        <div
+                          className="w-12 h-6 border border-amber-600 rounded flex items-center justify-center"
+                          style={{ backgroundColor: '#92400e' }} // CIED 9 color
+                          data-connection-point="ir1-box"
+                        >
+                          <span className="text-white text-xs font-bold">IR1</span>
+                        </div>
+                  </div>
                 );
+                  }
+                  return null;
               })}
             </div>
 
@@ -1017,6 +1176,20 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
               </defs>
               {externalToMipiLines.map((l, i) => (
                 <line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke={l.color} strokeWidth="3" strokeOpacity="0.9" markerEnd="url(#arrowhead-ext-mipi)" />
+              ))}
+            </svg>
+          )}
+
+          {/* Overlay lines: ISP -> CIED */}
+          {ispToCiedLines.length > 0 && (
+            <svg className="fixed top-0 left-0 w-screen h-screen pointer-events-none z-10" style={{ overflow: 'visible' }}>
+              <defs>
+                <marker id="arrowhead-isp-cied" markerWidth="5" markerHeight="3.5" refX="4.5" refY="1.75" orient="auto">
+                  <polygon points="0 0, 5 1.75, 0 3.5" fill="context-stroke" />
+                </marker>
+              </defs>
+              {ispToCiedLines.map((l, i) => (
+                <line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke={l.color} strokeWidth="3" strokeOpacity="0.9" markerEnd="url(#arrowhead-isp-cied)" />
               ))}
             </svg>
           )}
