@@ -98,6 +98,82 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
   const i2cSub = useCameraStore((s: any) => s.i2cSub ?? 13);
   const setI2cMain = useCameraStore((s: any) => s.setI2cMain ?? (() => {}));
   const setI2cSub = useCameraStore((s: any) => s.setI2cSub ?? (() => {}));
+  
+  // Debug flags
+  const debugSelectMainCoreOperations = useCameraStore((s: any) => s.debugSelectMainCoreOperations ?? 1);
+  const debugSelectSubCoreOperations = useCameraStore((s: any) => s.debugSelectSubCoreOperations ?? 1);
+  
+  // MIPI type states
+  const [mipi0Type, setMipi0Type] = useState<'MAIN' | 'SUB'>('MAIN');
+  const [mipi1Type, setMipi1Type] = useState<'MAIN' | 'SUB'>('SUB');
+  
+  // Determine behavior based on viewMode and debug flags
+  const getMipiBehavior = () => {
+    if (viewMode === 'main') {
+      if (debugSelectMainCoreOperations === 1) {
+        // Current main core behavior
+        return { showMipi0: true, showMipi1: false, mipi0Fixed: false, mipi1Fixed: false };
+      } else if (debugSelectMainCoreOperations === 2) {
+        // Unified view with MAIN fixed for both MIPI0 and MIPI1
+        return { showMipi0: true, showMipi1: true, mipi0Fixed: true, mipi1Fixed: true };
+      } else if (debugSelectMainCoreOperations === 3) {
+        // Main view with SUB core selected - both MIPI0 and MIPI1 show SUB
+        return { showMipi0: true, showMipi1: true, mipi0Fixed: true, mipi1Fixed: true };
+      }
+    } else if (viewMode === 'sub') {
+      if (debugSelectSubCoreOperations === 1) {
+        // Current sub core behavior
+        return { showMipi0: false, showMipi1: true, mipi0Fixed: false, mipi1Fixed: false };
+      } else if (debugSelectSubCoreOperations === 2) {
+        // Sub view with SUB core selected - both MIPI0 and MIPI1 show SUB
+        return { showMipi0: true, showMipi1: true, mipi0Fixed: true, mipi1Fixed: true };
+      }
+    } else if (viewMode === 'unified') {
+      // Unified view: both MIPI0 and MIPI1 selectable, default MIPI0=MAIN, MIPI1=SUB
+      return { showMipi0: true, showMipi1: true, mipi0Fixed: false, mipi1Fixed: false };
+    }
+    // Default behavior
+    return { showMipi0: true, showMipi1: true, mipi0Fixed: false, mipi1Fixed: false };
+  };
+  
+  const mipiBehavior = getMipiBehavior();
+  
+  // Force values when fixed
+  useEffect(() => {
+    if (mipiBehavior.mipi0Fixed) {
+      // For main core with SUB selected, MIPI0 should be SUB
+      if (viewMode === 'main' && debugSelectMainCoreOperations === 3) {
+        setMipi0Type('SUB');
+      } else if (viewMode === 'sub' && debugSelectSubCoreOperations === 2) {
+        // Sub core with SUB selected
+        setMipi0Type('SUB');
+      } else {
+        setMipi0Type('MAIN');
+      }
+    }
+    if (mipiBehavior.mipi1Fixed) {
+      // For main core with SUB selected, MIPI1 should be SUB
+      if (viewMode === 'main' && debugSelectMainCoreOperations === 3) {
+        setMipi1Type('SUB');
+      } else if (viewMode === 'main' && debugSelectMainCoreOperations === 2) {
+        // Main core with MAIN selected
+        setMipi1Type('MAIN');
+      } else if (viewMode === 'sub' && debugSelectSubCoreOperations === 2) {
+        // Sub core with SUB selected
+        setMipi1Type('SUB');
+      } else {
+        setMipi1Type('SUB');
+      }
+    }
+  }, [mipiBehavior.mipi0Fixed, mipiBehavior.mipi1Fixed, viewMode, debugSelectMainCoreOperations, debugSelectSubCoreOperations]);
+
+  // Set default values for unified view
+  useEffect(() => {
+    if (viewMode === 'unified') {
+      setMipi0Type('MAIN');
+      setMipi1Type('SUB');
+    }
+  }, [viewMode]);
 
   // Compute Camera Mux R0/R1/R2/R3 -> SVDW 1-1/2-1/3-1/4-1 connections
   const computeCamMuxToSvdw = () => {
@@ -123,7 +199,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
         const svdwRect = svdw.getBoundingClientRect();
         const x1 = camRectBase.left + camRectBase.width; // right edge
         const y1 = camRectBase.top + camRectBase.height / 2;
-        const x2 = svdwRect.left;
+      const x2 = svdwRect.left;
         let y2 = svdwRect.top + svdwRect.height / 2;
         if (forceHorizontalOutputs) {
           // Force horizontal by aligning destination Y to source Y
@@ -566,8 +642,9 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
     return [`isp${channelIndex}` as ChannelMode, 'bypass'];
   };
 
-  const shouldShowMipi0 = viewMode === 'unified' || viewMode === 'main';
-  const shouldShowMipi1 = viewMode === 'unified' || viewMode === 'sub';
+  // Use new behavior logic instead of old shouldShowMipi0/1
+  const shouldShowMipi0 = mipiBehavior.showMipi0;
+  const shouldShowMipi1 = mipiBehavior.showMipi1;
 
   // Calculate which channels to show based on view mode
   const getActiveChannels = () => {
@@ -697,9 +774,19 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                   <div className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 w-[140px] relative mb-4" id="mipi0-block" style={{ minHeight: '280px' }}>
                     <div className="flex items-center justify-center mb-4">
                       <input type="checkbox" className="mr-2 w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 focus:ring-2" />
-                      <div className="text-center font-semibold text-sm text-purple-400">MIPI0</div>
+                  <div className="text-center font-semibold text-sm text-purple-400">MIPI0</div>
                     </div>
-                    <div className="text-center text-xs text-gray-400 mb-4">MAIN</div>
+                    <select
+                      className={`w-full text-xs border border-gray-500 rounded px-1 py-0.5 mb-4 font-bold ${
+                        mipiBehavior.mipi0Fixed ? 'bg-sky-200 text-gray-900' : 'bg-gray-600 text-gray-200'
+                      }`}
+                      value={mipi0Type}
+                      onChange={(e) => setMipi0Type(e.target.value as 'MAIN' | 'SUB')}
+                      disabled={mipiBehavior.mipi0Fixed}
+                    >
+                      <option value="MAIN" className="bg-gray-700 text-gray-200">MAIN</option>
+                      <option value="SUB" className="bg-gray-700 text-gray-200">SUB</option>
+                    </select>
                     <select
                       className="w-full text-xs bg-gray-600 text-gray-200 border border-gray-500 rounded px-1 py-0.5 mb-8 font-bold"
                       value={i2cMain}
@@ -710,10 +797,10 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                           {`I2C${n}`}
                         </option>
                       ))}
-                    </select>
+                  </select>
                     <div className="space-y-4">
-                      {[0, 1, 2, 3].map(i => (
-                        <div key={i} className="flex items-center justify-between" data-channel={`mipi0-${i}`}>
+                    {[0, 1, 2, 3].map(i => (
+                      <div key={i} className="flex items-center justify-between" data-channel={`mipi0-${i}`}>
                           <span className="text-xs font-bold text-gray-200">CH{i}</span>
                         <div
                           className={`w-4 h-4 rounded ${channelColorClasses[i]} cursor-pointer hover:ring-2 hover:ring-white transition-all`}
@@ -731,9 +818,19 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                   <div className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 w-[140px] relative mt-auto" id="mipi1-block" style={{ minHeight: '280px' }}>
                     <div className="flex items-center justify-center mb-4">
                       <input type="checkbox" className="mr-2 w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 focus:ring-2" />
-                      <div className="text-center font-semibold text-sm text-purple-400">MIPI1</div>
+                  <div className="text-center font-semibold text-sm text-purple-400">MIPI1</div>
                     </div>
-                    <div className="text-center text-xs text-gray-400 mb-4">SUB</div>
+                    <select
+                      className={`w-full text-xs border border-gray-500 rounded px-1 py-0.5 mb-4 font-bold ${
+                        mipiBehavior.mipi1Fixed ? 'bg-sky-200 text-gray-900' : 'bg-gray-600 text-gray-200'
+                      }`}
+                      value={mipi1Type}
+                      onChange={(e) => setMipi1Type(e.target.value as 'MAIN' | 'SUB')}
+                      disabled={mipiBehavior.mipi1Fixed}
+                    >
+                      <option value="MAIN" className="bg-gray-700 text-gray-200">MAIN</option>
+                      <option value="SUB" className="bg-gray-700 text-gray-200">SUB</option>
+                    </select>
                     <select
                       className="w-full text-xs bg-gray-600 text-gray-200 border border-gray-500 rounded px-1 py-0.5 mb-8 font-bold"
                       value={i2cSub}
@@ -744,10 +841,10 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                           {`I2C${n}`}
                         </option>
                       ))}
-                    </select>
+                  </select>
                     <div className="space-y-4">
-                      {[0, 1, 2, 3].map(i => (
-                        <div key={i} className="flex items-center justify-between" data-channel={`mipi1-${i}`}>
+                    {[0, 1, 2, 3].map(i => (
+                      <div key={i} className="flex items-center justify-between" data-channel={`mipi1-${i}`}>
                           <span className="text-xs font-bold text-gray-200">CH{i}</span>
                         <div
                           className={`w-4 h-4 rounded ${channelColorClasses[i + 4]} cursor-pointer hover:ring-2 hover:ring-white transition-all`}
