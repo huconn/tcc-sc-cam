@@ -2,7 +2,8 @@
   "name": "telechips-soc-configuration-tool",
   "version": "0.9.0",
   "description": "Telechips SOC Configuration Tool",
-  "main": "main.js",
+  "type": "module",
+  "main": "main.cjs",
   "scripts": {
     "dev": "concurrently \"npm run dev:vite\" \"npm run dev:electron\"",
     "dev:vite": "vite",

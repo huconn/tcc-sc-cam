@@ -11,7 +11,7 @@ const createWindow = () => {
     show: false, // 창을 먼저 숨김
     fullscreen: false,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
       // 프로덕션에서는 개발자 도구 비활성화 / 불필요한 네트워크 사용 최소화

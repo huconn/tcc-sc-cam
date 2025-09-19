@@ -8,8 +8,8 @@
   "files": [
     "dist-electron/**/*",
     "dist/**/*",
-    "main.js",
-    "preload.js",
+    "main.cjs",
+    "preload.cjs",
     "package.json",
     "assets/**/*",
     "!**/*.ts",

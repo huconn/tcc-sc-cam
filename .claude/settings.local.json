@@ -12,7 +12,13 @@
       "Bash(git add:*)",
       "Bash(npm run build:*)",
       "Bash(dir:*)",
-      "Bash(cmd /c dir:*)"
+      "Bash(cmd /c dir:*)",
+      "Bash(cmd /c:*)",
+      "Bash(powershell:*)",
+      "Bash(git log:*)",
+      "Bash(git tag:*)",
+      "Bash(git push:*)",
+      "Bash(npm uninstall:*)"
     ],
     "deny": [],
     "ask": []
