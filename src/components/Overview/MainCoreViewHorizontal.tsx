@@ -1226,7 +1226,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
               {useCameraStore(s => s.debugMainCoreViewHorizontalLayout) && (
                 <span className="absolute -top-3 -left-3 bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded">6</span>
               )}
-              <div ref={ciedRef} className="absolute" style={{ left: '-600px' }}>
+              <div ref={ciedRef} className="absolute" style={{ left: '-570px' }}>
                 <CIEDBar />
               </div>
               <div style={{ width: '20px' }} />

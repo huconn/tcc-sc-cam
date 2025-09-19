@@ -9,6 +9,7 @@ const createWindow = () => {
     width: 1400,
     height: 900,
     show: false, // 창을 먼저 숨김
+    fullscreen: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -17,13 +18,14 @@ const createWindow = () => {
       devTools: isDev,
       spellcheck: false
     },
-    icon: path.join(__dirname, 'assets/icon.svg'),
+    icon: path.join(__dirname, 'assets/telechips.ico'),
     titleBarStyle: 'default',
     autoHideMenuBar: true
   })
 
   // 창이 준비되면 표시
   mainWindow.once('ready-to-show', () => {
+    try { mainWindow.maximize() } catch {}
     mainWindow.show()
   })
 

@@ -63,7 +63,7 @@ export const App: React.FC = () => {
       {/* Header */}
       <header className="bg-gray-850 border-b border-gray-700">
         <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-[10px]">
             <h1 className="text-xl font-bold text-gray-100">Telechips SOC Configuration Tool - Camera</h1>
             <span className="text-xs text-gray-500">TCC807x (Dolphin5)</span>
           </div>
