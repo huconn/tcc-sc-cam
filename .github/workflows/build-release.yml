@@ -1,0 +1,168 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger on version tags like v1.0.0, v0.9.0, etc.
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+        include:
+          - os: windows-latest
+            platform: win32
+            arch: x64
+            build_cmd: build:win
+            artifact_ext: .exe
+          - os: macos-latest
+            platform: darwin
+            arch: x64
+            build_cmd: build:mac
+            artifact_ext: .dmg
+          - os: ubuntu-latest
+            platform: linux
+            arch: x64
+            build_cmd: build:linux
+            artifact_ext: .AppImage
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Need full history for git hash
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Electron app
+        run: npm run ${{ matrix.build_cmd }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: List build artifacts
+        shell: bash
+        run: |
+          echo "Contents of dist directory:"
+          ls -la dist/ || true
+          echo "Finding installer files:"
+          find dist -name "*Setup*" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.rpm" 2>/dev/null || true
+
+      - name: Upload Windows artifacts
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: dist/*.exe
+          if-no-files-found: error
+
+      - name: Upload macOS artifacts
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-installer
+          path: |
+            dist/*.dmg
+            dist/*.zip
+          if-no-files-found: error
+
+      - name: Upload Linux artifacts
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-installer
+          path: |
+            dist/*.AppImage
+            dist/*.deb
+            dist/*.rpm
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+
+      - name: Display structure of downloaded files
+        run: |
+          echo "Downloaded artifacts:"
+          ls -R release-artifacts
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: Release ${{ github.ref_name }}
+          body: |
+            ## Telechips SOC Configuration Tool - ${{ github.ref_name }}
+
+            ### What's New
+            - Camera configuration for TCC807x (Dolphin5)
+            - Visual pipeline designer
+            - DTS file generation
+            - Multi-core support
+
+            ### Installation
+            - **Windows**: Download and run the `.exe` installer
+            - **macOS**: Download and open the `.dmg` file
+            - **Linux**: Download the `.AppImage` (or `.deb`/`.rpm` for specific distributions)
+
+            ### System Requirements
+            - Windows 10 or later / macOS 10.13+ / Linux (64-bit)
+            - 4GB RAM minimum
+            - 200MB free disk space
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-beta') || contains(github.ref_name, '-alpha') }}
+
+      - name: Upload Windows Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release-artifacts/windows-installer/Telechips SOC Configuration Tool Setup*.exe
+          asset_name: Telechips-SOC-Tool-Setup-${{ github.ref_name }}-win.exe
+          asset_content_type: application/octet-stream
+        continue-on-error: true
+
+      - name: Upload macOS DMG Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release-artifacts/macos-installer/*.dmg
+          asset_name: Telechips-SOC-Tool-${{ github.ref_name }}-mac.dmg
+          asset_content_type: application/octet-stream
+        continue-on-error: true
+
+      - name: Upload Linux AppImage Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release-artifacts/linux-installer/*.AppImage
+          asset_name: Telechips-SOC-Tool-${{ github.ref_name }}-linux.AppImage
+          asset_content_type: application/octet-stream
+        continue-on-error: true

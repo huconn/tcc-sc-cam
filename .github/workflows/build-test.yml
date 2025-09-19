@@ -1,0 +1,69 @@
+name: Build Test
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - '.gitignore'
+  pull_request:
+    branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - '.gitignore'
+
+jobs:
+  test-build:
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+        node-version: [20]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Vite build
+        run: npm run build
+
+      - name: Test Electron packaging (Windows)
+        if: matrix.os == 'windows-latest'
+        run: npm run build:win:simple
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Test Electron packaging (macOS)
+        if: matrix.os == 'macos-latest'
+        run: npm run build:mac:simple
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Test Electron packaging (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: npm run build:linux:simple
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify build artifacts exist
+        shell: bash
+        run: |
+          if [ -d "dist" ]; then
+            echo "✅ Build artifacts created successfully"
+            ls -la dist/
+          else
+            echo "❌ Build artifacts not found"
+            exit 1
+          fi
