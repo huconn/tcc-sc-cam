@@ -9,6 +9,7 @@
     "dist-electron/**/*",
     "dist/**/*",
     "main.js",
+    "preload.js",
     "package.json",
     "assets/**/*",
     "!**/*.ts",

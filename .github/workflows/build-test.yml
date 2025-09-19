@@ -16,21 +16,16 @@ on:
 
 jobs:
   test-build:
-    strategy:
-      matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
-        node-version: [20]
-
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js ${{ matrix.node-version }}
+      - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: '20'
           cache: 'npm'
 
       - name: Cache Electron
@@ -55,21 +50,8 @@ jobs:
       - name: Run Vite build
         run: npm run build
 
-      - name: Test Electron packaging (Windows)
-        if: matrix.os == 'windows-latest'
+      - name: Test Electron packaging for Windows
         run: npm run build:win:simple
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Test Electron packaging (macOS)
-        if: matrix.os == 'macos-latest'
-        run: npm run build:mac:simple
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Test Electron packaging (Linux)
-        if: matrix.os == 'ubuntu-latest'
-        run: npm run build:linux:simple
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

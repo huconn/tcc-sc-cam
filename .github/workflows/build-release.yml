@@ -7,27 +7,7 @@ on:
 
 jobs:
   build:
-    strategy:
-      matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
-        include:
-          - os: windows-latest
-            platform: win32
-            arch: x64
-            build_cmd: build:win
-            artifact_ext: .exe
-          - os: macos-latest
-            platform: darwin
-            arch: x64
-            build_cmd: build:mac
-            artifact_ext: .dmg
-          - os: ubuntu-latest
-            platform: linux
-            arch: x64
-            build_cmd: build:linux
-            artifact_ext: .AppImage
-
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-latest
 
     steps:
       - name: Checkout code
@@ -60,8 +40,8 @@ jobs:
           ELECTRON_SKIP_BINARY_DOWNLOAD: 0
           ELECTRON_CACHE: ${{ runner.temp }}/electron-cache
 
-      - name: Build Electron app
-        run: npm run ${{ matrix.build_cmd }}
+      - name: Build Electron app for Windows
+        run: npm run build:win
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -74,32 +54,10 @@ jobs:
           find dist -name "*Setup*" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.rpm" 2>/dev/null || true
 
       - name: Upload Windows artifacts
-        if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v4
         with:
           name: windows-installer
           path: dist/*.exe
-          if-no-files-found: error
-
-      - name: Upload macOS artifacts
-        if: matrix.os == 'macos-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-installer
-          path: |
-            dist/*.dmg
-            dist/*.zip
-          if-no-files-found: error
-
-      - name: Upload Linux artifacts
-        if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-installer
-          path: |
-            dist/*.AppImage
-            dist/*.deb
-            dist/*.rpm
           if-no-files-found: error
 
   release:
@@ -150,35 +108,19 @@ jobs:
           draft: false
           prerelease: ${{ contains(github.ref_name, '-beta') || contains(github.ref_name, '-alpha') }}
 
+      - name: Find Windows installer file
+        id: find_installer
+        run: |
+          INSTALLER_FILE=$(find ./release-artifacts/windows-installer -name "*.exe" | head -1)
+          echo "installer_path=$INSTALLER_FILE" >> $GITHUB_OUTPUT
+          echo "Found installer: $INSTALLER_FILE"
+
       - name: Upload Windows Release Asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./release-artifacts/windows-installer/Telechips SOC Configuration Tool Setup*.exe
+          asset_path: ${{ steps.find_installer.outputs.installer_path }}
           asset_name: Telechips-SOC-Tool-Setup-${{ github.ref_name }}-win.exe
           asset_content_type: application/octet-stream
-        continue-on-error: true
-
-      - name: Upload macOS DMG Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./release-artifacts/macos-installer/*.dmg
-          asset_name: Telechips-SOC-Tool-${{ github.ref_name }}-mac.dmg
-          asset_content_type: application/octet-stream
-        continue-on-error: true
-
-      - name: Upload Linux AppImage Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./release-artifacts/linux-installer/*.AppImage
-          asset_name: Telechips-SOC-Tool-${{ github.ref_name }}-linux.AppImage
-          asset_content_type: application/octet-stream
-        continue-on-error: true
