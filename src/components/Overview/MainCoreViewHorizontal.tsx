@@ -199,24 +199,26 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
   const computeMipiToIsp = () => {
     const lines: Array<{x1:number;y1:number;x2:number;y2:number;color:string}> = [];
 
-    // mipi0: CHi -> ISPi
-    for (let i = 0; i < 4; i += 1) {
-      //console.log(`mipi0-ch${i}`, `isp${i}-box`);
-      const ch = document.querySelector(`[data-anchor="mipi0-ch${i}"]`) as HTMLElement | null;
-      const isp = document.querySelector(`[data-connection-point="isp-left-${i}-box"]`) as HTMLElement | null;
-      if (!ch || !isp) continue;
-      //onsole.log(ch, isp);
-      const a = ch.getBoundingClientRect();
-      const b = isp.getBoundingClientRect();
-      lines.push({
-        x1: a.left + a.width,
-        y1: a.top + a.height / 2,
-        x2: b.left,
-        y2: b.top + b.height / 2,
-        color: channelColors[i]
-      });
+    // mipi0: CHi -> ISPi (only if shouldShowMipi0)
+    if (shouldShowMipi0) {
+      for (let i = 0; i < 4; i += 1) {
+        //console.log(`mipi0-ch${i}`, `isp${i}-box`);
+        const ch = document.querySelector(`[data-anchor="mipi0-ch${i}"]`) as HTMLElement | null;
+        const isp = document.querySelector(`[data-connection-point="isp-left-${i}-box"]`) as HTMLElement | null;
+        if (!ch || !isp) continue;
+        //onsole.log(ch, isp);
+        const a = ch.getBoundingClientRect();
+        const b = isp.getBoundingClientRect();
+        lines.push({
+          x1: a.left + a.width,
+          y1: a.top + a.height / 2,
+          x2: b.left,
+          y2: b.top + b.height / 2,
+          color: channelColors[i]
+        });
+      }
     }
-    // mipi1: CHi -> ISP(i+4)
+    // mipi1: CHi -> ISP(i+4) (always compute, regardless of viewMode)
     for (let i = 0; i < 4; i += 1) {
       //console.log(`mipi1-ch${i}`, `isp${i + 4}-box`);
       
@@ -240,22 +242,25 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
   // ISP right edge to Camera Mux left edge
   const computeIspToCamMux = () => {
     const lines: Array<{x1:number;y1:number;x2:number;y2:number;color:string}> = [];
-    for (let i = 0; i < 4; i += 1) {
-      //console.log(`isp-right-${i}-box`, `mux-left-${i}`);
-      const isp = document.querySelector(`[data-anchor-point="isp-right-${i}-box"]`) as HTMLElement | null;
-      const l = document.querySelector(`[data-connection-point="mux-left-${i}-target"]`) as HTMLElement | null;
-      if (!isp || !l) continue;
-      const a = isp.getBoundingClientRect();
-      const b = l.getBoundingClientRect();
-      lines.push({
-        x1: a.left + a.width,
-        y1: a.top + a.height / 2,
-        x2: b.left,
-        y2: b.top + b.height / 2,
-        color: channelColors[i]
-      });
+    // isp0..3 -> L0..3 (only if shouldShowMipi0)
+    if (shouldShowMipi0) {
+      for (let i = 0; i < 4; i += 1) {
+        //console.log(`isp-right-${i}-box`, `mux-left-${i}`);
+        const isp = document.querySelector(`[data-anchor-point="isp-right-${i}-box"]`) as HTMLElement | null;
+        const l = document.querySelector(`[data-connection-point="mux-left-${i}-target"]`) as HTMLElement | null;
+        if (!isp || !l) continue;
+        const a = isp.getBoundingClientRect();
+        const b = l.getBoundingClientRect();
+        lines.push({
+          x1: a.left + a.width,
+          y1: a.top + a.height / 2,
+          x2: b.left,
+          y2: b.top + b.height / 2,
+          color: channelColors[i]
+        });
+      }
     }
-    // isp4..7 -> L4..7
+    // isp4..7 -> L4..7 (always compute, regardless of viewMode)
     for (let i = 0; i < 4; i += 1) {
       const ispIdx = i + 4;
       //console.log(`isp-right-${ispIdx}-box`, `mux-left-${ispIdx}`);
