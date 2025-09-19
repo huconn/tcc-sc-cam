@@ -159,27 +159,59 @@ npm test
 
 ### Using Electron Builder
 
+#### Default Build Commands (with Git Hash)
+These commands automatically append the git commit hash to the version (e.g., `0.9.0-9053b5b`):
+
 ```bash
-# Build the application only
+# Build the application only (without installer)
 npm run build
 
-# Build installer for Windows
+# Build installer for Windows (includes git hash)
 npm run build:win
 
-# Build installer for macOS
+# Build installer for macOS (includes git hash)
 npm run build:mac
 
-# Build installer for Linux
+# Build installer for Linux (includes git hash)
 npm run build:linux
 
-# Build installer for current platform
+# Build installer for current platform (includes git hash)
 npm run dist
 ```
 
+#### Alternative Version Strategies
+
+```bash
+# Simple version without git hash (e.g., 0.9.0)
+npm run build:win:simple
+npm run build:mac:simple
+npm run build:linux:simple
+
+# With build number (e.g., 0.9.0-20250119.1823)
+npm run build:win:build
+
+# With both build number and git hash (e.g., 0.9.0-20250119.1823-9053b5b)
+npm run build:win:full
+```
+
+#### Setting Custom Build Numbers
+For CI/CD environments, you can set a custom build number:
+
+```bash
+# Windows
+set BUILD_NUMBER=123
+npm run build:win:build
+# Result: 0.9.0-123
+
+# Linux/macOS
+export BUILD_NUMBER=123
+npm run build:mac:build
+```
+
 The installer files will be generated in the `dist` directory:
-- Windows: `Telechips SOC Configuration Tool Setup {version}.exe`
-- macOS: `.dmg` and `.zip` files
-- Linux: `.AppImage`, `.deb`, and `.rpm` files
+- Windows: `Telechips SOC Configuration Tool Setup {version}-{hash}.exe`
+- macOS: `.dmg` and `.zip` files with version-hash
+- Linux: `.AppImage`, `.deb`, and `.rpm` files with version-hash
 
 ## Troubleshooting
 

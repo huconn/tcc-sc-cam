@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron')
+const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('node:path')
 
 let mainWindow = null
@@ -58,4 +58,9 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
+})
+
+// Handle IPC for getting app version
+ipcMain.handle('get-app-version', () => {
+  return app.getVersion()
 })

@@ -10,5 +10,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Add file system operations
   saveFile: (fileName, content) => ipcRenderer.invoke('save-file', fileName, content),
   loadFile: () => ipcRenderer.invoke('load-file'),
-  exportDTS: (config) => ipcRenderer.invoke('export-dts', config)
+  exportDTS: (config) => ipcRenderer.invoke('export-dts', config),
+  // Get app version
+  getAppVersion: () => ipcRenderer.invoke('get-app-version')
 })

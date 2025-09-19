@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Download, Upload, Save } from 'lucide-react';
 import { OverviewPage } from '@/components/Overview/OverviewPage';
 import { useCameraStore } from '@/store/cameraStore';
@@ -6,6 +6,32 @@ import { DTSGenerator } from '@/utils/dtsGenerator';
 
 export const App: React.FC = () => {
   const { exportConfiguration, loadConfiguration } = useCameraStore();
+  const [appVersion, setAppVersion] = useState<string>('');
+
+  useEffect(() => {
+    // Get app version when component mounts
+    const getVersion = async () => {
+      // Check if we're in Electron environment
+      const electronAPI = (window as any).electronAPI;
+
+      if (electronAPI?.getAppVersion) {
+        try {
+          const version = await electronAPI.getAppVersion();
+          setAppVersion(version);
+          console.log('App version from Electron:', version);
+        } catch (error) {
+          console.error('Failed to get app version:', error);
+          setAppVersion('0.9.0'); // Fallback version
+        }
+      } else {
+        // If electronAPI is not available
+        console.warn('ElectronAPI not available, using fallback version');
+        setAppVersion('0.9.0-dev');
+      }
+    };
+
+    getVersion();
+  }, []);
 
   const handleExportDTS = () => {
     const config = exportConfiguration();
@@ -108,6 +134,13 @@ export const App: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Version Display - Bottom Right Corner */}
+      {appVersion && (
+        <div className="fixed bottom-3 right-3 bg-gray-800/80 backdrop-blur-sm text-gray-400 text-xs px-2 py-1 rounded border border-gray-700/50">
+          v{appVersion}
+        </div>
+      )}
     </div>
   );
 };

@@ -1,6 +1,7 @@
 {
   "appId": "com.telechips.soc.configuration.tool",
   "productName": "Telechips SOC Configuration Tool",
+  "artifactName": "${productName} Setup ${version}.${ext}",
   "directories": {
     "output": "dist"
   },
