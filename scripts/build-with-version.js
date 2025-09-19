@@ -91,9 +91,9 @@ try {
   console.log('Building with Vite...');
   execSync('npm run build', { stdio: 'inherit', cwd: projectRoot });
 
-  // Run electron-builder with custom config
+  // Run electron-builder with custom config (disable auto-publish)
   console.log(`Building installer for ${platform}...`);
-  execSync(`npx electron-builder ${platformFlag} --config ${tempConfigPath}`, {
+  execSync(`npx electron-builder ${platformFlag} --config ${tempConfigPath} --publish never`, {
     stdio: 'inherit',
     cwd: projectRoot
   });
