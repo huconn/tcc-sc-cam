@@ -65,8 +65,8 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
       <div className="relative bg-gray-800 text-gray-100 border border-gray-700 rounded-lg shadow-xl w-[90vw] h-[90vh] flex flex-col p-6" role="dialog" aria-modal="true">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <Settings className="w-6 h-6 text-purple-500" />
-            <h3 className="text-xl font-semibold">{headerTitle}</h3>
+            <Settings className="w-12 h-12 text-purple-500" />
+            <h3 className="text-xl font-semibold whitespace-nowrap">{headerTitle}</h3>
             <select value={status} onChange={(e) => setStatus(e.target.value as 'okay' | 'disabled')} className={`${selectCls} w-32`}>
               <option value="okay">OK</option>
               <option value="disabled">Disabled</option>
@@ -461,7 +461,7 @@ export const CIEDConfigModal: React.FC<CIEDConfigModalProps> = ({ open, onClose,
           </div>
         </div>
 
-        <div className="mt-4 flex items-center justify-end gap-2">
+        <div className="mt-4 flex items-center justify-end gap-4">
           <button onClick={onClose} className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">Cancel</button>
           <button onClick={() => onSave({})} className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">Save</button>
         </div>

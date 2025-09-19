@@ -91,7 +91,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
   const [chToIspLines, setChToIspLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string}>>([]);
   const [ispToLLines, setIspToLLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string}>>([]);
   const [externalToMipiLines, setExternalToMipiLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string}>>([]);
-  const [ispToCiedLines, setIspToCiedLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string}>>([]);
+  const [ispToCiedLines, setIspToCiedLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string;hasArrow?:boolean}>>([]);
   const [selectorTopOverrides, setSelectorTopOverrides] = useState<Record<number, number>>({});
   const forceHorizontalOutputs = useCameraStore(s => s.debugMainCoreViewHorizontalForceOutputs ?? false);
   // Read each field separately to avoid creating a new snapshot object every render
@@ -414,7 +414,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
     const lines: Array<{x1:number;y1:number;x2:number;y2:number;color:string}> = [];
     
     // ISP1 -> IR0 connection
-    const isp1 = document.querySelector('[data-connection-point="isp-right-1-box"]') as HTMLElement | null;
+    const isp1 = document.querySelector('[data-anchor-point="isp-right-1-box"]') as HTMLElement | null;
     const ir0 = document.querySelector('[data-connection-point="ir0-box"]') as HTMLElement | null;
     
     console.log('ISP1 element:', isp1);
@@ -424,54 +424,68 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
       const isp1Rect = isp1.getBoundingClientRect();
       const ir0Rect = ir0.getBoundingClientRect();
       
-      // Create L-shaped line: horizontal then vertical then horizontal to IR0
-      const horizontalEndX = isp1Rect.left + isp1Rect.width + 50; // 50px horizontal extension
-      const verticalY = ir0Rect.top + ir0Rect.height / 2;
-      
+      // Two segments per new request:
+      // 1) Vertical segment (no arrow) going down 20px from ISP1 right-center
+      const startX = isp1Rect.left + isp1Rect.width;
+      const startY = isp1Rect.top + isp1Rect.height / 2;
+      const midY = startY + 20;
       lines.push({
-        x1: isp1Rect.left + isp1Rect.width,
-        y1: isp1Rect.top + isp1Rect.height / 2,
-        x2: horizontalEndX,
-        y2: isp1Rect.top + isp1Rect.height / 2,
-        color: channelColors[1] // ISP1 color
+        x1: startX,
+        y1: startY,
+        x2: startX,
+        y2: midY,
+        color: channelColors[1]
       });
       
+      // 2) Horizontal segment (with arrow) from that point to IR0 left
       lines.push({
-        x1: horizontalEndX,
-        y1: isp1Rect.top + isp1Rect.height / 2,
-        x2: horizontalEndX,
-        y2: verticalY,
-        color: channelColors[1] // ISP1 color
-      });
-      
-      lines.push({
-        x1: horizontalEndX,
-        y1: verticalY,
+        x1: startX,
+        y1: midY,
         x2: ir0Rect.left,
-        y2: verticalY,
-        color: channelColors[1] // ISP1 color
+        y2: midY,
+        color: channelColors[1]
       });
     }
     
-    // ISP3 -> CIED9 connection
-    const isp3 = document.querySelector('[data-connection-point="isp-right-3-box"]') as HTMLElement | null;
-    const cied9 = document.querySelector('[data-connection-point="cied-slot-9"]') as HTMLElement | null;
+    // ISP3 -> IR1 two-segment connection (vertical 20px then horizontal with arrow)
+    const isp3 = document.querySelector('[data-anchor-point="isp-right-3-box"]') as HTMLElement | null;
+    const ir1 = document.querySelector('[data-connection-point="ir1-box"]') as HTMLElement | null;
     
-    if (isp3 && cied9) {
+    if (isp3 && ir1) {
       const isp3Rect = isp3.getBoundingClientRect();
-      const cied9Rect = cied9.getBoundingClientRect();
+      const ir1Rect = ir1.getBoundingClientRect();
       
+      const startX3 = isp3Rect.left + isp3Rect.width;
+      const startY3 = isp3Rect.top + isp3Rect.height / 2;
+      const midY3 = startY3 + 20;
+      // vertical 20px
       lines.push({
-        x1: isp3Rect.left + isp3Rect.width,
-        y1: isp3Rect.top + isp3Rect.height / 2,
-        x2: cied9Rect.left,
-        y2: cied9Rect.top + cied9Rect.height / 2,
-        color: channelColors[3] // ISP3 color
+        x1: startX3,
+        y1: startY3,
+        x2: startX3,
+        y2: midY3,
+        color: channelColors[3]
+      });
+      // horizontal to IR1 left with arrow
+      lines.push({
+        x1: startX3,
+        y1: midY3,
+        x2: ir1Rect.left,
+        y2: midY3,
+        color: channelColors[3]
       });
     }
     
     
     setIspToCiedLines(lines);
+  };
+
+  // Open CIED modal for a given slot by delegating to CIEDBar's button
+  const openCiedSlot = (slot: number) => {
+    try {
+      const btn = document.querySelector(`[data-connection-point="cied-slot-${slot}"]`) as HTMLButtonElement | null;
+      btn?.click();
+    } catch {}
   };
 
   useEffect(() => {
@@ -1023,9 +1037,10 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                         }}
                       >
                         <div
-                          className="w-12 h-6 border border-slate-400 rounded flex items-center justify-center"
+                          className="w-12 h-6 border border-slate-400 rounded flex items-center justify-center cursor-pointer hover:scale-110 transition-transform"
                           style={{ backgroundColor: '#64748b' }} // CIED 8 color
                           data-connection-point="ir0-box"
+                          onClick={() => openCiedSlot(8)}
                         >
                           <span className="text-white text-xs font-bold">IR0</span>
                         </div>
@@ -1056,9 +1071,10 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                     }}
                   >
                         <div
-                          className="w-12 h-6 border border-amber-600 rounded flex items-center justify-center"
+                          className="w-12 h-6 border border-amber-600 rounded flex items-center justify-center cursor-pointer hover:scale-110 transition-transform"
                           style={{ backgroundColor: '#92400e' }} // CIED 9 color
                           data-connection-point="ir1-box"
+                          onClick={() => openCiedSlot(9)}
                         >
                           <span className="text-white text-xs font-bold">IR1</span>
                         </div>
@@ -1189,7 +1205,17 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                 </marker>
               </defs>
               {ispToCiedLines.map((l, i) => (
-                <line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke={l.color} strokeWidth="3" strokeOpacity="0.9" markerEnd="url(#arrowhead-isp-cied)" />
+                <line
+                  key={i}
+                  x1={l.x1}
+                  y1={l.y1}
+                  x2={l.x2}
+                  y2={l.y2}
+                  stroke={l.color}
+                  strokeWidth="3"
+                  strokeOpacity="0.9"
+                  markerEnd={i % 2 === 1 ? 'url(#arrowhead-isp-cied)' : undefined}
+                />
               ))}
             </svg>
           )}
