@@ -22,14 +22,6 @@
   "author": "Daekeun Kang",
   "license": "ISC",
   "devDependencies": {
-    "@electron-forge/cli": "^7.9.0",
-    "@electron-forge/maker-deb": "^7.9.0",
-    "@electron-forge/maker-rpm": "^7.9.0",
-    "@electron-forge/maker-squirrel": "^7.9.0",
-    "@electron-forge/maker-zip": "^7.9.0",
-    "@electron-forge/plugin-auto-unpack-natives": "^7.9.0",
-    "@electron-forge/plugin-fuses": "^7.9.0",
-    "@electron/fuses": "^1.8.0",
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
     "@vitejs/plugin-react": "^5.0.2",
@@ -48,7 +40,6 @@
   },
   "dependencies": {
     "clsx": "^2.1.1",
-    "electron-squirrel-startup": "^1.0.1",
     "lucide-react": "^0.544.0",
     "react-dnd": "^16.0.1",
     "react-dnd-html5-backend": "^16.0.1",

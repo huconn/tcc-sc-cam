@@ -33,8 +33,24 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
+      - name: Cache Electron
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+            ~/AppData/Local/electron/Cache
+            ~/Library/Caches/electron
+          key: ${{ runner.os }}-electron-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-
+
       - name: Install dependencies
-        run: npm ci
+        run: |
+          npm install --no-audit --no-fund
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: 0
+          ELECTRON_CACHE: ${{ runner.temp }}/electron-cache
 
       - name: Run Vite build
         run: npm run build
