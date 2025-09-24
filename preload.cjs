@@ -11,6 +11,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveFile: (fileName, content) => ipcRenderer.invoke('save-file', fileName, content),
   loadFile: () => ipcRenderer.invoke('load-file'),
   exportDTS: (config) => ipcRenderer.invoke('export-dts', config),
+  // Convert DTB to JSON map; if no path passed, shows file picker in main
+  convertDTB: (inPath) => ipcRenderer.invoke('convert-dtb', inPath),
+  // Save DTS and compiled DTB to disk
+  saveDtsDtb: (dtsText) => ipcRenderer.invoke('save-dts-dtb', dtsText),
   // Get app version
   getAppVersion: () => ipcRenderer.invoke('get-app-version')
 })

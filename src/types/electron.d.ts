@@ -8,6 +8,8 @@ export interface ElectronAPI {
   saveFile: (fileName: string, content: string) => Promise<void>;
   loadFile: () => Promise<{ filePath: string; content: string } | null>;
   exportDTS: (config: any) => Promise<void>;
+  convertDTB: (inPath?: string) => Promise<{ canceled?: boolean; inputPath?: string; outPath?: string; jsonText?: string; error?: string }>;
+  saveDtsDtb: (dtsText: string) => Promise<{ canceled?: boolean; dtsPath?: string; dtbPath?: string; error?: string }>;
   getAppVersion: () => Promise<string>;
 }
 

@@ -9,6 +9,8 @@
     "dev:vite": "vite",
     "dev:electron": "wait-on http://localhost:5175 && cross-env NODE_ENV=development electron .",
     "build": "vite build",
+    "generate:dts-json": "node scripts/convert-dtb.cjs --in ./example.dtb --out ./public/data/dts-map.json",
+    "prebuild": "npm run generate:dts-json",
     "build:win": "node scripts/build-with-version.js hash win32",
     "build:win:simple": "npm run build && electron-builder --win",
     "build:win:build": "node scripts/build-with-version.js build win32",
@@ -44,6 +46,7 @@
     "lucide-react": "^0.544.0",
     "react-dnd": "^16.0.1",
     "react-dnd-html5-backend": "^16.0.1",
+    "yaml": "^2.6.0",
     "zustand": "^5.0.8"
   }
 }

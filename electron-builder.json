@@ -16,6 +16,13 @@
     "!**/node_modules/{.cache,**/test,**/tests,**/*.md,**/*.markdown}",
     "!src/**/*"
   ],
+  "extraResources": [
+    {
+      "from": "tools/",
+      "to": "tools",
+      "filter": ["**/*"]
+    }
+  ],
   "win": {
     "target": [
       {
