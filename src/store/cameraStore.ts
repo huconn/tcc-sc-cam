@@ -138,10 +138,10 @@ export const useCameraStore = create<CameraStore>((set) => ({
   debugMainCoreViewHorizontalForceOutputs: false,
 
   // CIEDConfigModal: show grid borders
-  debugCIEDConfigModalGridBorders: false,
+  debugCIEDConfigModalGridBorders: true,
 
   // MainCoreViewHorizontal: show layout guide borders
-  debugMainCoreViewHorizontalLayout: false,
+  debugMainCoreViewHorizontalLayout: true,
 
   // selectMainCoreOperations: 1 : current view, 2 : operations selector
   debugSelectMainCoreOperations: 2,

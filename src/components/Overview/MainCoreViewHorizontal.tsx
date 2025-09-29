@@ -33,6 +33,7 @@ import { CameraMuxBlock } from '@/components/CameraMux/CameraMuxBlock';
 import { SVDWBlock } from '@/components/SVDW/SVDWBlock';
 import { VideoOutputsSection } from '@/components/VideoPipeline/VideoOutputsSection';
 import { CIEDBar } from '@/components/CIED/CIEDBar';
+import { I2CPanel } from '@/components/I2CConfiguration';
 
 interface MainCoreViewHorizontalProps {
   selectedDevices: {
@@ -92,13 +93,9 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
   const [ispToLLines, setIspToLLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string}>>([]);
   const [externalToMipiLines, setExternalToMipiLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string}>>([]);
   const [ispToCiedLines, setIspToCiedLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string;hasArrow?:boolean}>>([]);
+  const [i2cToExternalLines, setI2cToExternalLines] = useState<Array<{x1:number;y1:number;x2:number;y2:number;color:string}>>([]);
   const [selectorTopOverrides, setSelectorTopOverrides] = useState<Record<number, number>>({});
   const forceHorizontalOutputs = useCameraStore(s => s.debugMainCoreViewHorizontalForceOutputs ?? false);
-  // Read each field separately to avoid creating a new snapshot object every render
-  const i2cMain = useCameraStore((s: any) => s.i2cMain ?? 12);
-  const i2cSub = useCameraStore((s: any) => s.i2cSub ?? 13);
-  const setI2cMain = useCameraStore((s: any) => s.setI2cMain ?? (() => {}));
-  const setI2cSub = useCameraStore((s: any) => s.setI2cSub ?? (() => {}));
   
   // Debug flags
   const debugSelectMainCoreOperations = useCameraStore((s: any) => s.debugSelectMainCoreOperations ?? 1);
@@ -409,6 +406,53 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
     setExternalToMipiLines(lines);
   };
 
+  // I2C to External Device connection lines
+  const computeI2cToExternal = () => {
+    const lines: Array<{x1:number;y1:number;x2:number;y2:number;color:string}> = [];
+    
+    // Find I2C blocks
+    const i2cMipi0Block = document.querySelector('#i2c-mipi0-block') as HTMLElement | null;
+    const i2cMipi1Block = document.querySelector('#i2c-mipi1-block') as HTMLElement | null;
+    
+    // I2C MIPI0 to External Device MIPI0
+    if (i2cMipi0Block) {
+      const topExtDevice = document.querySelector('[data-connection-point="ext-device-top"]') as HTMLElement | null;
+      if (topExtDevice) {
+        const i2cRect = i2cMipi0Block.getBoundingClientRect();
+        const extRect = topExtDevice.getBoundingClientRect();
+        
+        // Line from I2C left edge to External Device right edge
+        lines.push({
+          x1: i2cRect.left,
+          y1: i2cRect.top + i2cRect.height / 2,
+          x2: extRect.left + extRect.width,
+          y2: extRect.top + extRect.height / 2,
+          color: '#3b82f6' // blue
+        });
+      }
+    }
+    
+    // I2C MIPI1 to External Device MIPI1
+    if (i2cMipi1Block) {
+      const bottomExtDevice = document.querySelector('[data-connection-point="ext-device-bottom"]') as HTMLElement | null;
+      if (bottomExtDevice) {
+        const i2cRect = i2cMipi1Block.getBoundingClientRect();
+        const extRect = bottomExtDevice.getBoundingClientRect();
+        
+        // Line from I2C left edge to External Device right edge
+        lines.push({
+          x1: i2cRect.left,
+          y1: i2cRect.top + i2cRect.height / 2,
+          x2: extRect.left + extRect.width,
+          y2: extRect.top + extRect.height / 2,
+          color: '#10b981' // green
+        });
+      }
+    }
+    
+    setI2cToExternalLines(lines);
+  };
+
   // ISP to CIED connection lines
   const computeIspToCied = () => {
     const lines: Array<{x1:number;y1:number;x2:number;y2:number;color:string}> = [];
@@ -634,6 +678,8 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
     computeMipiToIsp();
     computeIspToCamMux();
     computeCamMuxToCied();
+    computeExternalToMipi();
+    computeI2cToExternal();
     const t1 = setTimeout(computeCamMuxToSvdw, 100);
     const t2 = setTimeout(computeCamMuxToSvdw, 300);
     const t3 = setTimeout(computeCamMuxToSvdw, 600);
@@ -646,7 +692,13 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
     const w1 = setTimeout(computeCamMuxToCied, 100);
     const w2 = setTimeout(computeCamMuxToCied, 300);
     const w3 = setTimeout(computeCamMuxToCied, 600);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(u1); clearTimeout(u2); clearTimeout(u3); clearTimeout(v1); clearTimeout(v2); clearTimeout(v3); clearTimeout(w1); clearTimeout(w2); clearTimeout(w3); };
+    const x1 = setTimeout(computeExternalToMipi, 100);
+    const x2 = setTimeout(computeExternalToMipi, 300);
+    const x3 = setTimeout(computeExternalToMipi, 600);
+    const y1 = setTimeout(computeI2cToExternal, 100);
+    const y2 = setTimeout(computeI2cToExternal, 300);
+    const y3 = setTimeout(computeI2cToExternal, 600);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(u1); clearTimeout(u2); clearTimeout(u3); clearTimeout(v1); clearTimeout(v2); clearTimeout(v3); clearTimeout(w1); clearTimeout(w2); clearTimeout(w3); clearTimeout(x1); clearTimeout(x2); clearTimeout(x3); clearTimeout(y1); clearTimeout(y2); clearTimeout(y3); };
   }, []);
 
   // Channel configurations for each MIPI
@@ -784,61 +836,65 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
               <div style={{ height: '20%' }} />
               <div className="flex flex-col justify-between flex-1">
               {shouldShowMipi0 && (
-                <div
-                    className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 cursor-pointer hover:bg-gray-600 transition-colors w-[140px]"
-                  onClick={() => onDeviceClick('mipi0')}
-                  data-connection-point="ext-device-top"
-                >
-                    <div className="text-center font-semibold text-sm mb-4 text-purple-400">External Devices</div>
-                  <div className="flex gap-1 justify-center">
-                    {externalDevices?.mipi0 &&
-                       ((((externalDevices.mipi0 as any)?.devices && (externalDevices.mipi0 as any).devices.length > 0) ||
-                        (Array.isArray(externalDevices.mipi0) && externalDevices.mipi0.length > 0))) ? (
-                        (((externalDevices.mipi0 as any)?.devices || externalDevices.mipi0) as any[]).slice(0, 4).map((device: any, index: number) => (
-                        <div
-                          key={index}
-                          className={`w-6 h-6 rounded ${deviceTypeColors[device.type] || 'bg-gray-500'}`}
-                          title={`${device.name} - ${device.model}`}
-                        />
-                      ))
-                    ) : (
-                      [0, 1, 2, 3].map(i => (
-                        <div
-                          key={i}
-                          className="w-6 h-6 rounded bg-gray-500"
-                        />
-                      ))
-                    )}
+                <div className="flex flex-col">
+                  <div
+                    className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 cursor-pointer hover:bg-gray-600 transition-colors w-[140px] mb-4"
+                    onClick={() => onDeviceClick('mipi0')}
+                    data-connection-point="ext-device-top"
+                  >
+                      <div className="text-center font-semibold text-sm mb-4 text-purple-400">External Devices</div>
+                    <div className="flex gap-1 justify-center">
+                      {externalDevices?.mipi0 &&
+                         ((((externalDevices.mipi0 as any)?.devices && (externalDevices.mipi0 as any).devices.length > 0) ||
+                          (Array.isArray(externalDevices.mipi0) && externalDevices.mipi0.length > 0))) ? (
+                          (((externalDevices.mipi0 as any)?.devices || externalDevices.mipi0) as any[]).slice(0, 4).map((device: any, index: number) => (
+                          <div
+                            key={index}
+                            className={`w-6 h-6 rounded ${deviceTypeColors[device.type] || 'bg-gray-500'}`}
+                            title={`${device.name} - ${device.model}`}
+                          />
+                        ))
+                      ) : (
+                        [0, 1, 2, 3].map(i => (
+                          <div
+                            key={i}
+                            className="w-6 h-6 rounded bg-gray-500"
+                          />
+                        ))
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
 
               {shouldShowMipi1 && (
-                <div
+                <div className="flex flex-col">
+                  <div
                     className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 cursor-pointer hover:bg-gray-600 transition-colors w-[140px]"
-                  onClick={() => onDeviceClick('mipi1')}
-                  data-connection-point="ext-device-bottom"
-                >
-                    <div className="text-center font-semibold text-sm mb-4 text-purple-400">External Devices</div>
-                  <div className="flex gap-1 justify-center">
-                    {externalDevices?.mipi1 &&
-                       ((((externalDevices.mipi1 as any)?.devices && (externalDevices.mipi1 as any).devices.length > 0) ||
-                        (Array.isArray(externalDevices.mipi1) && externalDevices.mipi1.length > 0))) ? (
-                        (((externalDevices.mipi1 as any)?.devices || externalDevices.mipi1) as any[]).slice(0, 4).map((device: any, index: number) => (
-                        <div
-                          key={index}
-                          className={`w-6 h-6 rounded ${deviceTypeColors[device.type] || 'bg-gray-500'}`}
-                          title={`${device.name} - ${device.model}`}
-                        />
-                      ))
-                    ) : (
-                      [4, 5, 6, 7].map(i => (
-                        <div
-                          key={i}
-                          className="w-6 h-6 rounded bg-gray-500"
-                        />
-                      ))
-                    )}
+                    onClick={() => onDeviceClick('mipi1')}
+                    data-connection-point="ext-device-bottom"
+                  >
+                      <div className="text-center font-semibold text-sm mb-4 text-purple-400">External Devices</div>
+                    <div className="flex gap-1 justify-center">
+                      {externalDevices?.mipi1 &&
+                         ((((externalDevices.mipi1 as any)?.devices && (externalDevices.mipi1 as any).devices.length > 0) ||
+                          (Array.isArray(externalDevices.mipi1) && externalDevices.mipi1.length > 0))) ? (
+                          (((externalDevices.mipi1 as any)?.devices || externalDevices.mipi1) as any[]).slice(0, 4).map((device: any, index: number) => (
+                          <div
+                            key={index}
+                            className={`w-6 h-6 rounded ${deviceTypeColors[device.type] || 'bg-gray-500'}`}
+                            title={`${device.name} - ${device.model}`}
+                          />
+                        ))
+                      ) : (
+                        [4, 5, 6, 7].map(i => (
+                          <div
+                            key={i}
+                            className="w-6 h-6 rounded bg-gray-500"
+                          />
+                        ))
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
@@ -851,9 +907,36 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
               {useCameraStore(s => s.debugMainCoreViewHorizontalLayout) && (
                 <span className="absolute -top-3 -left-3 bg-green-600 text-white text-[10px] px-1.5 py-0.5 rounded">3</span>
               )}
+              
+              {/* Debug Grid Lines for MIPI Column */}
+              {useCameraStore(s => s.debugMainCoreViewHorizontalLayout) && (
+                <div className="absolute inset-0 pointer-events-none">
+                  {/* Top 20% section */}
+                  <div className="absolute border-2 border-green-400 bg-green-400/10" style={{ top: '0px', left: '0px', width: '100%', height: '20%' }}>
+                    <span className="absolute -top-3 -left-3 bg-green-600 text-white text-[10px] px-1.5 py-0.5 rounded">3-1</span>
+                  </div>
+                  {/* Middle section */}
+                  <div className="absolute border-2 border-green-400 bg-green-400/10" style={{ top: '20%', left: '0px', width: '100%', height: '60%' }}>
+                    <span className="absolute -top-3 -left-3 bg-green-600 text-white text-[10px] px-1.5 py-0.5 rounded">3-2</span>
+                  </div>
+                  {/* Bottom 20% section */}
+                  <div className="absolute border-2 border-green-400 bg-green-400/10" style={{ top: '80%', left: '0px', width: '100%', height: '20%' }}>
+                    <span className="absolute -top-3 -left-3 bg-green-600 text-white text-[10px] px-1.5 py-0.5 rounded">3-3</span>
+                  </div>
+                </div>
+              )}
+              
               <div style={{ height: '20%' }} />
-              <div className="flex flex-col justify-start flex-1">
+              
+              <div className="flex flex-col justify-between flex-1">
               {shouldShowMipi0 && (
+                <div className="flex flex-col">
+                  {/* I2C Block for MIPI0 - grouped with MIPI0 */}
+                  <I2CPanel 
+                    shouldShowMipi0={true}
+                    shouldShowMipi1={false}
+                  />
+                  
                   <div className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 w-[140px] relative mb-4" id="mipi0-block" style={{ minHeight: '280px' }}>
                     <div className="flex items-center justify-center mb-4">
                       <input type="checkbox" className="mr-2 w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 focus:ring-2" />
@@ -870,17 +953,6 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                       <option value="MAIN" className="bg-gray-700 text-gray-200">MAIN</option>
                       <option value="SUB" className="bg-gray-700 text-gray-200">SUB</option>
                   </select>
-                    <select
-                      className="w-full text-xs bg-gray-600 text-gray-200 border border-gray-500 rounded px-1 py-0.5 mb-8 font-bold"
-                      value={i2cMain}
-                      onChange={(e) => setI2cMain(parseInt(e.target.value))}
-                    >
-                      {Array.from({ length: 16 }).map((_, n) => (
-                        <option key={n} value={n} disabled={n === i2cSub} className="bg-gray-700 text-gray-200">
-                          {`I2C${n}`}
-                        </option>
-                      ))}
-                  </select>
                     <div className="space-y-4">
                     {[0, 1, 2, 3].map(i => (
                       <div key={i} className="flex items-center justify-between" data-channel={`mipi0-${i}`}>
@@ -894,11 +966,19 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                       </div>
                     ))}
                   </div>
+                  </div>
                 </div>
               )}
 
               {shouldShowMipi1 && (
-                  <div className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 w-[140px] relative mt-auto" id="mipi1-block" style={{ minHeight: '280px' }}>
+                <div className="flex flex-col">
+                  {/* I2C Block for MIPI1 - grouped with MIPI1 */}
+                  <I2CPanel 
+                    shouldShowMipi0={false}
+                    shouldShowMipi1={true}
+                  />
+                  
+                  <div className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 w-[140px] relative" id="mipi1-block" style={{ minHeight: '280px' }}>
                     <div className="flex items-center justify-center mb-4">
                       <input type="checkbox" className="mr-2 w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 focus:ring-2" />
                   <div className="text-center font-semibold text-sm text-purple-400">MIPI1</div>
@@ -914,17 +994,6 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                       <option value="MAIN" className="bg-gray-700 text-gray-200">MAIN</option>
                       <option value="SUB" className="bg-gray-700 text-gray-200">SUB</option>
                   </select>
-                    <select
-                      className="w-full text-xs bg-gray-600 text-gray-200 border border-gray-500 rounded px-1 py-0.5 mb-8 font-bold"
-                      value={i2cSub}
-                      onChange={(e) => setI2cSub(parseInt(e.target.value))}
-                    >
-                      {Array.from({ length: 16 }).map((_, n) => (
-                        <option key={n} value={n} disabled={n === i2cMain} className="bg-gray-700 text-gray-200">
-                          {`I2C${n}`}
-                        </option>
-                      ))}
-                  </select>
                     <div className="space-y-4">
                     {[0, 1, 2, 3].map(i => (
                       <div key={i} className="flex items-center justify-between" data-channel={`mipi1-${i}`}>
@@ -937,6 +1006,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                         ></div>
                       </div>
                     ))}
+                  </div>
                   </div>
                 </div>
               )}
@@ -1220,6 +1290,19 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
             </svg>
           )}
 
+          {/* Overlay lines: I2C -> External Devices */}
+          {i2cToExternalLines.length > 0 && (
+            <svg className="fixed top-0 left-0 w-screen h-screen pointer-events-none z-10" style={{ overflow: 'visible' }}>
+              <defs>
+                <marker id="arrowhead-i2c-ext" markerWidth="5" markerHeight="3.5" refX="4.5" refY="1.75" orient="auto">
+                  <polygon points="0 0, 5 1.75, 0 3.5" fill="context-stroke" />
+                </marker>
+              </defs>
+              {i2cToExternalLines.map((l, i) => (
+                <line key={`i2c-${i}`} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke={l.color} strokeWidth="3" strokeOpacity="0.9" markerEnd="url(#arrowhead-i2c-ext)" />
+              ))}
+            </svg>
+          )}
 
             {/* Right group: CIED (left) — 20px spacer — SVDW/VideoPipeline (right) */}
             <div ref={rightGroupRef} className={`ml-auto flex items-start relative ${useCameraStore(s => s.debugMainCoreViewHorizontalLayout ? 'debug-blue' : '')}`}>
