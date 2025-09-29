@@ -15,9 +15,13 @@ export const I2CPanel: React.FC<I2CPanelProps> = ({
   const i2cSub = useCameraStore((s: any) => s.i2cSub ?? 13);
   const setI2cMain = useCameraStore((s: any) => s.setI2cMain ?? (() => {}));
   const setI2cSub = useCameraStore((s: any) => s.setI2cSub ?? (() => {}));
+  const debugShowLayoutBorders = useCameraStore(s => s.debugShowLayoutBorders ?? false);
 
   return (
-    <div className="flex flex-col">
+    <div className={`flex flex-col ${debugShowLayoutBorders ? 'debug' : ''}`}>
+      {debugShowLayoutBorders && (
+        <span className="absolute -top-3 -left-3 bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded">I2C-PANEL</span>
+      )}
       {/* I2C Block for MIPI0 */}
       {shouldShowMipi0 && (
         <I2CConfigBlock

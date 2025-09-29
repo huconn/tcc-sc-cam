@@ -8,7 +8,8 @@ import { dtsMapToDts } from '@/utils/dtsSerialize';
 
 export const App: React.FC = () => {
   const { exportConfiguration, loadConfiguration, setDtsMap, setLoadedDtsText } = useCameraStore();
-  const debugShowDtsMap = useCameraStore(s => (s as any).debugShowDtsMap as boolean);
+  const debugShowDtsMap = useCameraStore((s: any) => s.debugShowDtsMap as boolean);
+  const debugShowResolution = useCameraStore((s: any) => s.debugShowResolution as boolean);
   const webLoadInputRef = useRef<HTMLInputElement | null>(null);
   const [appVersion, setAppVersion] = useState<string>('');
   const [isElectronApp, setIsElectronApp] = useState<boolean>(() => {
@@ -18,6 +19,11 @@ export const App: React.FC = () => {
     const isElectronProcess = !!w?.process?.versions?.electron;
     const hasElectronAPI = !!w?.electronAPI?.getAppVersion;
     return isElectronUA || isElectronProcess || hasElectronAPI;
+  });
+  const [browserInfo, setBrowserInfo] = useState({
+    resolution: '0x0',
+    scale: '100%',
+    devicePixelRatio: 1
   });
 
   useEffect(() => {
@@ -44,6 +50,32 @@ export const App: React.FC = () => {
     };
 
     getVersion();
+  }, []);
+
+  // Update browser info (resolution, scale, device pixel ratio)
+  useEffect(() => {
+    const updateBrowserInfo = () => {
+      const resolution = `${screen.width}x${screen.height}`;
+      const scale = Math.round((window.outerWidth / window.innerWidth) * 100);
+      const devicePixelRatio = window.devicePixelRatio || 1;
+      
+      setBrowserInfo({
+        resolution,
+        scale: `${scale}%`,
+        devicePixelRatio
+      });
+    };
+
+    // Initial update
+    updateBrowserInfo();
+
+    // Listen for resize events
+    window.addEventListener('resize', updateBrowserInfo);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('resize', updateBrowserInfo);
+    };
   }, []);
 
   const handleExportDTS = () => {
@@ -207,6 +239,21 @@ export const App: React.FC = () => {
             <span className="text-xs text-gray-500">TCC807x (Dolphin5)</span>
           </div>
           <div className="flex items-center gap-2">
+            {/* Browser Info Display - Only show when debugShowResolution is true */}
+            {debugShowResolution && (
+              <div className="flex items-center gap-3 px-3 py-1 bg-gray-800 rounded-lg border border-gray-600">
+                <div className="text-xs text-gray-300">
+                  <span className="text-gray-400">Resolution:</span> {browserInfo.resolution}
+                </div>
+                <div className="text-xs text-gray-300">
+                  <span className="text-gray-400">Scale:</span> {browserInfo.scale}
+                </div>
+                <div className="text-xs text-gray-300">
+                  <span className="text-gray-400">DPR:</span> {browserInfo.devicePixelRatio}
+                </div>
+              </div>
+            )}
+            
             {/* Hidden input for web-only load (DTS/JSON) */}
             <input
               ref={webLoadInputRef}

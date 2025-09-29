@@ -42,13 +42,13 @@ interface CameraStore extends CameraConfiguration {
   i2cSub?: number;
   setI2cMain?: (n: number) => void;
   setI2cSub?: (n: number) => void;
-  // Global UI debug flags (namespaced by screen/component)
+  // Global UI debug flags
   debugMainCoreViewHorizontalForceOutputs?: boolean;
   setDebugMainCoreViewHorizontalForceOutputs?: (v: boolean) => void;
-  debugCIEDConfigModalGridBorders?: boolean;
-  setDebugCIEDConfigModalGridBorders?: (v: boolean) => void;
-  debugMainCoreViewHorizontalLayout?: boolean;
-  setDebugMainCoreViewHorizontalLayout?: (v: boolean) => void;
+  debugShowLayoutBorders?: boolean;
+  setDebugShowLayoutBorders?: (v: boolean) => void;
+  debugShowResolution?: boolean;
+  setDebugShowResolution?: (v: boolean) => void;
 }
 
 const initialState: CameraConfiguration = {
@@ -137,11 +137,11 @@ export const useCameraStore = create<CameraStore>((set) => ({
   // MainCoreViewHorizontal: force OUT->SVDW/Video lines horizontal
   debugMainCoreViewHorizontalForceOutputs: false,
 
-  // CIEDConfigModal: show grid borders
-  debugCIEDConfigModalGridBorders: true,
+  // Global debug: show layout guide borders for all components
+  debugShowLayoutBorders: true,
 
-  // MainCoreViewHorizontal: show layout guide borders
-  debugMainCoreViewHorizontalLayout: true,
+  // Show browser resolution and scale info
+  debugShowResolution: true,
 
   // selectMainCoreOperations: 1 : current view, 2 : operations selector
   debugSelectMainCoreOperations: 2,
@@ -236,6 +236,6 @@ export const useCameraStore = create<CameraStore>((set) => ({
   setI2cMain: (n) => set({ i2cMain: n }),
   setI2cSub: (n) => set({ i2cSub: n }),
   setDebugMainCoreViewHorizontalForceOutputs: (v) => set({ debugMainCoreViewHorizontalForceOutputs: v }),
-  setDebugCIEDConfigModalGridBorders: (v) => set({ debugCIEDConfigModalGridBorders: v }),
-  setDebugMainCoreViewHorizontalLayout: (v) => set({ debugMainCoreViewHorizontalLayout: v }),
+  setDebugShowLayoutBorders: (v) => set({ debugShowLayoutBorders: v }),
+  setDebugShowResolution: (v) => set({ debugShowResolution: v }),
 }));
