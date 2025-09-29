@@ -824,13 +824,13 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
           {useCameraStore(s => s.debugShowLayoutBorders) && (
             <span className="absolute -top-3 -left-3 bg-gray-700 text-white text-[10px] px-1.5 py-0.5 rounded">0-2</span>
           )}
-          <div ref={group1Ref} className={`flex items-stretch relative h-full ${useCameraStore(s => s.debugShowLayoutBorders ? 'debug-purple' : '')}`} style={{ gap: '100px' }}>
+          <div ref={group1Ref} className={`flex items-stretch relative h-full ${useCameraStore(s => s.debugShowLayoutBorders ? 'debug-purple' : '')}`} style={{ marginTop: '30px', gap: '100px' }}>
             {useCameraStore(s => s.debugShowLayoutBorders) && (
               <span className="absolute -top-3 -left-3 bg-purple-600 text-white text-[10px] px-1.5 py-0.5 rounded">1</span>
             )}
 
             {/* Container 1-1: External Devices */}
-            <div className={`flex flex-col relative border-2 border-cyan-500 rounded-lg w-1/10 flex-shrink-0 ${useCameraStore(s => s.debugShowLayoutBorders ? 'debug-cyan' : '')}`} style={{ padding: '10px' }}>
+            <div className={`flex flex-col relative rounded-lg w-1/10 flex-shrink-0 ${useCameraStore(s => s.debugShowLayoutBorders ? 'border-2 border-cyan-500 debug-cyan' : '')}`} style={{ padding: '10px', backgroundColor: 'rgba(219, 234, 254, 0.22)' }}>
               {useCameraStore(s => s.debugShowLayoutBorders) && (
                 <span className="absolute -top-3 -left-3 bg-cyan-600 text-white text-[10px] px-1.5 py-0.5 rounded">1-1</span>
               )}
@@ -911,7 +911,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
             </div>
 
             {/* Container 1-2: MIPI, ISP, Camera Mux, Right Group */}
-            <div className={`flex items-stretch relative h-full border-2 border-pink-500 rounded-lg flex-1 ${useCameraStore(s => s.debugShowLayoutBorders ? 'debug-pink' : '')}`} style={{ padding: '10px', gap: '100px' }}>
+            <div className={`flex items-stretch relative h-full rounded-lg flex-1 ${useCameraStore(s => s.debugShowLayoutBorders ? 'border-2 border-pink-500 debug-pink' : '')}`} style={{ padding: '10px', gap: '100px', backgroundColor: 'rgba(209, 213, 219, 0.12)' }}>
               {useCameraStore(s => s.debugShowLayoutBorders) && (
                 <span className="absolute -top-3 -left-3 bg-pink-600 text-white text-[10px] px-1.5 py-0.5 rounded">1-2</span>
               )}

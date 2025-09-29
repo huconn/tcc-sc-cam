@@ -5,6 +5,7 @@ import clsx from 'clsx';
 
 export const CameraMuxPanel: React.FC = () => {
   const { cameraMux, updateCameraMux, mipiChannels, ispConfigs } = useCameraStore();
+  const debugShowLayoutBorders = useCameraStore((s: any) => s.debugShowLayoutBorders ?? false);
 
   const availableInputs = [
     ...mipiChannels.filter(m => m.enabled).map(m => ({
@@ -38,7 +39,10 @@ export const CameraMuxPanel: React.FC = () => {
   };
 
   return (
-    <div className="bg-gray-850 rounded-lg p-4">
+    <div className={`bg-gray-850 rounded-lg p-4 relative ${debugShowLayoutBorders ? 'debug' : ''}`}>
+      {debugShowLayoutBorders && (
+        <span className="absolute -top-3 -left-3 bg-purple-600 text-white text-[10px] px-1.5 py-0.5 rounded">MUX-PANEL</span>
+      )}
       <div className="flex items-center gap-2 mb-4">
         <GitBranch className="w-5 h-5 text-primary-400" />
         <h2 className="text-lg font-semibold">Camera Mux Configuration</h2>

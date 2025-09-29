@@ -18,11 +18,11 @@ export const I2CConfigBlock: React.FC<I2CConfigBlockProps> = ({
   onI2CChange,
   disabledValues = []
 }) => {
-  const debugShowLayoutBorders = useCameraStore(s => s.debugShowLayoutBorders ?? false);
+  const debugShowLayoutBorders = useCameraStore((s: any) => s.debugShowLayoutBorders ?? false);
   
   return (
     <div 
-      className={`bg-gray-800 border-2 ${borderColor} rounded-lg p-3 w-[140px] relative mb-4 ${debugShowLayoutBorders ? 'debug' : ''}`} 
+      className={`bg-gray-800 border-2 ${borderColor} ${textColor} rounded-lg p-3 w-full relative mb-4 ${debugShowLayoutBorders ? 'debug' : ''}`} 
       id={`i2c-${mipiType}-block`}
     >
       {debugShowLayoutBorders && (

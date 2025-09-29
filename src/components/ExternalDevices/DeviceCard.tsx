@@ -20,6 +20,7 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({ device }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(device.name);
   const Icon = deviceIcons[device.type];
+  const debugShowLayoutBorders = useCameraStore((s: any) => s.debugShowLayoutBorders ?? false);
 
   const handleSaveName = () => {
     updateDevice(device.id, { name: editName });
@@ -27,7 +28,10 @@ export const DeviceCard: React.FC<DeviceCardProps> = ({ device }) => {
   };
 
   return (
-    <div className="card p-3 hover:shadow-xl transition-shadow">
+    <div className={`card p-3 hover:shadow-xl transition-shadow relative ${debugShowLayoutBorders ? 'debug' : ''}`}>
+      {debugShowLayoutBorders && (
+        <span className="absolute -top-3 -left-3 bg-orange-600 text-white text-[10px] px-1.5 py-0.5 rounded">DEVICE</span>
+      )}
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-2">
           <Icon className="w-5 h-5 text-primary-400" />
