@@ -5,6 +5,7 @@ import { ISPCard } from './ISPCard';
 
 export const ISPPanel: React.FC = () => {
   const { ispConfigs, viewMode } = useCameraStore();
+  const debugShowLayoutBorders = useCameraStore((s: any) => s.debugShowLayoutBorders ?? false);
 
   const filteredISPs = ispConfigs.filter(isp => {
     if (viewMode === 'unified') return true;
@@ -14,7 +15,10 @@ export const ISPPanel: React.FC = () => {
   });
 
   return (
-    <div className="bg-gray-850 rounded-lg p-4">
+    <div className={`bg-gray-850 rounded-lg p-4 relative ${debugShowLayoutBorders ? 'debug' : ''}`}>
+      {debugShowLayoutBorders && (
+        <span className="absolute -top-3 -left-3 bg-yellow-600 text-white text-[10px] px-1.5 py-0.5 rounded">ISP-PANEL</span>
+      )}
       <div className="flex items-center gap-2 mb-4">
         <Aperture className="w-5 h-5 text-primary-400" />
         <h2 className="text-lg font-semibold">ISP Configuration</h2>

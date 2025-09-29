@@ -15,6 +15,7 @@ const deviceTypes: Array<{ type: DeviceType; label: string; icon: React.ReactNod
 export const DevicePanel: React.FC = () => {
   const { devices, addDevice } = useCameraStore();
   const [showAddMenu, setShowAddMenu] = useState(false);
+  const debugShowLayoutBorders = useCameraStore((s: any) => s.debugShowLayoutBorders ?? false);
 
   const handleAddDevice = (type: DeviceType) => {
     const newDevice: Device = {
@@ -29,7 +30,10 @@ export const DevicePanel: React.FC = () => {
   };
 
   return (
-    <div className="w-80 bg-gray-850 border-r border-gray-700 flex flex-col h-full">
+    <div className={clsx('w-80 bg-gray-850 border-r border-gray-700 flex flex-col h-full relative', debugShowLayoutBorders && 'debug')}>
+      {debugShowLayoutBorders && (
+        <span className="absolute -top-3 -left-3 bg-cyan-600 text-white text-[10px] px-1.5 py-0.5 rounded">DEV-PANEL</span>
+      )}
       <div className="p-4 border-b border-gray-700">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-semibold text-gray-100">External Devices</h2>

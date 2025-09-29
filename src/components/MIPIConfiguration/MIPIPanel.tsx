@@ -5,6 +5,7 @@ import { MIPIChannelCard } from './MIPIChannelCard';
 
 export const MIPIPanel: React.FC = () => {
   const { mipiChannels, viewMode } = useCameraStore();
+  const debugShowLayoutBorders = useCameraStore((s: any) => s.debugShowLayoutBorders ?? false);
 
   const filteredChannels = mipiChannels.filter(channel => {
     if (viewMode === 'unified') return true;
@@ -14,7 +15,10 @@ export const MIPIPanel: React.FC = () => {
   });
 
   return (
-    <div className="bg-gray-850 rounded-lg p-4">
+    <div className={`bg-gray-850 rounded-lg p-4 relative ${debugShowLayoutBorders ? 'debug' : ''}`}>
+      {debugShowLayoutBorders && (
+        <span className="absolute -top-3 -left-3 bg-green-600 text-white text-[10px] px-1.5 py-0.5 rounded">MIPI-PANEL</span>
+      )}
       <div className="flex items-center gap-2 mb-4">
         <Activity className="w-5 h-5 text-primary-400" />
         <h2 className="text-lg font-semibold">MIPI CSI-2 Configuration</h2>

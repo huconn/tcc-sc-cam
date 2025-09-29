@@ -9,6 +9,7 @@ interface MIPIChannelCardProps {
 
 export const MIPIChannelCard: React.FC<MIPIChannelCardProps> = ({ channel }) => {
   const { updateMIPIChannel, viewMode } = useCameraStore();
+  const debugShowLayoutBorders = useCameraStore((s: any) => s.debugShowLayoutBorders ?? false);
 
   const handleCoreChange = (core: 'main' | 'sub' | 'none') => {
     updateMIPIChannel(channel.id, { core, enabled: core !== 'none' });
@@ -20,9 +21,13 @@ export const MIPIChannelCard: React.FC<MIPIChannelCardProps> = ({ channel }) => 
 
   return (
     <div className={clsx(
-      'card p-4',
-      channel.enabled && 'border-primary-500'
+      'card p-4 relative',
+      channel.enabled && 'border-primary-500',
+      debugShowLayoutBorders && 'debug'
     )}>
+      {debugShowLayoutBorders && (
+        <span className="absolute -top-3 -left-3 bg-green-700 text-white text-[10px] px-1.5 py-0.5 rounded">MIPI</span>
+      )}
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-semibold text-base">{channel.name}</h3>
         <div className="flex items-center gap-3">

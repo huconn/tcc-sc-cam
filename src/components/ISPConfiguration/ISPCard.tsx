@@ -16,6 +16,7 @@ const cfaOptions = [
 
 export const ISPCard: React.FC<ISPCardProps> = ({ isp }) => {
   const { updateISPConfig, viewMode } = useCameraStore();
+  const debugShowLayoutBorders = useCameraStore((s: any) => s.debugShowLayoutBorders ?? false);
 
   const handleCoreChange = (core: 'main' | 'sub' | 'none') => {
     updateISPConfig(isp.id, { core, enabled: core !== 'none' });
@@ -28,9 +29,13 @@ export const ISPCard: React.FC<ISPCardProps> = ({ isp }) => {
 
   return (
     <div className={clsx(
-      'card p-3',
-      isp.enabled && 'border-primary-500'
+      'card p-3 relative',
+      isp.enabled && 'border-primary-500',
+      debugShowLayoutBorders && 'debug'
     )}>
+      {debugShowLayoutBorders && (
+        <span className="absolute -top-3 -left-3 bg-yellow-700 text-white text-[10px] px-1.5 py-0.5 rounded">ISP</span>
+      )}
       <div className="flex items-center justify-between mb-2">
         <h3 className="font-semibold text-sm">{isp.name}</h3>
         <div className={clsx(

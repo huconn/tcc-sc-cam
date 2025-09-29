@@ -8,6 +8,7 @@ import clsx from 'clsx';
 
 export const OverviewPage: React.FC = () => {
   const { externalDevices, setExternalDevices, viewMode, setViewMode } = useCameraStore();
+  const debugShowLayoutBorders = useCameraStore((s: any) => s.debugShowLayoutBorders ?? false);
   const [selectedDevices, setSelectedDevices] = useState<{
     mipi0: string[];
     mipi1: string[];
@@ -61,9 +62,15 @@ export const OverviewPage: React.FC = () => {
 
 
   return (
-    <div className="flex flex-col h-full bg-gray-900">
+    <div className={`flex flex-col h-full bg-gray-900 relative ${debugShowLayoutBorders ? 'debug' : ''}`}>
+      {debugShowLayoutBorders && (
+        <span className="absolute -top-3 -left-3 bg-gray-600 text-white text-[10px] px-1.5 py-0.5 rounded">OVERVIEW</span>
+      )}
       {/* Header */}
-      <div className="bg-gray-800 border-b border-gray-700 p-4">
+      <div className={`bg-gray-800 border-b border-gray-700 p-4 relative ${debugShowLayoutBorders ? 'debug' : ''}`}>
+        {debugShowLayoutBorders && (
+          <span className="absolute -top-3 -left-3 bg-gray-700 text-white text-[10px] px-1.5 py-0.5 rounded">OVR-HDR</span>
+        )}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
             <Camera className="w-6 h-6 text-primary-500" />
@@ -93,7 +100,10 @@ export const OverviewPage: React.FC = () => {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-6">
+      <div className={`flex-1 overflow-auto p-6 relative ${debugShowLayoutBorders ? 'debug' : ''}`}>
+        {debugShowLayoutBorders && (
+          <span className="absolute -top-3 -left-3 bg-gray-700 text-white text-[10px] px-1.5 py-0.5 rounded">OVR-CNT</span>
+        )}
         <MainCoreViewHorizontal
           selectedDevices={selectedDevices}
           externalDevices={externalDevices}
