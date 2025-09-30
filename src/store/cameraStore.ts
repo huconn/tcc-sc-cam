@@ -31,12 +31,9 @@ interface CameraStore extends CameraConfiguration {
   updateMDWConfig: (updates: Partial<MDWConfig>) => void;
   loadConfiguration: (config: CameraConfiguration) => void;
   exportConfiguration: () => CameraConfiguration;
-  // DTS map loaded from DTB→DTS→JSON
-  dtsMap?: DtsMap;
-  setDtsMap?: (map: DtsMap | undefined) => void;
-  // Canonical DTS captured from input (if available)
-  loadedDtsText?: string;
-  setLoadedDtsText?: (text?: string) => void;
+  // 원본 DTS map (전체 데이터, 읽기 전용)
+  originalDtsMap?: DtsMap;
+  setOriginalDtsMap?: (map: DtsMap | undefined) => void;
   // I2C selections for MIPI blocks
   i2cMain?: number;
   i2cSub?: number;
@@ -59,6 +56,8 @@ const initialState: CameraConfiguration = {
     mipi0: [],
     mipi1: []
   },
+  i2cMain: 12,
+  i2cSub: 13,
   mipiChannels: [
     {
       id: 'mipi0',
@@ -128,10 +127,7 @@ const initialState: CameraConfiguration = {
 
 export const useCameraStore = create<CameraStore>((set) => ({
   ...initialState,
-  i2cMain: 12,
-  i2cSub: 13,
-  dtsMap: undefined,
-  loadedDtsText: undefined,
+  originalDtsMap: undefined,
 
   // for debugging  ================================================
   // MainCoreViewHorizontal: force OUT->SVDW/Video lines horizontal
@@ -220,6 +216,9 @@ export const useCameraStore = create<CameraStore>((set) => ({
       viewMode: state.viewMode,
       devices: state.devices,
       connections: state.connections,
+      externalDevices: state.externalDevices,
+      i2cMain: state.i2cMain,
+      i2cSub: state.i2cSub,
       mipiChannels: state.mipiChannels,
       ispConfigs: state.ispConfigs,
       cameraMux: state.cameraMux,
@@ -230,8 +229,7 @@ export const useCameraStore = create<CameraStore>((set) => ({
     };
   },
 
-  setDtsMap: (map) => set({ dtsMap: map }),
-  setLoadedDtsText: (text) => set({ loadedDtsText: text }),
+  setOriginalDtsMap: (map) => set({ originalDtsMap: map }),
 
   setI2cMain: (n) => set({ i2cMain: n }),
   setI2cSub: (n) => set({ i2cSub: n }),

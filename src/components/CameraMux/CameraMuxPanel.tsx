@@ -1,11 +1,16 @@
 import React from 'react';
 import { GitBranch, ArrowRight } from 'lucide-react';
 import { useCameraStore } from '@/store/cameraStore';
+import { CameraController } from '@/controllers/CameraController';
 import clsx from 'clsx';
 
 export const CameraMuxPanel: React.FC = () => {
-  const { cameraMux, updateCameraMux, mipiChannels, ispConfigs } = useCameraStore();
   const debugShowLayoutBorders = useCameraStore((s: any) => s.debugShowLayoutBorders ?? false);
+  
+  // ✅ Store를 구독하여 자동 리렌더링
+  const cameraMux = useCameraStore(s => s.cameraMux);
+  const mipiChannels = useCameraStore(s => s.mipiChannels);
+  const ispConfigs = useCameraStore(s => s.ispConfigs);
 
   const availableInputs = [
     ...mipiChannels.filter(m => m.enabled).map(m => ({
@@ -30,7 +35,13 @@ export const CameraMuxPanel: React.FC = () => {
     if (input && input !== 'none') {
       newMappings.push({ input, output });
     }
-    updateCameraMux({ mappings: newMappings });
+    
+    const result = CameraController.updateCameraMux({ mappings: newMappings });
+    
+    if (!result.isValid) {
+      console.error('Validation failed:', result.errors);
+      alert(`Failed to update camera mux: ${result.errors[0]?.message}`);
+    }
   };
 
   const getInputForOutput = (output: string) => {

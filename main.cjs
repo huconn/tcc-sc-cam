@@ -109,7 +109,6 @@ ipcMain.handle('convert-dtb', async (_evt, inputPathOptional) => {
     // If JSON selected, read and return directly
     const ext = path.extname(inputPath).toLowerCase()
     let jsonText
-    let dtsTextForSave = ''
     if (ext === '.json') {
       jsonText = fs.readFileSync(inputPath, 'utf-8')
     } else {
@@ -117,23 +116,11 @@ ipcMain.handle('convert-dtb', async (_evt, inputPathOptional) => {
       const dtcCandidatePacked = path.join(process.resourcesPath || process.cwd(), 'tools', 'DTC.exe')
       const dtcPath = process.env.DTC_PATH || (require('fs').existsSync(dtcCandidatePacked) ? dtcCandidatePacked : undefined)
       const dtc = dtcPath || 'dtc'
-      // If input is DTS, read it directly for saving later
-      if (ext === '.dts') {
-        dtsTextForSave = fs.readFileSync(inputPath, 'utf-8')
-      }
       jsonText = convertDtbToJson(dtc, inputPath)
-      // If it was DTB, convert to DTS explicitly for saving later
-      if (ext === '.dtb') {
-        const { spawnSync } = require('node:child_process')
-        const resDts = spawnSync(dtc, ['-I', 'dtb', '-O', 'dts', inputPath], { stdio: 'pipe', encoding: 'utf-8' })
-        if (resDts.status === 0) {
-          dtsTextForSave = resDts.stdout
-        }
-      }
     }
     fs.writeFileSync(outPath, jsonText, 'utf-8')
 
-    return { canceled: false, inputPath, outPath, jsonText, dtsText: dtsTextForSave }
+    return { canceled: false, inputPath, outPath, jsonText }
   } catch (e) {
     return { error: String(e.message || e) }
   }

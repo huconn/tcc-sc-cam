@@ -1,6 +1,7 @@
 import React from 'react';
 import { ISPConfig } from '@/types/camera';
 import { useCameraStore } from '@/store/cameraStore';
+import { CameraController } from '@/controllers/CameraController';
 import clsx from 'clsx';
 
 interface ISPCardProps {
@@ -15,11 +16,16 @@ const cfaOptions = [
 ];
 
 export const ISPCard: React.FC<ISPCardProps> = ({ isp }) => {
-  const { updateISPConfig, viewMode } = useCameraStore();
+  const viewMode = useCameraStore(s => s.viewMode);
   const debugShowLayoutBorders = useCameraStore((s: any) => s.debugShowLayoutBorders ?? false);
 
   const handleCoreChange = (core: 'main' | 'sub' | 'none') => {
-    updateISPConfig(isp.id, { core, enabled: core !== 'none' });
+    const result = CameraController.updateISPConfig(isp.id, { core, enabled: core !== 'none' });
+    
+    if (!result.isValid) {
+      console.error('Validation failed:', result.errors);
+      alert(`Failed to update ISP config: ${result.errors[0]?.message}`);
+    }
   };
 
   const isEditable = viewMode !== 'unified';
@@ -78,7 +84,12 @@ export const ISPCard: React.FC<ISPCardProps> = ({ isp }) => {
               <label className="block text-xs text-gray-400 mb-1">CFA</label>
               <select
                 value={isp.cfa}
-                onChange={(e) => updateISPConfig(isp.id, { cfa: parseInt(e.target.value) as 0 | 1 | 2 | 3 })}
+                onChange={(e) => {
+                  const result = CameraController.updateISPConfig(isp.id, { cfa: parseInt(e.target.value) as 0 | 1 | 2 | 3 });
+                  if (!result.isValid) {
+                    alert(`Failed to update CFA: ${result.errors[0]?.message}`);
+                  }
+                }}
                 className="input text-xs w-full"
               >
                 {cfaOptions.map(opt => (
@@ -98,7 +109,12 @@ export const ISPCard: React.FC<ISPCardProps> = ({ isp }) => {
               <input
                 type="checkbox"
                 checked={isp.memorySharing}
-                onChange={(e) => updateISPConfig(isp.id, { memorySharing: e.target.checked })}
+                onChange={(e) => {
+                  const result = CameraController.updateISPConfig(isp.id, { memorySharing: e.target.checked });
+                  if (!result.isValid) {
+                    alert(`Failed to update memory sharing: ${result.errors[0]?.message}`);
+                  }
+                }}
                 className="w-3 h-3 text-primary-600 bg-gray-800 border-gray-600 rounded"
               />
               <span>Memory Sharing</span>
@@ -108,7 +124,12 @@ export const ISPCard: React.FC<ISPCardProps> = ({ isp }) => {
               <input
                 type="checkbox"
                 checked={isp.bypassMode}
-                onChange={(e) => updateISPConfig(isp.id, { bypassMode: e.target.checked })}
+                onChange={(e) => {
+                  const result = CameraController.updateISPConfig(isp.id, { bypassMode: e.target.checked });
+                  if (!result.isValid) {
+                    alert(`Failed to update bypass mode: ${result.errors[0]?.message}`);
+                  }
+                }}
                 className="w-3 h-3 text-primary-600 bg-gray-800 border-gray-600 rounded"
               />
               <span>Bypass Mode</span>

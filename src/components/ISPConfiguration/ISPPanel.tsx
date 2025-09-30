@@ -1,11 +1,15 @@
 import React from 'react';
 import { Aperture } from 'lucide-react';
 import { useCameraStore } from '@/store/cameraStore';
+import { CameraController } from '@/controllers/CameraController';
 import { ISPCard } from './ISPCard';
 
 export const ISPPanel: React.FC = () => {
-  const { ispConfigs, viewMode } = useCameraStore();
+  const viewMode = useCameraStore(s => s.viewMode);
   const debugShowLayoutBorders = useCameraStore((s: any) => s.debugShowLayoutBorders ?? false);
+  
+  // ✅ Store를 구독하여 자동 리렌더링
+  const ispConfigs = useCameraStore(s => s.ispConfigs);
 
   const filteredISPs = ispConfigs.filter(isp => {
     if (viewMode === 'unified') return true;

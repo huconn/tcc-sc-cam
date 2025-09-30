@@ -4,10 +4,10 @@ import { OverviewPage } from '@/components/Overview/OverviewPage';
 import { DtsMapPanel } from '@/components/Overview/DtsMapPanel';
 import { useCameraStore } from '@/store/cameraStore';
 import { DTSGenerator } from '@/utils/dtsGenerator';
-import { dtsMapToDts } from '@/utils/dtsSerialize';
+import { DtsController } from '@/controllers/DtsController';
 
 export const App: React.FC = () => {
-  const { exportConfiguration, loadConfiguration, setDtsMap, setLoadedDtsText } = useCameraStore();
+  const { exportConfiguration, loadConfiguration, setOriginalDtsMap } = useCameraStore();
   const debugShowDtsMap = useCameraStore((s: any) => s.debugShowDtsMap as boolean);
   const debugShowResolution = useCameraStore((s: any) => s.debugShowResolution as boolean);
   const webLoadInputRef = useRef<HTMLInputElement | null>(null);
@@ -103,76 +103,48 @@ export const App: React.FC = () => {
   };
 
   const handleSaveConfig = async () => {
-    const electronAPI = (window as any).electronAPI;
     const state = useCameraStore.getState();
-    const { dtsMap, loadedDtsText } = state as any;
-    if (!dtsMap && !loadedDtsText) {
+    const { originalDtsMap } = state as any;
+    
+    if (!originalDtsMap) {
       alert('No DTS map loaded. Load DTB/DTS/JSON first.');
       return;
     }
+    
     try {
-      const dtsText = loadedDtsText || dtsMapToDts(dtsMap as any);
-      if (isElectronApp && electronAPI?.saveDtsDtb) {
-        const res = await electronAPI.saveDtsDtb(dtsText);
-        if (res?.error) {
-          console.error(res.error);
-          alert('Failed to save DTS/DTB.');
-        } else if (!res?.canceled) {
-          alert(`Saved:\nDTS: ${res.dtsPath}\nDTB: ${res.dtbPath}`);
-        }
+      const cameraConfig = state.exportConfiguration();
+      
+      if (isElectronApp) {
+        // Electron: Save DTS/DTB files
+        const result = await DtsController.saveCameraConfig(originalDtsMap, cameraConfig);
+        alert(`Saved:\nDTS: ${result.dtsPath}\nDTB: ${result.dtbPath}`);
       } else {
-        // Web fallback: download only DTS
-        const blob = new Blob([dtsText], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'output.dts';
-        link.click();
+        // Web: Download DTS file
+        DtsController.downloadCameraConfig(originalDtsMap, cameraConfig);
       }
-    } catch (e) {
-      console.error(e);
-      alert('Unexpected error while generating DTS.');
+    } catch (error) {
+      console.error(error);
+      alert(`Failed to save: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
   const handleLoadDTB = async () => {
-    const electronAPI = (window as any).electronAPI;
     // Web: only allow loading DTS/JSON into dtsMap
-    if (!isElectronApp || !electronAPI?.convertDTB) {
-      // Clear previous map before loading new
-      setDtsMap?.(undefined);
-      setLoadedDtsText?.(undefined);
+    if (!isElectronApp) {
+      setOriginalDtsMap?.(undefined);
       webLoadInputRef.current?.click();
       return;
     }
+    
     // Electron: allow DTB/DTS/JSON
     try {
-      // Clear previous map before loading new
-      setDtsMap?.(undefined);
-      setLoadedDtsText?.(undefined);
-      const res = await electronAPI.convertDTB();
-      if (res?.error) {
-        console.error(res.error);
-        alert('Failed to load/convert file. See console for details.');
-        return;
-      }
-      if (res?.canceled) return;
-      if (res?.jsonText && setDtsMap) {
-        try {
-          const dataMap = JSON.parse(res.jsonText);
-          setDtsMap(dataMap);
-        } catch (e) {
-          console.error('Failed to parse returned JSON text', e);
-        }
-      }
-      if (res?.dtsText && setLoadedDtsText) {
-        setLoadedDtsText(res.dtsText);
-      } else {
-        setLoadedDtsText?.(undefined);
-      }
-    } catch (e) {
-      console.error(e);
-      alert('Unexpected error while loading file.');
+      setOriginalDtsMap?.(undefined);
+      const { originalDtsMap, cameraConfig } = await DtsController.loadDtbAndExtractCamera();
+      setOriginalDtsMap?.(originalDtsMap);
+      loadConfiguration(cameraConfig);
+    } catch (error) {
+      console.error(error);
+      alert(`Failed to load DTB: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 

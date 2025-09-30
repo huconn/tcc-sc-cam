@@ -4,9 +4,13 @@ function indent(depth: number): string {
   return '\t'.repeat(depth)
 }
 
-function serializeProps(props: Record<string, unknown> | undefined, depth: number, out: string[]): void {
+function serializeProps(props: Record<string, unknown> | undefined, propsOrder: any[] | undefined, depth: number, out: string[]): void {
   if (!props) return
-  for (const key of Object.keys(props)) {
+  
+  // 🔥 propsOrder가 있으면 순서대로, 없으면 Object.keys() 사용
+  const keys = propsOrder ? propsOrder.map(p => p.key) : Object.keys(props)
+  
+  for (const key of keys) {
     const val = props[key]
     if (val === true) {
       out.push(`${indent(depth)}${key};`)
@@ -28,13 +32,13 @@ function serializeProps(props: Record<string, unknown> | undefined, depth: numbe
 function serializeNode(node: DtsNode, depth: number, out: string[]): void {
   if (node.name === '/') {
     out.push('/ {')
-    serializeProps(node.props as any, depth + 1, out)
+    serializeProps(node.props as any, (node as any).propsOrder, depth + 1, out)  // 🔥 순서 보존
     if (node.children) for (const ch of node.children) serializeNode(ch, depth + 1, out)
     out.push('};')
     return
   }
   out.push(`${indent(depth)}${node.name} {`)
-  serializeProps(node.props as any, depth + 1, out)
+  serializeProps(node.props as any, (node as any).propsOrder, depth + 1, out)  // 🔥 순서 보존
   if (node.children) for (const ch of node.children) serializeNode(ch, depth + 1, out)
   out.push(`${indent(depth)}};`)
 }

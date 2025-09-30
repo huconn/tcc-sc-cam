@@ -1,6 +1,7 @@
 import React from 'react';
 import { MIPIChannel } from '@/types/camera';
 import { useCameraStore } from '@/store/cameraStore';
+import { CameraController } from '@/controllers/CameraController';
 import clsx from 'clsx';
 
 interface MIPIChannelCardProps {
@@ -8,11 +9,16 @@ interface MIPIChannelCardProps {
 }
 
 export const MIPIChannelCard: React.FC<MIPIChannelCardProps> = ({ channel }) => {
-  const { updateMIPIChannel, viewMode } = useCameraStore();
+  const viewMode = useCameraStore(s => s.viewMode);
   const debugShowLayoutBorders = useCameraStore((s: any) => s.debugShowLayoutBorders ?? false);
 
   const handleCoreChange = (core: 'main' | 'sub' | 'none') => {
-    updateMIPIChannel(channel.id, { core, enabled: core !== 'none' });
+    const result = CameraController.updateMIPIChannel(channel.id, { core, enabled: core !== 'none' });
+    
+    if (!result.isValid) {
+      console.error('Validation failed:', result.errors);
+      alert(`Failed to update MIPI channel: ${result.errors[0]?.message}`);
+    }
   };
 
   const isEditable = viewMode !== 'unified';

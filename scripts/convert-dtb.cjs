@@ -72,6 +72,7 @@ function parseDts(text) {
 
   function parsePropsAndChildren() {
     const props = {}
+    const propsOrder = []  // 🔥 순서 보존용 배열
     const children = []
     while (i < tokens.length) {
       const t = peek()
@@ -94,10 +95,10 @@ function parseDts(text) {
           fullName += next()
         }
         if (next() !== '{') throw new Error('Expected { for node')
-        const { props: cprops, children: cchildren } = parsePropsAndChildren()
+        const { props: cprops, propsOrder: cpropsOrder, children: cchildren } = parsePropsAndChildren()
         // optional trailing ; after node block
         if (peek() === ';') next()
-        children.push({ path: '', name: fullName, label, props: cprops, children: cchildren })
+        children.push({ path: '', name: fullName, label, props: cprops, propsOrder: cpropsOrder, children: cchildren })
         continue
       }
       // property
@@ -106,25 +107,28 @@ function parseDts(text) {
         const val = parseValueList()
         if (peek() === ';') next()
         props[nameTok] = val
+        propsOrder.push({ key: nameTok, value: val })  // 🔥 순서 보존
       } else if (peek() === ';') {
         next()
         props[nameTok] = true
+        propsOrder.push({ key: nameTok, value: true })  // 🔥 순서 보존
       } else {
         // Unexpected token; try to recover
         if (peek() === '{') { next(); parsePropsAndChildren(); if (peek() === ';') next() }
       }
     }
-    return { props, children }
+    return { props, propsOrder, children }
   }
 
   // root wrapper
-  const root = { path: '/', name: '/', props: {}, children: [] }
+  const root = { path: '/', name: '/', props: {}, propsOrder: [], children: [] }
   while (i < tokens.length) {
     const t = next()
     if (t === '/') {
       if (next() !== '{') break
-      const { props, children } = parsePropsAndChildren()
+      const { props, propsOrder, children } = parsePropsAndChildren()
       root.props = props
+      root.propsOrder = propsOrder  // 🔥 순서 보존
       root.children = children
       break
     }
@@ -145,7 +149,16 @@ function parseDts(text) {
 
   // flatten
   const nodes = []
-  function collect(n) { nodes.push({ path: n.path, name: n.name, props: n.props, children: n.children?.map(c=>({ path: c.path, name: c.name })) }); if (n.children) n.children.forEach(collect) }
+  function collect(n) { 
+    nodes.push({ 
+      path: n.path, 
+      name: n.name, 
+      props: n.props, 
+      propsOrder: n.propsOrder,  // 🔥 순서 보존
+      children: n.children?.map(c=>({ path: c.path, name: c.name })) 
+    }); 
+    if (n.children) n.children.forEach(collect) 
+  }
   collect(root)
   const byPath = {}
   nodes.forEach((n, idx) => { byPath[n.path] = idx })
