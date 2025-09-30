@@ -6,6 +6,9 @@ let mainWindow = null
 const isDev = process.env.NODE_ENV === 'development'
 
 const createWindow = () => {
+  const devTools = true;           // 최상위 조건: DevTools 기능 활성화 여부 (F12, Ctrl+Shift+I)
+  const enableDevTools = true;     // 하위 조건: 로딩 시 콘솔 자동 열기 여부
+  
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -15,29 +18,31 @@ const createWindow = () => {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
-      // 프로덕션에서는 개발자 도구 비활성화 / 불필요한 네트워크 사용 최소화
-      devTools: isDev,
+      devTools: devTools,  // true: F12, Ctrl+Shift+I 작동 | false: 완전 비활성화
       spellcheck: false
     },
     icon: path.join(__dirname, 'assets/telechips.ico'),
     titleBarStyle: 'default',
-    autoHideMenuBar: true
+    autoHideMenuBar: true  // 항상 메뉴 숨김
   })
 
   // 창이 준비되면 표시
   mainWindow.once('ready-to-show', () => {
     try { mainWindow.maximize() } catch {}
     mainWindow.show()
+    
+    // devTools가 true이고 enableDevTools가 true면 자동으로 DevTools 열기
+    if (devTools && enableDevTools) {
+      mainWindow.webContents.openDevTools()
+    }
   })
 
   // In development, load from Vite dev server
   if (isDev) {
     mainWindow.loadURL('http://localhost:5175')
-    mainWindow.webContents.openDevTools()
   } else {
     // In production, load the built files
     mainWindow.loadFile(path.join(__dirname, 'dist/index.html'))
-    // 프로덕션에서는 개발자 도구를 열지 않음
   }
 
   mainWindow.on('closed', () => {

@@ -7,7 +7,7 @@ import clsx from 'clsx';
 export const CameraMuxPanel: React.FC = () => {
   const debugShowLayoutBorders = useCameraStore((s: any) => s.debugShowLayoutBorders ?? false);
   
-  // ✅ Store를 구독하여 자동 리렌더링
+  // Store를 구독하여 자동 리렌더링
   const cameraMux = useCameraStore(s => s.cameraMux);
   const mipiChannels = useCameraStore(s => s.mipiChannels);
   const ispConfigs = useCameraStore(s => s.ispConfigs);

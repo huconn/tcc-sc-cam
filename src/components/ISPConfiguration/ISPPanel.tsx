@@ -8,7 +8,7 @@ export const ISPPanel: React.FC = () => {
   const viewMode = useCameraStore(s => s.viewMode);
   const debugShowLayoutBorders = useCameraStore((s: any) => s.debugShowLayoutBorders ?? false);
   
-  // ✅ Store를 구독하여 자동 리렌더링
+  // Store를 구독하여 자동 리렌더링
   const ispConfigs = useCameraStore(s => s.ispConfigs);
 
   const filteredISPs = ispConfigs.filter(isp => {

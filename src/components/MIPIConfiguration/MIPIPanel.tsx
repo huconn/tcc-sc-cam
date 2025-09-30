@@ -8,8 +8,7 @@ export const MIPIPanel: React.FC = () => {
   const viewMode = useCameraStore(s => s.viewMode);
   const debugShowLayoutBorders = useCameraStore((s: any) => s.debugShowLayoutBorders ?? false);
   
-  // ✅ Controller를 통해 데이터 가져오기 + 자동 리렌더링
-  // Store를 구독하면서 Controller를 통해 데이터 가져오기
+  // Store를 구독하여 자동 리렌더링
   const mipiChannels = useCameraStore(s => s.mipiChannels);
 
   const filteredChannels = mipiChannels.filter(channel => {

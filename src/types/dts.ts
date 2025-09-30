@@ -11,7 +11,7 @@ export interface DtsNode {
   path: string
   name: string
   props?: DtsNodePropertyMap
-  propsOrder?: DtsNodeProperty[]  // 🔥 순서 보존용
+  propsOrder?: DtsNodeProperty[]  // 순서 보존용
   children?: DtsNode[]
 }
 
