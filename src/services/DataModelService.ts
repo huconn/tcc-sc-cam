@@ -2,25 +2,70 @@ import type { DtsMap, DtsNode } from '@/types/dts';
 import type { CameraConfiguration } from '@/types/camera';
 import { NodeMappingRules } from './NodeMappingRules';
 
+interface CameraMappingRules {
+  version: string;
+  socType: string;
+  module: string;
+  description: string;
+  nodeMappings: any;
+}
+
 /**
  * 데이터 모델 서비스
  * JSON과 카메라 데이터의 역할을 명확히 정의
  */
 export class DataModelService {
+  private static cameraMappingCache: Map<string, CameraMappingRules> = new Map();
+
+  /**
+   * Camera Mapping 파일 로드
+   */
+  static async loadCameraMapping(socType: string): Promise<CameraMappingRules> {
+    // 캐시 확인
+    if (this.cameraMappingCache.has(socType)) {
+      return this.cameraMappingCache.get(socType)!;
+    }
+
+    try {
+      const path = `/config/${socType}/camera-mapping.json`;
+      const response = await fetch(path);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to load camera mapping for ${socType}: ${response.statusText}`);
+      }
+      
+      const mappingRules: CameraMappingRules = await response.json();
+      
+      // 검증
+      if (mappingRules.socType !== socType) {
+        console.warn(`SoC type mismatch: expected ${socType}, got ${mappingRules.socType}`);
+      }
+      
+      // 캐시 저장
+      this.cameraMappingCache.set(socType, mappingRules);
+      console.log(`Camera mapping loaded for ${socType}`, mappingRules);
+      
+      return mappingRules;
+    } catch (error) {
+      console.error(`Failed to load camera mapping for ${socType}:`, error);
+      throw error;
+    }
+  }
+
   /**
    * 원본 JSON에서 CameraConfiguration 추출 (핵심 기능)
    * 
-   * 노드 매핑 규칙:
-   * - MIPI: path에 'mipi' && 'csi' 포함
-   * - ISP: path에 'isp' 포함 (display 제외)
-   * - I2C: path에 'i2c@' 포함
-   * - External Device: I2C 노드의 자식 노드 중 compatible에 센서/직렬화기 키워드 포함
-   * - SVDW: path에 'svdw' 포함
-   * - VWDMA: path에 'vwdma' 포함
-   * - CIED: path에 'cied' 포함
-   * - MDW: path에 'mdw' 포함
+   * @param originalJson - DTS JSON 맵
+   * @param socType - SoC 타입 (tcc807x, tcc805x 등)
+   * 
+   * 노드 매핑 규칙은 camera-mapping.json에서 로드
    */
-  static extractCameraConfig(originalJson: DtsMap): CameraConfiguration {
+  static async extractCameraConfig(originalJson: DtsMap, socType: string): Promise<CameraConfiguration> {
+    // 매핑 파일 로드
+    await this.loadCameraMapping(socType);
+    console.log(`Extracting camera config using mapping rules for ${socType}`);
+    
+    // 기존 로직은 그대로 유지 (추후 동적 매핑 적용 예정)
     const config: CameraConfiguration = {
       viewMode: 'unified',
       devices: [],
@@ -360,7 +405,7 @@ export class DataModelService {
   /**
    * Ports 파싱
    */
-  private static parsePortsFromNode(node: DtsNode): any[] {
+  private static parsePortsFromNode(_node: DtsNode): any[] {
     // TODO: children에서 ports 노드를 찾아서 파싱
     // 현재는 간단히 빈 배열 반환
     return [];

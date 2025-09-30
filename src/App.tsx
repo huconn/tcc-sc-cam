@@ -11,11 +11,17 @@ export const App: React.FC = () => {
   const { exportConfiguration, loadConfiguration, setOriginalDtsMap } = useCameraStore();
   const debugShowDtsMap = useCameraStore((s: any) => s.debugShowDtsMap as boolean);
   const debugShowResolution = useCameraStore((s: any) => s.debugShowResolution as boolean);
+  const debugShowConfigurationSelector = useCameraStore((s: any) => s.debugShowConfigurationSelector as boolean);
   const webLoadInputRef = useRef<HTMLInputElement | null>(null);
   const [appVersion, setAppVersion] = useState<string>('');
-  const [currentSoc, setCurrentSoc] = useState<string>('');  // 선택된 SoC
-  const [currentModule, setCurrentModule] = useState<string>('');  // 선택된 모듈
-  const [showSelector, setShowSelector] = useState<boolean>(true);  // Configuration Selector 표시
+  // localStorage에서 이전 선택 복원 (새로고침 시 유지)
+  const [currentSoc, setCurrentSoc] = useState<string>(() => {
+    return localStorage.getItem('selectedSoc') || '';
+  });
+  const [currentModule, setCurrentModule] = useState<string>(() => {
+    return localStorage.getItem('selectedModule') || '';
+  });
+  const [showSelector, setShowSelector] = useState<boolean>(false);  // Configuration Selector 표시 (초기값 false)
   const [isElectronApp, setIsElectronApp] = useState<boolean>(() => {
     const w: any = window as any;
     const ua = navigator.userAgent || '';
@@ -55,6 +61,50 @@ export const App: React.FC = () => {
 
     getVersion();
   }, []);
+
+  // Electron 환경에서는 main.cjs의 'close' 이벤트에서 localStorage 정리
+  // 브라우저 환경에서는 localStorage 유지 (개발용)
+
+  // Auto-load default SoC/Module if selector is disabled
+  useEffect(() => {
+    const autoLoadDefault = async () => {
+      if (!debugShowConfigurationSelector && !currentSoc && !currentModule) {
+        try {
+          // Load soc-profiles.json
+          const response = await fetch('/config/soc-profiles.json');
+          const profiles = await response.json();
+          
+          // Find first enabled SoC
+          const firstEnabledSoc = Object.entries(profiles.profiles).find(
+            ([_, profile]: [string, any]) => profile.enabled
+          );
+          
+          if (firstEnabledSoc) {
+            const [socKey, socProfile] = firstEnabledSoc as [string, any];
+            
+            // Find first enabled module
+            const firstEnabledModule = Object.entries(socProfile.modules).find(
+              ([_, module]: [string, any]) => module.enabled
+            );
+            
+            if (firstEnabledModule) {
+              const [moduleKey] = firstEnabledModule;
+              console.log(`Auto-loading: ${socKey} / ${moduleKey}`);
+              setCurrentSoc(socKey);
+              setCurrentModule(moduleKey);
+              // localStorage에도 저장 (세션 유지)
+              localStorage.setItem('selectedSoc', socKey);
+              localStorage.setItem('selectedModule', moduleKey);
+            }
+          }
+        } catch (error) {
+          console.error('Failed to auto-load default SoC/Module:', error);
+        }
+      }
+    };
+    
+    autoLoadDefault();
+  }, [debugShowConfigurationSelector, currentSoc, currentModule]);
 
   // Update browser info (resolution, scale, device pixel ratio)
   useEffect(() => {
@@ -143,9 +193,10 @@ export const App: React.FC = () => {
     // Electron: allow DTB/DTS/JSON
     try {
       setOriginalDtsMap?.(undefined);
-      const { originalDtsMap, cameraConfig } = await DtsController.loadDtbAndExtractCamera();
+      const { originalDtsMap, cameraConfig, socType } = await DtsController.loadDtbAndExtractCamera();
       setOriginalDtsMap?.(originalDtsMap);
       loadConfiguration(cameraConfig);
+      console.log(`DTB loaded for SoC: ${socType}`);
     } catch (error) {
       console.error(error);
       alert(`Failed to load DTB: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -206,15 +257,45 @@ export const App: React.FC = () => {
   // (Removed Load Map web-only flow per request)
 
   const handleConfigurationSelect = (soc: string, module: string) => {
+    console.log(`Configuration selected: ${soc} / ${module}`);
     setCurrentSoc(soc);
     setCurrentModule(module);
     setShowSelector(false);
+    
+    // localStorage에 저장 (새로고침 시 유지)
+    localStorage.setItem('selectedSoc', soc);
+    localStorage.setItem('selectedModule', module);
   };
+
+  // 팝업 표시 조건
+  // 1. debugShowConfigurationSelector가 true이고
+  // 2. (localStorage에 저장된 값이 없거나 showSelector가 true일 때)
+  const hasStoredSelection = localStorage.getItem('selectedSoc') && localStorage.getItem('selectedModule');
+  const shouldShowSelector = debugShowConfigurationSelector && (!hasStoredSelection || showSelector);
+  
+  // 디버깅 로그 및 강제 초기화 (임시)
+  useEffect(() => {
+    console.log('=== Selector Debug ===');
+    console.log('debugShowConfigurationSelector:', debugShowConfigurationSelector);
+    console.log('hasStoredSelection:', !!hasStoredSelection);
+    console.log('storedSoc:', localStorage.getItem('selectedSoc'));
+    console.log('storedModule:', localStorage.getItem('selectedModule'));
+    console.log('currentSoc:', currentSoc);
+    console.log('currentModule:', currentModule);
+    console.log('showSelector:', showSelector);
+    console.log('shouldShowSelector:', shouldShowSelector);
+    console.log('=====================');
+    
+    // 🔥 임시: localStorage 강제 초기화 (테스트용 - 확인 후 다시 주석 처리)
+    // UNCOMMENT BELOW TO TEST FIRST RUN:
+    // localStorage.removeItem('selectedSoc');
+    // localStorage.removeItem('selectedModule');
+  }, [debugShowConfigurationSelector, hasStoredSelection, currentSoc, currentModule, showSelector, shouldShowSelector]);
 
   return (
     <div className="flex flex-col h-screen bg-gray-900">
-      {/* Configuration Selector - 최초 로딩 시 표시 */}
-      {showSelector && (
+      {/* Configuration Selector */}
+      {shouldShowSelector && (
         <ConfigurationSelector onSelect={handleConfigurationSelect} />
       )}
       {/* Header */}
@@ -225,12 +306,15 @@ export const App: React.FC = () => {
               Telechips SOC Configuration Tool{currentModule ? ` - ${currentModule.charAt(0).toUpperCase() + currentModule.slice(1)}` : ''}
             </h1>
             <span className="text-xs text-gray-500">{currentSoc ? currentSoc.toUpperCase() : ''}</span>
-            {currentSoc && currentModule && (
+            {debugShowConfigurationSelector && currentSoc && currentModule && (
               <button
                 onClick={() => {
                   setShowSelector(true);
                   setCurrentSoc('');
                   setCurrentModule('');
+                  // localStorage 초기화 (재선택 가능하도록)
+                  localStorage.removeItem('selectedSoc');
+                  localStorage.removeItem('selectedModule');
                 }}
                 className="text-xs text-gray-400 hover:text-gray-200 underline"
               >

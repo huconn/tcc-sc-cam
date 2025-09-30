@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Camera, Cpu, Zap, ChevronRight, Play } from 'lucide-react';
 
 interface ConfigurationSelectorProps {
@@ -63,6 +63,14 @@ export const ConfigurationSelector: React.FC<ConfigurationSelectorProps> = ({ on
       .catch(err => console.error('Failed to load soc-profiles.json:', err));
   }, []);
 
+  const handleStart = useCallback(() => {
+    if (selectedSoc && selectedModule) {
+      setProgress(100); // 프로그레스 바 즉시 완료
+      setUserInteracted(true); // 사용자 선택으로 간주
+      onSelect(selectedSoc, selectedModule);
+    }
+  }, [selectedSoc, selectedModule, onSelect]);
+
   // 자동 실행 타이머
   useEffect(() => {
     if (!profileData || userInteracted) return;
@@ -80,15 +88,7 @@ export const ConfigurationSelector: React.FC<ConfigurationSelectorProps> = ({ on
     }, 50);
 
     return () => clearInterval(progressTimer);
-  }, [profileData, userInteracted, selectedSoc, selectedModule]);
-
-  const handleStart = () => {
-    if (selectedSoc && selectedModule) {
-      setProgress(100); // 프로그레스 바 즉시 완료
-      setUserInteracted(true); // 사용자 선택으로 간주
-      onSelect(selectedSoc, selectedModule);
-    }
-  };
+  }, [profileData, userInteracted, handleStart]);
 
   const handleSocClick = (socKey: string, isEnabled: boolean) => {
     if (!isEnabled) return; // 비활성화된 SoC는 선택 불가

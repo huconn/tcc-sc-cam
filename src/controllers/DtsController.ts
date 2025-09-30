@@ -43,7 +43,7 @@ export class DtsController {
       // 5. 각 모듈별 데이터 추출
       for (const module of enabledModules) {
         if (module === 'camera') {
-          const cameraConfig = DataModelService.extractCameraConfig(originalDtsMap);
+          const cameraConfig = await DataModelService.extractCameraConfig(originalDtsMap, socType);
           socConfig.modules.camera = cameraConfig;
           console.log('Camera configuration extracted');
         }
@@ -65,6 +65,7 @@ export class DtsController {
   static async loadDtbAndExtractCamera(): Promise<{
     originalDtsMap: DtsMap;
     cameraConfig: CameraConfiguration;
+    socType: string;
   }> {
     const { originalDtsMap, socConfig } = await this.loadDtbAndExtractConfig();
     
@@ -74,7 +75,8 @@ export class DtsController {
     
     return {
       originalDtsMap,
-      cameraConfig: socConfig.modules.camera
+      cameraConfig: socConfig.modules.camera,
+      socType: socConfig.socType
     };
   }
 

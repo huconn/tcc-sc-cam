@@ -148,6 +148,9 @@ export const useCameraStore = create<CameraStore>((set) => ({
   // Show Dts Map for debugging
   debugShowDtsMap: true,
 
+  // Show Configuration Selector popup (SoC/Module selection)
+  debugShowConfigurationSelector: true,
+
   // ==============================================================
 
   setViewMode: (mode) => set({ viewMode: mode }),

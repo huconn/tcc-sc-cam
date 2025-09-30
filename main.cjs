@@ -45,6 +45,18 @@ const createWindow = () => {
     mainWindow.loadFile(path.join(__dirname, 'dist/index.html'))
   }
 
+  // 창 닫기 전에 renderer에 알림
+  mainWindow.on('close', (event) => {
+    // renderer에서 localStorage 정리할 시간을 주기 위해 잠시 대기
+    if (mainWindow && mainWindow.webContents) {
+      mainWindow.webContents.executeJavaScript(`
+        localStorage.removeItem('selectedSoc');
+        localStorage.removeItem('selectedModule');
+        console.log('Window closing: localStorage cleared');
+      `).catch(() => {});
+    }
+  })
+
   mainWindow.on('closed', () => {
     mainWindow = null
   })

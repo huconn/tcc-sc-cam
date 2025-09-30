@@ -24,7 +24,7 @@ export class DtsService {
   /**
    * DTB를 JSON으로 변환 (Electron IPC 호출)
    */
-  static async dtbToJson(dtbPath: string): Promise<DtsMap> {
+  static async dtbToJson(dtbPath?: string): Promise<DtsMap> {
     const electronAPI = (window as any).electronAPI;
     if (!electronAPI?.convertDTB) {
       throw new Error('Electron API not available');
