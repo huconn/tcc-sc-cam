@@ -154,6 +154,16 @@ export class DataModelService {
       this.parseI2CNode(node, originalJson)
     ).filter(Boolean) as any[];
 
+    // Debug log: I2C channels parsed
+    try {
+      const i2cSummary = (config.i2cChannels || []).map((ch: any) => ({
+        channelNumber: ch.channelNumber,
+        status: ch.status,
+        deviceCount: Array.isArray(ch.devices) ? ch.devices.length : 0
+      }));
+      console.log('[DataModelService] i2cChannels parsed:', i2cSummary);
+    } catch {}
+
     // External Devices는 I2C 채널에서 가져옴
     // UI에서 사용하기 편하도록 MIPI별로 재구성
     const mipi0Devices: any[] = [];
@@ -175,6 +185,23 @@ export class DataModelService {
       mipi0: mipi0Devices,
       mipi1: mipi1Devices
     };
+
+    // Debug log: External devices mapped to MIPI
+    try {
+      const countByType = (arr: any[]) => arr.reduce((acc: any, d: any) => {
+        const t = d?.type || 'unknown';
+        acc[t] = (acc[t] || 0) + 1;
+        return acc;
+      }, {});
+      console.log('[DataModelService] externalDevices.mipi0:', {
+        total: mipi0Devices.length,
+        byType: countByType(mipi0Devices)
+      });
+      console.log('[DataModelService] externalDevices.mipi1:', {
+        total: mipi1Devices.length,
+        byType: countByType(mipi1Devices)
+      });
+    } catch {}
 
     return config;
   }

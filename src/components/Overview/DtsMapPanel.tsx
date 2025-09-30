@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useCameraStore } from '@/store/cameraStore';
 
 export const DtsMapPanel: React.FC = () => {
-  const dtsMap = useCameraStore(s => s.dtsMap);
+  const dtsMap = useCameraStore(s => (s as any).originalDtsMap);
   const [query, setQuery] = useState('');
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
 
