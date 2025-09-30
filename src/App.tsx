@@ -323,21 +323,6 @@ export const App: React.FC = () => {
             )}
           </div>
           <div className="flex items-center gap-2">
-            {/* Browser Info Display - Only show when debugShowResolution is true */}
-            {debugShowResolution && (
-              <div className="flex items-center gap-3 px-3 py-1 bg-gray-800 rounded-lg border border-gray-600">
-                <div className="text-xs text-gray-300">
-                  <span className="text-gray-400">Resolution:</span> {browserInfo.resolution}
-                </div>
-                <div className="text-xs text-gray-300">
-                  <span className="text-gray-400">Scale:</span> {browserInfo.scale}
-                </div>
-                <div className="text-xs text-gray-300">
-                  <span className="text-gray-400">DPR:</span> {browserInfo.devicePixelRatio}
-                </div>
-              </div>
-            )}
-            
             {/* Hidden input for web-only load (DTS/JSON) */}
             <input
               ref={webLoadInputRef}
@@ -424,6 +409,17 @@ export const App: React.FC = () => {
       {appVersion && (
         <div className="fixed bottom-3 right-3 bg-gray-800/80 backdrop-blur-sm text-gray-400 text-xs px-2 py-1 rounded border border-gray-700/50">
           v{appVersion}
+        </div>
+      )}
+
+      {/* Browser Info - Bottom Left Corner, always on top when debug flag enabled */}
+      {debugShowResolution && (
+        <div className="fixed bottom-3 left-3 z-[1000] bg-gray-800/90 backdrop-blur-sm border border-gray-700/50 rounded px-3 py-2 text-[11px] leading-4 text-gray-200 shadow-lg">
+          <span className="text-gray-400">Resolution:</span> {browserInfo.resolution}
+          <span className="mx-2" />
+          <span className="text-gray-400">Scale:</span> {browserInfo.scale}
+          <span className="mx-2" />
+          <span className="text-gray-400">DPR:</span> {browserInfo.devicePixelRatio}
         </div>
       )}
     </div>
