@@ -1,5 +1,6 @@
 import type { DtsMap, DtsNode } from '@/types/dts';
 import type { CameraConfiguration } from '@/types/camera';
+import { NodeMappingRules } from './NodeMappingRules';
 
 /**
  * 데이터 모델 서비스
@@ -7,29 +8,17 @@ import type { CameraConfiguration } from '@/types/camera';
  */
 export class DataModelService {
   /**
-   * JSON (DtsMap)에서 카메라 관련 데이터만 추출하여 새로운 JSON 생성
-   * 이 JSON이 실제 카메라 데이터 파일이 됨
-   */
-  static extractCameraDataFromJson(originalJson: DtsMap): DtsMap {
-    const cameraNodes: DtsNode[] = [];
-    
-    // 카메라 관련 노드만 추출
-    for (const node of originalJson.nodes) {
-      if (this.isCameraRelatedNode(node)) {
-        cameraNodes.push(node);
-      }
-    }
-    
-    // 카메라 전용 JSON 생성
-    return {
-      root: '/',
-      nodes: cameraNodes,
-      byPath: this.createByPathMap(cameraNodes)
-    };
-  }
-
-  /**
    * 원본 JSON에서 CameraConfiguration 추출 (핵심 기능)
+   * 
+   * 노드 매핑 규칙:
+   * - MIPI: path에 'mipi' && 'csi' 포함
+   * - ISP: path에 'isp' 포함 (display 제외)
+   * - I2C: path에 'i2c@' 포함
+   * - External Device: I2C 노드의 자식 노드 중 compatible에 센서/직렬화기 키워드 포함
+   * - SVDW: path에 'svdw' 포함
+   * - VWDMA: path에 'vwdma' 포함
+   * - CIED: path에 'cied' 포함
+   * - MDW: path에 'mdw' 포함
    */
   static extractCameraConfig(originalJson: DtsMap): CameraConfiguration {
     const config: CameraConfiguration = {
@@ -55,11 +44,8 @@ export class DataModelService {
       }
     };
 
-    // MIPI 채널 추출
-    const mipiNodes = originalJson.nodes.filter(n => 
-      n.path.toLowerCase().includes('mipi') && 
-      n.path.toLowerCase().includes('csi')
-    );
+    // MIPI 채널 추출 (NodeMappingRules 사용)
+    const mipiNodes = originalJson.nodes.filter(n => NodeMappingRules.isMIPINode(n));
     for (const node of mipiNodes) {
       const mipiConfig = this.parseMIPINode(node);
       if (mipiConfig) {
@@ -67,11 +53,8 @@ export class DataModelService {
       }
     }
 
-    // ISP 설정 추출
-    const ispNodes = originalJson.nodes.filter(n => 
-      n.path.toLowerCase().includes('isp') &&
-      !n.path.toLowerCase().includes('display')
-    );
+    // ISP 설정 추출 (NodeMappingRules 사용)
+    const ispNodes = originalJson.nodes.filter(n => NodeMappingRules.isISPNode(n));
     for (const node of ispNodes) {
       const ispConfig = this.parseISPNode(node);
       if (ispConfig) {
@@ -120,12 +103,10 @@ export class DataModelService {
       config.mdwConfig = this.parseMDWNode(mdwNode);
     }
 
-    // I2C 채널 추출 (자식 노드인 External Devices 포함)
-    const i2cNodes = originalJson.nodes.filter(n => 
-      n.path.toLowerCase().includes('i2c@')
-    );
+    // I2C 채널 추출 (NodeMappingRules 사용, 자식 노드인 External Devices 포함)
+    const i2cNodes = originalJson.nodes.filter(n => NodeMappingRules.isI2CNode(n));
     config.i2cChannels = i2cNodes.map(node => 
-      this.parseI2CNode(node, originalJson.nodes)
+      this.parseI2CNode(node, originalJson)
     ).filter(Boolean) as any[];
 
     // External Devices는 I2C 채널에서 가져옴
@@ -299,7 +280,7 @@ export class DataModelService {
   /**
    * I2C 채널 노드 파싱 (자식 노드인 External Device 포함)
    */
-  private static parseI2CNode(node: DtsNode, allNodes: DtsNode[]): any {
+  private static parseI2CNode(node: DtsNode, dtsMap: DtsMap): any {
     const props = node.props || {};
     const nodeName = node.name.toLowerCase();
     
@@ -307,14 +288,13 @@ export class DataModelService {
     const match = nodeName.match(/i2c@([0-9a-fx]+)/);
     if (!match) return null;
     
-    // 채널 번호는 aliases에서 가져와야 하지만, 일단 순서로 추정
-    // TODO: aliases 파싱 필요
-    const channelNumber = 0;
+    // Aliases에서 채널 번호 추출
+    const channelNumber = NodeMappingRules.extractI2CChannelNumber(dtsMap, node.path);
     
     // I2C 채널의 자식 노드들 (External Devices) 찾기
-    const childDevices = allNodes.filter(n => 
+    const childDevices = dtsMap.nodes.filter(n => 
       n.path.startsWith(node.path + '/') &&
-      this.isExternalDeviceNode(n)
+      NodeMappingRules.isExternalDeviceNode(n)
     );
     
     const devices = childDevices.map(deviceNode => 
@@ -340,25 +320,6 @@ export class DataModelService {
     };
   }
 
-  /**
-   * External Device 노드인지 판단
-   */
-  private static isExternalDeviceNode(node: DtsNode): boolean {
-    const compatible = String(node.props?.compatible || '').toLowerCase();
-    const nodeName = node.name.toLowerCase();
-    
-    // Camera Sensor, Serializer, Deserializer 감지
-    return (
-      compatible.includes('ar') ||       // arxxxx (Camera Sensor)
-      compatible.includes('max967') ||   // max96701 (Serializer)
-      compatible.includes('max928') ||   // max9286 (Deserializer)
-      compatible.includes('ov') ||       // OV5640 등
-      compatible.includes('imx') ||      // IMX219 등
-      nodeName.includes('sensor') ||
-      nodeName.includes('serializer') ||
-      nodeName.includes('deserializer')
-    );
-  }
 
   /**
    * External Device 노드 파싱
@@ -637,22 +598,6 @@ export class DataModelService {
     return lines.join('\n');
   }
 
-  /**
-   * 노드가 카메라 관련인지 판단
-   */
-  private static isCameraRelatedNode(node: DtsNode): boolean {
-    const cameraKeywords = [
-      'mipi', 'csi', 'isp', 'camera', 'sensor', 
-      'svdw', 'vwdma', 'cied', 'mdw', 'cam-mux'
-    ];
-    
-    const nodePath = node.path.toLowerCase();
-    const nodeName = node.name.toLowerCase();
-    
-    return cameraKeywords.some(keyword => 
-      nodePath.includes(keyword) || nodeName.includes(keyword)
-    );
-  }
 
   /**
    * byPath 맵 생성

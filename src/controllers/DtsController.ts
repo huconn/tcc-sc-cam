@@ -2,35 +2,80 @@ import { DtsService } from '@/services/DtsService';
 import { FileService } from '@/services/FileService';
 import { DataModelService } from '@/services/DataModelService';
 import { DtsOverlayService } from '@/services/DtsOverlayService';
+import { SocProfileService } from '@/services/SocProfileService';
 import type { DtsMap } from '@/types/dts';
 import type { CameraConfiguration } from '@/types/camera';
+import type { SocConfiguration } from '@/types/modules';
 
 /**
  * DTS 컨트롤러
- * DTS/DTB 파일 관리 및 카메라 데이터 변환 비즈니스 로직 담당
+ * DTS/DTB 파일 관리 및 모듈별 데이터 변환 비즈니스 로직 담당
  */
 export class DtsController {
   /**
-   * DTB 파일 로드 및 카메라 데이터 추출
+   * DTB 파일 로드 및 SoC 설정 추출 (확장 가능 구조)
+   */
+  static async loadDtbAndExtractConfig(): Promise<{
+    originalDtsMap: DtsMap;
+    socConfig: SocConfiguration;
+  }> {
+    try {
+      // 1. 프로파일 로드 (최초 1회)
+      await SocProfileService.loadProfiles();
+      
+      // 2. DTB → JSON 변환
+      const originalDtsMap = await DtsService.dtbToJson();
+      console.log('DTB loaded and converted to JSON');
+      
+      // 3. SoC 타입 감지
+      const socType = SocProfileService.detectSocType(originalDtsMap);
+      console.log(`Detected SoC type: ${socType}`);
+      
+      // 4. 활성화된 모듈별 데이터 추출
+      const enabledModules = SocProfileService.getEnabledModules(socType);
+      console.log(`Enabled modules: ${enabledModules.join(', ')}`);
+      
+      const socConfig: SocConfiguration = {
+        socType,
+        modules: {}
+      };
+      
+      // 5. 각 모듈별 데이터 추출
+      for (const module of enabledModules) {
+        if (module === 'camera') {
+          const cameraConfig = DataModelService.extractCameraConfig(originalDtsMap);
+          socConfig.modules.camera = cameraConfig;
+          console.log('Camera configuration extracted');
+        }
+        // 향후 추가:
+        // else if (module === 'pin') { ... }
+        // else if (module === 'power') { ... }
+      }
+      
+      return { originalDtsMap, socConfig };
+    } catch (error) {
+      console.error('Failed to load DTB and extract config:', error);
+      throw new Error(`Failed to load DTB: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * DTB 파일 로드 및 카메라 데이터 추출 (기존 호환성)
    */
   static async loadDtbAndExtractCamera(): Promise<{
     originalDtsMap: DtsMap;
     cameraConfig: CameraConfiguration;
   }> {
-    try {
-      // 1. DTB → JSON 변환
-      const originalDtsMap = await DtsService.dtbToJson();
-      console.log('✅ DTB loaded and converted to JSON');
-      
-      // 2. JSON에서 카메라 데이터 추출
-      const cameraConfig = DataModelService.extractCameraConfig(originalDtsMap);
-      console.log('✅ Camera configuration extracted:', cameraConfig);
-      
-      return { originalDtsMap, cameraConfig };
-    } catch (error) {
-      console.error('Failed to load DTB and extract camera data:', error);
-      throw new Error(`Failed to load DTB: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    const { originalDtsMap, socConfig } = await this.loadDtbAndExtractConfig();
+    
+    if (!socConfig.modules.camera) {
+      throw new Error('Camera module not found in SoC configuration');
     }
+    
+    return {
+      originalDtsMap,
+      cameraConfig: socConfig.modules.camera
+    };
   }
 
   /**

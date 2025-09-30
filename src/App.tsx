@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Download, Upload, Save, FolderOpen } from 'lucide-react';
 import { OverviewPage } from '@/components/Overview/OverviewPage';
 import { DtsMapPanel } from '@/components/Overview/DtsMapPanel';
+import { ConfigurationSelector } from '@/components/ConfigurationSelector';
 import { useCameraStore } from '@/store/cameraStore';
 import { DTSGenerator } from '@/utils/dtsGenerator';
 import { DtsController } from '@/controllers/DtsController';
@@ -12,6 +13,9 @@ export const App: React.FC = () => {
   const debugShowResolution = useCameraStore((s: any) => s.debugShowResolution as boolean);
   const webLoadInputRef = useRef<HTMLInputElement | null>(null);
   const [appVersion, setAppVersion] = useState<string>('');
+  const [currentSoc, setCurrentSoc] = useState<string>('');  // 선택된 SoC
+  const [currentModule, setCurrentModule] = useState<string>('');  // 선택된 모듈
+  const [showSelector, setShowSelector] = useState<boolean>(true);  // Configuration Selector 표시
   const [isElectronApp, setIsElectronApp] = useState<boolean>(() => {
     const w: any = window as any;
     const ua = navigator.userAgent || '';
@@ -159,12 +163,12 @@ export const App: React.FC = () => {
         const text = e.target?.result as string;
         if (lower.endsWith('.json')) {
           const map = JSON.parse(text);
-          setDtsMap?.(map);
+          setOriginalDtsMap?.(map);
         } else if (lower.endsWith('.dts')) {
           // parse in browser
           import('@/utils/dtsParse').then(mod => {
             const map = mod.parseDtsToMap(text);
-            setDtsMap?.(map);
+            setOriginalDtsMap?.(map);
           });
         } else {
           alert('Web: please select a .dts or .json file.');
@@ -201,14 +205,38 @@ export const App: React.FC = () => {
 
   // (Removed Load Map web-only flow per request)
 
+  const handleConfigurationSelect = (soc: string, module: string) => {
+    setCurrentSoc(soc);
+    setCurrentModule(module);
+    setShowSelector(false);
+  };
+
   return (
     <div className="flex flex-col h-screen bg-gray-900">
+      {/* Configuration Selector - 최초 로딩 시 표시 */}
+      {showSelector && (
+        <ConfigurationSelector onSelect={handleConfigurationSelect} />
+      )}
       {/* Header */}
       <header className="bg-gray-850 border-b border-gray-700">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-[10px]">
-            <h1 className="text-xl font-bold text-gray-100">Telechips SOC Configuration Tool - Camera</h1>
-            <span className="text-xs text-gray-500">TCC807x (Dolphin5)</span>
+            <h1 className="text-xl font-bold text-gray-100">
+              Telechips SOC Configuration Tool{currentModule ? ` - ${currentModule.charAt(0).toUpperCase() + currentModule.slice(1)}` : ''}
+            </h1>
+            <span className="text-xs text-gray-500">{currentSoc ? currentSoc.toUpperCase() : ''}</span>
+            {currentSoc && currentModule && (
+              <button
+                onClick={() => {
+                  setShowSelector(true);
+                  setCurrentSoc('');
+                  setCurrentModule('');
+                }}
+                className="text-xs text-gray-400 hover:text-gray-200 underline"
+              >
+                Change SoC/Module
+              </button>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {/* Browser Info Display - Only show when debugShowResolution is true */}
@@ -276,13 +304,36 @@ export const App: React.FC = () => {
       <div className="flex flex-1 overflow-hidden">
         {/* Configuration Area */}
         <div className="flex-1 flex flex-col">
-          {/* Overview Content - Always shown */}
+          {/* Module Content - 현재 선택된 모듈에 따라 다른 UI 표시 */}
           <div className="flex-1 overflow-auto p-0">
-            <OverviewPage />
+            {currentModule === 'camera' ? (
+              <OverviewPage />
+            ) : currentModule === 'pin' ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center text-gray-400">
+                  <p className="text-xl mb-2">Pin Configuration</p>
+                  <p className="text-sm">Coming Soon</p>
+                </div>
+              </div>
+            ) : currentModule === 'power' ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center text-gray-400">
+                  <p className="text-xl mb-2">Power Configuration</p>
+                  <p className="text-sm">Coming Soon</p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center text-gray-400">
+                  <p className="text-xl mb-2">No Module Selected</p>
+                  <p className="text-sm">Please select SoC and Module</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
-        {/* DTS Map side panel (only when debug flag enabled) */}
-        {debugShowDtsMap && <DtsMapPanel />}
+        {/* DTS Map side panel (only when debug flag enabled and camera module) */}
+        {debugShowDtsMap && currentModule === 'camera' && <DtsMapPanel />}
       </div>
 
       {/* Version Display - Bottom Right Corner */}
