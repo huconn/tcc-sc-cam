@@ -15,14 +15,17 @@ export const DtsMapPanel: React.FC = () => {
 
   const selectedNode = useMemo(() => nodes.find(n => n.path === selectedPath), [nodes, selectedPath]);
 
-  if (!dtsMap) return null;
-
   return (
     <div className="w-[560px] border-l border-gray-700 bg-gray-900 flex">
       <div className="w-[280px] flex flex-col border-r border-gray-700">
         <div className="p-3 border-b border-gray-700">
           <div className="text-sm text-gray-300 font-semibold">DTS Map</div>
           <div className="text-xs text-gray-500">Nodes: {nodes.length}</div>
+          {!dtsMap && (
+            <div className="mt-2 text-xs text-yellow-500">
+              No DTB loaded. Please load a DTB file.
+            </div>
+          )}
           <input
             className="mt-2 w-full bg-gray-800 text-gray-200 text-sm px-2 py-1 rounded border border-gray-700 outline-none focus:border-gray-500"
             placeholder="Search path or name..."
@@ -81,7 +84,7 @@ export const DtsMapPanel: React.FC = () => {
               </div>
 
               <div className="text-gray-500 mt-3 mb-1">raw json</div>
-              <pre className="text-[11px] leading-[1.3] text-gray-400 bg-gray-900 border border-gray-700 rounded p-2 overflow-auto max-h-[240px]">
+              <pre className="text-[11px] leading-[1.3] text-gray-400 bg-gray-900 border border-gray-700 rounded p-2 overflow-auto h-[calc(100vh-300px)]">
 {JSON.stringify(selectedNode, null, 2)}
               </pre>
             </div>

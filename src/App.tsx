@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Download, Upload, Save, FolderOpen } from 'lucide-react';
 import { OverviewPage } from '@/components/Overview/OverviewPage';
-import { DtsMapPanel } from '@/components/Overview/DtsMapPanel';
+import { DtsMapPanel } from '@/components/Tools/DtsMapPanel';
 import { ConfigurationSelector } from '@/components/ConfigurationSelector';
 import { useCameraStore } from '@/store/cameraStore';
 import { DTSGenerator } from '@/utils/dtsGenerator';
@@ -35,6 +35,16 @@ export const App: React.FC = () => {
     scale: '100%',
     devicePixelRatio: 1
   });
+  const [dtsMapVisible, setDtsMapVisible] = useState<boolean>(true);  // DTS Map 표시 상태 (초기값 true)
+
+  // Debug: DTS Map 표시 상태 로그
+  useEffect(() => {
+    console.log('[DTS Map Debug]', {
+      debugShowDtsMap,
+      dtsMapVisible,
+      shouldShow: debugShowDtsMap && dtsMapVisible
+    });
+  }, [debugShowDtsMap, dtsMapVisible]);
 
   useEffect(() => {
     // Get app version when component mounts
@@ -131,6 +141,25 @@ export const App: React.FC = () => {
       window.removeEventListener('resize', updateBrowserInfo);
     };
   }, []);
+
+  // Keyboard shortcut for DTS Map toggle (Ctrl+Shift+D)
+  // debugShowDtsMap이 true일 때만 토글 가능
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.ctrlKey && event.shiftKey && event.key === 'D') {
+        event.preventDefault();
+        if (debugShowDtsMap) {
+          setDtsMapVisible(prev => !prev);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [debugShowDtsMap]);
 
   const handleExportDTS = () => {
     const config = exportConfiguration();
@@ -401,8 +430,8 @@ export const App: React.FC = () => {
             )}
           </div>
         </div>
-        {/* DTS Map side panel (only when debug flag enabled and camera module) */}
-        {debugShowDtsMap && currentModule === 'camera' && <DtsMapPanel />}
+        {/* DTS Map side panel (only when debug flag enabled and visible) */}
+        {debugShowDtsMap && dtsMapVisible && <DtsMapPanel />}
       </div>
 
       {/* Version Display - Bottom Right Corner */}
