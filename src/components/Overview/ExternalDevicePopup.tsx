@@ -27,6 +27,9 @@ interface Device {
   inputs: number;
   outputs: number;
   color: string;
+  compatible?: string;
+  reg?: string;
+  status?: string;
   config?: DeviceConfig;
 }
 
@@ -392,14 +395,17 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
               inputs: savedDevice.inputs ?? (savedDevice.type === 'sensor' ? 0 : (savedDevice.type === 'soc' ? 1 : 2)),
               outputs: savedDevice.outputs ?? (savedDevice.type === 'soc' ? 0 : 1),
               color: deviceType.color,
+              compatible: savedDevice.compatible,
+              reg: savedDevice.reg,
+              status: savedDevice.status,
               config: savedDevice.config || {
-                deviceName: deviceType.name.toLowerCase().replace(/\s+/g, '_'),
-                nodeName: `${savedDevice.type}_${savedDevice.id || Date.now()}`,
-                compatible: `vendor,${savedDevice.type}-${(savedDevice.model || 'default').split(' ')[0].toLowerCase()}`,
-                reg: '0x40',
+                deviceName: savedDevice.name || deviceType.name,
+                nodeName: savedDevice.id || `${savedDevice.type}_${Date.now()}`,
+                compatible: savedDevice.compatible || `vendor,${savedDevice.type}`,
+                reg: savedDevice.reg || '0x40',
                 inEndpoints: [],
                 outEndpoints: [],
-                status: 'okay',
+                status: (savedDevice.status as 'okay' | 'disabled') || 'okay',
                 properties: []
               }
             };
@@ -982,13 +988,13 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
           deviceType={selectedDevice.type}
           deviceModel={selectedDevice.model}
           config={selectedDevice.config || {
-            deviceName: selectedDevice.name.toLowerCase().replace(/\s+/g, '_'),
-            nodeName: `${selectedDevice.type}_${selectedDevice.id}`,
-            compatible: `vendor,${selectedDevice.type}`,
-            reg: '0x40',
+            deviceName: selectedDevice.name,
+            nodeName: selectedDevice.id,
+            compatible: selectedDevice.compatible || `vendor,${selectedDevice.type}`,
+            reg: selectedDevice.reg || '0x40',
             inEndpoints: [],
             outEndpoints: [],
-            status: 'okay',
+            status: (selectedDevice.status as 'okay' | 'disabled') || 'okay',
             properties: []
           }}
           onSave={handleSaveDeviceConfig}

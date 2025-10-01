@@ -33,6 +33,14 @@ interface DeviceConfigModalProps {
   onClose: () => void;
 }
 
+// Helper function to parse register address from DTS format
+const parseRegAddress = (reg: string): string => {
+  if (!reg) return '0x40';
+  // Extract hex value from formats like "< 0x50 >" or "0x50"
+  const match = reg.match(/0x[0-9a-fA-F]+/);
+  return match ? match[0] : '0x40';
+};
+
 export const DeviceConfigModal: React.FC<DeviceConfigModalProps> = ({
   deviceId,
   deviceType,
@@ -41,7 +49,10 @@ export const DeviceConfigModal: React.FC<DeviceConfigModalProps> = ({
   onSave,
   onClose
 }) => {
-  const [config, setConfig] = useState<DeviceConfig>(initialConfig);
+  const [config, setConfig] = useState<DeviceConfig>({
+    ...initialConfig,
+    reg: parseRegAddress(initialConfig.reg)
+  });
   const [showDtsPreview, setShowDtsPreview] = useState(true);
   const [newProperty, setNewProperty] = useState<DeviceProperty>({
     id: '',
@@ -51,7 +62,10 @@ export const DeviceConfigModal: React.FC<DeviceConfigModalProps> = ({
   });
 
   useEffect(() => {
-    setConfig(initialConfig);
+    setConfig({
+      ...initialConfig,
+      reg: parseRegAddress(initialConfig.reg)
+    });
   }, [initialConfig]);
 
   const handleAddProperty = () => {
