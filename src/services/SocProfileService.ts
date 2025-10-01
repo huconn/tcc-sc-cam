@@ -1,4 +1,5 @@
 import type { DtsMap } from '@/types/dts';
+import { loadJSON } from '@/utils/fileLoader';
 
 export interface SocProfile {
   name: string;
@@ -23,8 +24,7 @@ export class SocProfileService {
    * 프로파일 로드
    */
   static async loadProfiles(): Promise<void> {
-    const response = await fetch('/config/soc-profiles.json');
-    this.profiles = await response.json();
+    this.profiles = await loadJSON('/config/soc-profiles.json');
   }
 
   /**
@@ -65,8 +65,7 @@ export class SocProfileService {
     }
     
     const mappingRulesPath = profile.modules[module].mappingRules;
-    const response = await fetch(mappingRulesPath);
-    return await response.json();
+    return await loadJSON(mappingRulesPath);
   }
 
   /**

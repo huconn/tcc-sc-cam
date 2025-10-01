@@ -2,6 +2,7 @@ import type { DtsMap, DtsNode } from '@/types/dts';
 import type { CameraConfiguration } from '@/types/camera';
 import { NodeMappingRules } from './NodeMappingRules';
 import { serverLogger } from '@/utils/serverLogger';
+import { loadJSON } from '@/utils/fileLoader';
 
 interface CameraMappingRules {
   version: string;
@@ -29,13 +30,7 @@ export class DataModelService {
 
     try {
       const path = `/config/${socType}/camera-mapping.json`;
-      const response = await fetch(path);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to load camera mapping for ${socType}: ${response.statusText}`);
-      }
-      
-      const mappingRules: CameraMappingRules = await response.json();
+      const mappingRules: CameraMappingRules = await loadJSON(path);
       
       // 검증
       if (mappingRules.socType !== socType) {

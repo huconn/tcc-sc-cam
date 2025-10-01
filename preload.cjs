@@ -18,5 +18,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Get app version
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   // Log to server (main process)
-  logToServer: (level, message, data) => ipcRenderer.invoke('log-to-server', level, message, data)
+  logToServer: (level, message, data) => ipcRenderer.invoke('log-to-server', level, message, data),
+  // Read file from app resources
+  readResourceFile: (filePath) => ipcRenderer.invoke('read-resource-file', filePath)
 })

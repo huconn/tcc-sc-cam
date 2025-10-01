@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Camera, Cpu, Zap, ChevronRight, Play } from 'lucide-react';
+import { loadJSON } from '@/utils/fileLoader';
 
 interface ConfigurationSelectorProps {
   onSelect: (soc: string, module: string) => void;
@@ -37,9 +38,9 @@ export const ConfigurationSelector: React.FC<ConfigurationSelectorProps> = ({ on
 
   // Load soc-profiles.json
   useEffect(() => {
-    fetch('/config/soc-profiles.json')
-      .then(res => res.json())
+    loadJSON<ProfileData>('/config/soc-profiles.json')
       .then((data: ProfileData) => {
+        console.log('[ConfigurationSelector] Profile data loaded:', data);
         setProfileData(data);
         
         // 첫 번째 활성화된 SoC 자동 선택
@@ -60,7 +61,10 @@ export const ConfigurationSelector: React.FC<ConfigurationSelectorProps> = ({ on
           }
         }
       })
-      .catch(err => console.error('Failed to load soc-profiles.json:', err));
+      .catch(err => {
+        console.error('Failed to load soc-profiles.json:', err);
+        alert(`Failed to load configuration profiles: ${err.message}\n\nPlease check that the app is properly installed.`);
+      });
   }, []);
 
   const handleStart = useCallback(() => {

@@ -3,6 +3,7 @@ import { Download, Upload, Save, FolderOpen } from 'lucide-react';
 import { OverviewPage } from '@/components/Overview/OverviewPage';
 import { DtsMapPanel } from '@/components/Tools/DtsMapPanel';
 import { ConfigurationSelector } from '@/components/ConfigurationSelector';
+import { loadJSON } from '@/utils/fileLoader';
 import { useCameraStore } from '@/store/cameraStore';
 import { DTSGenerator } from '@/utils/dtsGenerator';
 import { DtsController } from '@/controllers/DtsController';
@@ -81,8 +82,7 @@ export const App: React.FC = () => {
       if (!debugShowConfigurationSelector && !currentSoc && !currentModule) {
         try {
           // Load soc-profiles.json
-          const response = await fetch('/config/soc-profiles.json');
-          const profiles = await response.json();
+          const profiles = await loadJSON('/config/soc-profiles.json');
           
           // Find first enabled SoC
           const firstEnabledSoc = Object.entries(profiles.profiles).find(

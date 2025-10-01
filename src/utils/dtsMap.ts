@@ -1,9 +1,8 @@
 import type { DtsMap, DtsNode } from '@/types/dts'
+import { loadJSON } from './fileLoader'
 
 export async function loadDtsMap(url: string = '/data/dts-map.json'): Promise<DtsMap> {
-  const res = await fetch(url)
-  if (!res.ok) throw new Error(`Failed to load DTS map: ${res.status}`)
-  return res.json()
+  return await loadJSON<DtsMap>(url)
 }
 
 export function findNodeByPath(map: DtsMap, nodePath: string): DtsNode | undefined {

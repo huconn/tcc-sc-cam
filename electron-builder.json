@@ -12,6 +12,8 @@
     "preload.cjs",
     "package.json",
     "assets/**/*",
+    "public/config/**/*",
+    "scripts/**/*",
     "!**/*.ts",
     "!**/node_modules/{.cache,**/test,**/tests,**/*.md,**/*.markdown}",
     "!src/**/*"
@@ -27,6 +29,10 @@
     "target": [
       {
         "target": "nsis",
+        "arch": ["x64"]
+      },
+      {
+        "target": "portable",
         "arch": ["x64"]
       }
     ],

@@ -7,7 +7,7 @@ const isDev = process.env.NODE_ENV === 'development'
 
 const createWindow = () => {
   const devTools = true;           // 최상위 조건: DevTools 기능 활성화 여부 (F12, Ctrl+Shift+I)
-  const enableDevTools = true;     // 하위 조건: 로딩 시 콘솔 자동 열기 여부
+  const enableDevTools = false;     // 하위 조건: 로딩 시 콘솔 자동 열기 여부
   
   mainWindow = new BrowserWindow({
     width: 1400,
@@ -189,6 +189,34 @@ ipcMain.handle('save-dts-dtb', async (_evt, dtsText) => {
       return { error: `dtc error (path: ${dtc}):\n${stderr}` }
     }
     return { canceled: false, dtsPath, dtbPath }
+  } catch (e) {
+    return { error: String(e.message || e) }
+  }
+})
+
+// Read resource file (config, data files)
+ipcMain.handle('read-resource-file', async (_evt, filePath) => {
+  try {
+    // Remove leading slash if present
+    const cleanPath = filePath.startsWith('/') ? filePath.slice(1) : filePath
+    
+    // In production, files are in dist/ folder inside app.asar or unpacked
+    // In development, files are in the root directory
+    let fullPath
+    if (isDev) {
+      fullPath = path.join(__dirname, 'public', cleanPath)
+    } else {
+      fullPath = path.join(__dirname, 'dist', cleanPath)
+    }
+    
+    console.log(`[read-resource-file] Requested: ${filePath}, Reading from: ${fullPath}`)
+    
+    if (!fs.existsSync(fullPath)) {
+      return { error: `File not found: ${fullPath}` }
+    }
+    
+    const content = fs.readFileSync(fullPath, 'utf-8')
+    return { content }
   } catch (e) {
     return { error: String(e.message || e) }
   }
