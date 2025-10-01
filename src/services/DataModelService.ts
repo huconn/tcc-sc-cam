@@ -429,12 +429,16 @@ export class DataModelService {
     serverLogger.info(`[DataModelService] I2C 채널 ${channelNumber} (${node.path})에서 자식 디바이스 찾기:`);
     serverLogger.info(`  - ${node.path}로 시작하는 노드: ${dtsMap.nodes.filter(n => n.path.startsWith(node.path + '/')).length}개`);
     serverLogger.info(`  - External Device로 판별된 노드: ${childDevices.length}개`);
+    serverLogger.info(`  - _originalDtsText available: ${dtsMap._originalDtsText ? 'YES' : 'NO'}`);
+    if (dtsMap._originalDtsText) {
+      serverLogger.info(`  - _originalDtsText length: ${dtsMap._originalDtsText.length} chars`);
+    }
     childDevices.forEach((device, index) => {
       serverLogger.info(`    [${index}] ${device.name} (${device.path}) - compatible: ${device.props?.compatible}`);
     });
     
     const devices = childDevices.map(deviceNode => 
-      this.parseExternalDeviceNode(deviceNode, dtsMap.nodes)
+      this.parseExternalDeviceNode(deviceNode, dtsMap.nodes, dtsMap._originalDtsText)
     ).filter(Boolean);
     
     return {
@@ -460,7 +464,7 @@ export class DataModelService {
   /**
    * External Device 노드 파싱
    */
-  private static parseExternalDeviceNode(node: DtsNode, allNodes: DtsNode[]): any {
+  private static parseExternalDeviceNode(node: DtsNode, allNodes: DtsNode[], originalDtsText?: string): any {
     const props = node.props || {};
     const compatible = String(props.compatible || '');
     
@@ -494,6 +498,14 @@ export class DataModelService {
     const cleanReg = typeof props.reg === 'string' ? props.reg.replace(/['"]/g, '').trim() : props.reg;
     const cleanPwdGpios = typeof props['pwd-gpios'] === 'string' ? props['pwd-gpios'].replace(/['"]/g, '').trim() : props['pwd-gpios'];
     
+    // 원본 DTS 텍스트에서 해당 노드 추출
+    const originalDts = originalDtsText ? this.extractNodeDtsText(node.name, originalDtsText) : undefined;
+    
+    serverLogger.info(`[parseExternalDeviceNode] ${node.name}: _originalDts ${originalDts ? 'found' : 'NOT found'}`);
+    if (originalDts) {
+      serverLogger.info(`[parseExternalDeviceNode] ${node.name}: _originalDts length: ${originalDts.length} chars`);
+    }
+    
     return {
       id: node.name,
       type,
@@ -504,8 +516,80 @@ export class DataModelService {
       reg: cleanReg,
       pwdGpios: cleanPwdGpios,
       broadcastingMode: props['broadcasting-mode'] === true || props['broadcasting-mode'] === '',
-      ports
+      ports,
+      _originalDts: originalDts  // 원본 DTS 텍스트
     };
+  }
+
+  /**
+   * 원본 DTS 텍스트에서 특정 노드 추출
+   * 중첩 괄호를 올바르게 처리하기 위해 문자 단위로 파싱
+   */
+  private static extractNodeDtsText(nodeName: string, dtsText: string): string | undefined {
+    try {
+      // 노드 시작 위치 찾기
+      const escapedName = nodeName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const startPattern = new RegExp(`(\\s+)${escapedName}\\s*\\{`, 'g');
+      const match = startPattern.exec(dtsText);
+      
+      if (!match) {
+        serverLogger.warn(`[extractNodeDtsText] Could not find ${nodeName} in DTS text`);
+        return undefined;
+      }
+      
+      const startIndex = match.index;
+      let braceCount = 0;
+      let inString = false;
+      let endIndex = -1;
+      
+      // 노드명 다음 { 부터 시작
+      const contentStart = match.index + match[0].length - 1; // { 위치
+      
+      // 괄호 균형 맞추기
+      for (let i = contentStart; i < dtsText.length; i++) {
+        const char = dtsText[i];
+        const prevChar = i > 0 ? dtsText[i - 1] : '';
+        
+        // 문자열 처리 (escape 문자 고려)
+        if (char === '"' && prevChar !== '\\') {
+          inString = !inString;
+          continue;
+        }
+        
+        if (inString) continue;
+        
+        // 괄호 카운트
+        if (char === '{') {
+          braceCount++;
+        } else if (char === '}') {
+          braceCount--;
+          
+          // 모든 괄호가 닫혔고, 다음에 ; 가 있으면 종료
+          if (braceCount === 0) {
+            // ; 찾기
+            const nextChars = dtsText.substring(i + 1, i + 10);
+            const semicolonIndex = nextChars.indexOf(';');
+            if (semicolonIndex !== -1) {
+              endIndex = i + 1 + semicolonIndex + 1; // }; 까지 포함
+              break;
+            }
+          }
+        }
+      }
+      
+      if (endIndex === -1) {
+        serverLogger.warn(`[extractNodeDtsText] Could not find closing brace for ${nodeName}`);
+        return undefined;
+      }
+      
+      const extracted = dtsText.substring(startIndex, endIndex).trim();
+      serverLogger.info(`[extractNodeDtsText] Found ${nodeName}: ${extracted.length} chars`);
+      return extracted;
+      
+    } catch (error) {
+      serverLogger.error(`[extractNodeDtsText] Failed to extract DTS for ${nodeName}:`, error);
+      return undefined;
+    }
   }
 
   /**

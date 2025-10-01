@@ -181,7 +181,11 @@ function convertDtbToJson(dtc, inputPath) {
   }
   // Step 2: parse DTS text -> JSON structure
   const parsed = parseDts(dtsText)
-  return JSON.stringify(parsed, null, 2)
+  // Step 3: return both JSON and original DTS text
+  return JSON.stringify({ 
+    ...parsed, 
+    _originalDtsText: dtsText 
+  }, null, 2)
 }
 
 function main() {

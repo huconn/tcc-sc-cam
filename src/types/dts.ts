@@ -19,6 +19,7 @@ export interface DtsMap {
   root?: string
   nodes: DtsNode[]
   byPath?: Record<string, number>
+  _originalDtsText?: string  // 원본 DTS 텍스트 (DTB 변환 시 포함)
 }
 
 

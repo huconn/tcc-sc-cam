@@ -30,6 +30,7 @@ interface DeviceConfigModalProps {
   deviceModel: string;
   config: DeviceConfig;
   ports?: any[]; // DTB에서 로드한 원본 ports 정보
+  originalDts?: string; // DTB에서 로드한 원본 DTS 텍스트
   onSave: (config: DeviceConfig) => void;
   onClose: () => void;
 }
@@ -48,6 +49,7 @@ export const DeviceConfigModal: React.FC<DeviceConfigModalProps> = ({
   deviceModel,
   config: initialConfig,
   ports,
+  originalDts,
   onSave,
   onClose
 }) => {
@@ -142,6 +144,14 @@ export const DeviceConfigModal: React.FC<DeviceConfigModalProps> = ({
   };
 
   const generateDtsPreview = () => {
+    // If original DTS text is available, use it directly
+    if (originalDts) {
+      console.log('[DeviceConfigModal] Using original DTS:', originalDts.substring(0, 100) + '...');
+      return originalDts;
+    }
+
+    console.log('[DeviceConfigModal] Generating DTS from config data (no originalDts)');
+    // Otherwise, generate from config data
     let dts = `${config.nodeName} {\n`;
     dts += `    status = "${config.status}";\n`;
     dts += `    compatible = "${config.compatible}";\n`;
