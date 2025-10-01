@@ -47,7 +47,11 @@
     "deleteAppDataOnUninstall": true,
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
-    "shortcutName": "Telechips SOC Tool"
+    "shortcutName": "Telechips SOC Tool",
+    "artifactName": "${productName} Setup ${version}.${ext}"
+  },
+  "portable": {
+    "artifactName": "${productName} Portable ${version}.${ext}"
   },
   "mac": {
     "target": ["dmg", "zip"],
