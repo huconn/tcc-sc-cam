@@ -98,6 +98,23 @@ ipcMain.handle('get-app-version', () => {
   return version
 })
 
+// Handle IPC for renderer process logging
+ipcMain.handle('log-to-server', (_evt, level, message, data) => {
+  const timestamp = new Date().toISOString()
+  const logMessage = `[${timestamp}] [${level.toUpperCase()}] ${message}`
+  
+  if (data) {
+    console.log(logMessage)
+    if (typeof data === 'object') {
+      console.log(JSON.stringify(data, null, 2))
+    } else {
+      console.log(data)
+    }
+  } else {
+    console.log(logMessage)
+  }
+})
+
 // Allow user to pick a DTB and convert to JSON map
 ipcMain.handle('convert-dtb', async (_evt, inputPathOptional) => {
   try {

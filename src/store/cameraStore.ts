@@ -13,6 +13,7 @@ import {
   CIEDConfig,
   MDWConfig
 } from '@/types/camera';
+import { serverLogger } from '@/utils/serverLogger';
 
 interface CameraStore extends CameraConfiguration {
   setViewMode: (mode: ViewMode) => void;
@@ -134,7 +135,7 @@ export const useCameraStore = create<CameraStore>((set) => ({
   debugMainCoreViewHorizontalForceOutputs: false,
 
   // Global debug: show layout guide borders for all components
-  debugShowLayoutBorders: false,
+  debugShowLayoutBorders: true,
 
   // Show browser resolution and scale info
   debugShowResolution: true,
@@ -211,7 +212,15 @@ export const useCameraStore = create<CameraStore>((set) => ({
     mdwConfig: { ...state.mdwConfig, ...updates }
   })),
 
-  loadConfiguration: (config) => set(config),
+  loadConfiguration: (config) => {
+    serverLogger.info('[CameraStore] loadConfiguration 호출됨');
+    serverLogger.info('[CameraStore] externalDevices 저장 전:', config.externalDevices);
+    set(config);
+    
+    // 저장 후 확인
+    const state = useCameraStore.getState();
+    serverLogger.info('[CameraStore] externalDevices 저장 후:', state.externalDevices);
+  },
 
   exportConfiguration: () => {
     const state = useCameraStore.getState();

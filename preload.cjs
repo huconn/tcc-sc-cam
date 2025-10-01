@@ -16,5 +16,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Save DTS and compiled DTB to disk
   saveDtsDtb: (dtsText) => ipcRenderer.invoke('save-dts-dtb', dtsText),
   // Get app version
-  getAppVersion: () => ipcRenderer.invoke('get-app-version')
+  getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+  // Log to server (main process)
+  logToServer: (level, message, data) => ipcRenderer.invoke('log-to-server', level, message, data)
 })

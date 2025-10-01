@@ -49,6 +49,7 @@ export class NodeMappingRules {
     // Camera Sensor 패턴
     const sensorPatterns = [
       'ar0',      // AR0147, AR0231, AR0820, etc.
+      'arxxxx',   // arxxxx, arxxxx_1, etc.
       'imx',      // IMX219, IMX424, etc.
       'ov',       // OV5640, etc.
       'cxd'       // CXD5700, etc.
@@ -63,10 +64,18 @@ export class NodeMappingRules {
       'max9671'   // MAX96712, etc.
     ];
     
-    return (
-      sensorPatterns.some(p => compatible.includes(p) || nodeName.includes(p)) ||
-      serdesPatterns.some(p => compatible.includes(p) || nodeName.includes(p))
-    );
+    const isSensor = sensorPatterns.some(p => compatible.includes(p) || nodeName.includes(p));
+    const isSerdes = serdesPatterns.some(p => compatible.includes(p) || nodeName.includes(p));
+    const isExternalDevice = isSensor || isSerdes;
+    
+    // 디버그 로그 (매우 많은 로그가 나올 수 있으므로 조건부)
+    if (isExternalDevice || compatible.includes('ar') || compatible.includes('max') || nodeName.includes('ar') || nodeName.includes('max')) {
+      console.log(`[NodeMappingRules] External Device 판별: ${node.name} - compatible: "${compatible}", nodeName: "${nodeName}" -> ${isExternalDevice ? 'MATCH' : 'NO MATCH'}`);
+      if (isSensor) console.log(`  -> Sensor 패턴 매치`);
+      if (isSerdes) console.log(`  -> SerDes 패턴 매치`);
+    }
+    
+    return isExternalDevice;
   }
 
   /**

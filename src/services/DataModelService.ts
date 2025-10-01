@@ -1,6 +1,7 @@
 import type { DtsMap, DtsNode } from '@/types/dts';
 import type { CameraConfiguration } from '@/types/camera';
 import { NodeMappingRules } from './NodeMappingRules';
+import { serverLogger } from '@/utils/serverLogger';
 
 interface CameraMappingRules {
   version: string;
@@ -150,6 +151,12 @@ export class DataModelService {
 
     // I2C 채널 추출 (NodeMappingRules 사용, 자식 노드인 External Devices 포함)
     const i2cNodes = originalJson.nodes.filter(n => NodeMappingRules.isI2CNode(n));
+    serverLogger.info(`[DataModelService] 전체 노드 수: ${originalJson.nodes.length}`);
+    serverLogger.info(`[DataModelService] I2C 노드 발견: ${i2cNodes.length}개`);
+    i2cNodes.forEach((node, index) => {
+      serverLogger.info(`  I2C[${index}]: ${node.name} (${node.path})`);
+    });
+    
     config.i2cChannels = i2cNodes.map(node => 
       this.parseI2CNode(node, originalJson)
     ).filter(Boolean) as any[];
@@ -161,7 +168,7 @@ export class DataModelService {
         status: ch.status,
         deviceCount: Array.isArray(ch.devices) ? ch.devices.length : 0
       }));
-      console.log('[DataModelService] i2cChannels parsed:', i2cSummary);
+      serverLogger.info('[DataModelService] i2cChannels parsed:', i2cSummary);
     } catch {}
 
     // External Devices는 I2C 채널에서 가져옴
@@ -169,16 +176,34 @@ export class DataModelService {
     const mipi0Devices: any[] = [];
     const mipi1Devices: any[] = [];
     
+    serverLogger.info(`[DataModelService] i2cMain: ${config.i2cMain || 12}, i2cSub: ${config.i2cSub || 13}`);
+    
     // i2cMain 채널의 디바이스들 → mipi0
     const i2cMainChannel = config.i2cChannels?.find(i2c => i2c.channelNumber === (config.i2cMain || 12));
     if (i2cMainChannel) {
-      mipi0Devices.push(...i2cMainChannel.devices.filter(d => d.status === 'okay'));
+      serverLogger.info(`[DataModelService] i2cMain 채널 발견: 채널${i2cMainChannel.channelNumber}, 디바이스 ${i2cMainChannel.devices?.length || 0}개`);
+      
+      // 각 디바이스의 상태 확인
+      i2cMainChannel.devices?.forEach((device, index) => {
+        serverLogger.info(`    Device[${index}] ${device.name}: status="${device.status}"`);
+      });
+      
+      const okDevices = i2cMainChannel.devices?.filter(d => d.status === 'okay') || [];
+      serverLogger.info(`[DataModelService] mipi0용 okay 디바이스: ${okDevices.length}개`);
+      mipi0Devices.push(...okDevices);
+    } else {
+      serverLogger.warn(`[DataModelService] i2cMain 채널 ${config.i2cMain || 12}를 찾을 수 없음`);
     }
     
     // i2cSub 채널의 디바이스들 → mipi1
     const i2cSubChannel = config.i2cChannels?.find(i2c => i2c.channelNumber === (config.i2cSub || 13));
     if (i2cSubChannel) {
-      mipi1Devices.push(...i2cSubChannel.devices.filter(d => d.status === 'okay'));
+      serverLogger.info(`[DataModelService] i2cSub 채널 발견: 채널${i2cSubChannel.channelNumber}, 디바이스 ${i2cSubChannel.devices?.length || 0}개`);
+      const okDevices = i2cSubChannel.devices?.filter(d => d.status === 'okay') || [];
+      serverLogger.info(`[DataModelService] mipi1용 okay 디바이스: ${okDevices.length}개`);
+      mipi1Devices.push(...okDevices);
+    } else {
+      serverLogger.warn(`[DataModelService] i2cSub 채널 ${config.i2cSub || 13}를 찾을 수 없음`);
     }
     
     config.externalDevices = {
@@ -201,6 +226,38 @@ export class DataModelService {
         total: mipi1Devices.length,
         byType: countByType(mipi1Devices)
       });
+      
+      // 상세 로그: 실제 저장되는 externalDevices 구조 (서버 콘솔로 전송)
+      serverLogger.info('[DataModelService] externalDevices 저장 구조:', config.externalDevices);
+      
+      // 각 디바이스의 상세 정보 로그 (서버 콘솔로 전송)
+      if (mipi0Devices.length > 0) {
+        serverLogger.info('[DataModelService] mipi0 디바이스 상세 정보:');
+        mipi0Devices.forEach((device, index) => {
+          serverLogger.info(`  [${index}] ${device.name}:`, {
+            id: device.id,
+            type: device.type,
+            compatible: device.compatible,
+            reg: device.reg,
+            status: device.status,
+            ports: device.ports ? `${device.ports.length} ports` : 'no ports'
+          });
+        });
+      }
+      
+      if (mipi1Devices.length > 0) {
+        serverLogger.info('[DataModelService] mipi1 디바이스 상세 정보:');
+        mipi1Devices.forEach((device, index) => {
+          serverLogger.info(`  [${index}] ${device.name}:`, {
+            id: device.id,
+            type: device.type,
+            compatible: device.compatible,
+            reg: device.reg,
+            status: device.status,
+            ports: device.ports ? `${device.ports.length} ports` : 'no ports'
+          });
+        });
+      }
     } catch {}
 
     return config;
@@ -369,6 +426,13 @@ export class DataModelService {
       NodeMappingRules.isExternalDeviceNode(n)
     );
     
+    serverLogger.info(`[DataModelService] I2C 채널 ${channelNumber} (${node.path})에서 자식 디바이스 찾기:`);
+    serverLogger.info(`  - ${node.path}로 시작하는 노드: ${dtsMap.nodes.filter(n => n.path.startsWith(node.path + '/')).length}개`);
+    serverLogger.info(`  - External Device로 판별된 노드: ${childDevices.length}개`);
+    childDevices.forEach((device, index) => {
+      serverLogger.info(`    [${index}] ${device.name} (${device.path}) - compatible: ${device.props?.compatible}`);
+    });
+    
     const devices = childDevices.map(deviceNode => 
       this.parseExternalDeviceNode(deviceNode)
     ).filter(Boolean);
@@ -400,30 +464,45 @@ export class DataModelService {
     const props = node.props || {};
     const compatible = String(props.compatible || '');
     
+    // compatible 값에서 따옴표 제거
+    const cleanCompatible = compatible.replace(/['"]/g, '').trim();
+    
     // 타입 판단
     let type: 'sensor' | 'serializer' | 'deserializer' | 'external-isp' = 'sensor';
-    if (compatible.includes('max967') || compatible.includes('serializer')) {
+    if (cleanCompatible.includes('max967') || cleanCompatible.includes('serializer')) {
       type = 'serializer';
-    } else if (compatible.includes('max928') || compatible.includes('deserializer')) {
+    } else if (cleanCompatible.includes('max928') || cleanCompatible.includes('deserializer')) {
       type = 'deserializer';
     }
     
     // 모델명 추출
-    const modelMatch = compatible.match(/tcc-[^,]+,(.+)/);
+    const modelMatch = cleanCompatible.match(/tcc-[^,]+,(.+)/);
     const model = modelMatch ? modelMatch[1] : node.name;
     
     // Ports 파싱
     const ports = this.parsePortsFromNode(node);
+    
+    // status 처리: 원본 DTS의 status 값에서 따옴표 제거
+    const rawStatus = props.status;
+    const cleanStatus = typeof rawStatus === 'string' ? rawStatus.replace(/['"]/g, '').trim() : rawStatus;
+    const status = cleanStatus === 'okay' ? 'okay' : 'disabled';
+    
+    // 디버그: 원본 status 값 로그
+    console.log(`[parseExternalDeviceNode] ${node.name}: rawStatus="${rawStatus}" -> cleanStatus="${cleanStatus}" -> status="${status}"`);
+    
+    // 기타 속성들도 따옴표 제거
+    const cleanReg = typeof props.reg === 'string' ? props.reg.replace(/['"]/g, '').trim() : props.reg;
+    const cleanPwdGpios = typeof props['pwd-gpios'] === 'string' ? props['pwd-gpios'].replace(/['"]/g, '').trim() : props['pwd-gpios'];
     
     return {
       id: node.name,
       type,
       name: node.name.split('@')[0],
       model,
-      status: props.status === 'okay' ? 'okay' : 'disabled',
-      compatible,
-      reg: props.reg,
-      pwdGpios: props['pwd-gpios'],
+      status,
+      compatible: cleanCompatible,
+      reg: cleanReg,
+      pwdGpios: cleanPwdGpios,
       broadcastingMode: props['broadcasting-mode'] === true || props['broadcasting-mode'] === '',
       ports
     };
