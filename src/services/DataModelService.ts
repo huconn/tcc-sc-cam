@@ -434,7 +434,7 @@ export class DataModelService {
     });
     
     const devices = childDevices.map(deviceNode => 
-      this.parseExternalDeviceNode(deviceNode)
+      this.parseExternalDeviceNode(deviceNode, dtsMap.nodes)
     ).filter(Boolean);
     
     return {
@@ -460,7 +460,7 @@ export class DataModelService {
   /**
    * External Device 노드 파싱
    */
-  private static parseExternalDeviceNode(node: DtsNode): any {
+  private static parseExternalDeviceNode(node: DtsNode, allNodes: DtsNode[]): any {
     const props = node.props || {};
     const compatible = String(props.compatible || '');
     
@@ -479,8 +479,8 @@ export class DataModelService {
     const modelMatch = cleanCompatible.match(/tcc-[^,]+,(.+)/);
     const model = modelMatch ? modelMatch[1] : node.name;
     
-    // Ports 파싱
-    const ports = this.parsePortsFromNode(node);
+    // Ports 파싱 (전체 노드 리스트 전달)
+    const ports = this.parsePortsFromNode(node, allNodes);
     
     // status 처리: 원본 DTS의 status 값에서 따옴표 제거
     const rawStatus = props.status;
@@ -510,11 +510,79 @@ export class DataModelService {
 
   /**
    * Ports 파싱
+   * DTS 파서가 노드를 평탄화하므로, allNodes에서 path 기반으로 자식 노드를 찾아야 함
    */
-  private static parsePortsFromNode(_node: DtsNode): any[] {
-    // TODO: children에서 ports 노드를 찾아서 파싱
-    // 현재는 간단히 빈 배열 반환
-    return [];
+  private static parsePortsFromNode(node: DtsNode, allNodes: DtsNode[]): any[] {
+    const ports: any[] = [];
+    
+    // 현재 노드의 path를 기준으로 자식 노드들 찾기
+    const basePath = node.path;
+    
+    // 단일 'port' 노드 찾기
+    const portNode = allNodes.find(n => n.path === `${basePath}/port`);
+    if (portNode) {
+      // port의 endpoint 노드 찾기
+      const endpointNodes = allNodes.filter(n => 
+        n.path.startsWith(`${basePath}/port/`) && n.name.startsWith('endpoint')
+      );
+      
+      endpointNodes.forEach(endpointNode => {
+        const props = endpointNode.props || {};
+        ports.push({
+          name: endpointNode.name,
+          remoteEndpoint: props['remote-endpoint'],
+          ioDirection: typeof props['io-direction'] === 'string' 
+            ? props['io-direction'].replace(/['"]/g, '').trim() 
+            : props['io-direction'],
+          phandle: props.phandle
+        });
+      });
+    }
+
+    // 'ports' 노드 찾기 (복수형 - deserializer에서 사용)
+    const portsNode = allNodes.find(n => n.path === `${basePath}/ports`);
+    if (portsNode) {
+      // ports 아래의 port@N 노드들 찾기
+      const portChildNodes = allNodes.filter(n => 
+        n.path.startsWith(`${basePath}/ports/port@`)
+      );
+      
+      // port@N별로 그룹핑
+      const portPaths = new Set(portChildNodes.map(n => {
+        const match = n.path.match(/^(.*\/port@\d+)/);
+        return match ? match[1] : null;
+      }).filter(Boolean));
+      
+      portPaths.forEach(portPath => {
+        const portName = portPath?.split('/').pop(); // "port@0"
+        const portNumber = portName?.split('@')[1]; // "0"
+        
+        // 해당 port@N의 endpoint들 찾기
+        const endpointNodes = allNodes.filter(n => 
+          n.path.startsWith(`${portPath}/`) && n.name.startsWith('endpoint')
+        );
+        
+        endpointNodes.forEach(endpointNode => {
+          const props = endpointNode.props || {};
+          ports.push({
+            name: `${portName}/${endpointNode.name}`,
+            portNumber,
+            remoteEndpoint: props['remote-endpoint'],
+            ioDirection: typeof props['io-direction'] === 'string' 
+              ? props['io-direction'].replace(/['"]/g, '').trim() 
+              : props['io-direction'],
+            phandle: props.phandle
+          });
+        });
+      });
+    }
+
+    serverLogger.info(`[parsePortsFromNode] ${node.name}: ${ports.length} ports parsed`);
+    if (ports.length > 0) {
+      serverLogger.info(`[parsePortsFromNode] ports:`, ports);
+    }
+
+    return ports;
   }
 
   /**
