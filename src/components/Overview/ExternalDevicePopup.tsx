@@ -30,6 +30,7 @@ interface Device {
   compatible?: string;
   reg?: string;
   status?: string;
+  ports?: any[];
   config?: DeviceConfig;
 }
 
@@ -398,6 +399,7 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
               compatible: savedDevice.compatible,
               reg: savedDevice.reg,
               status: savedDevice.status,
+              ports: savedDevice.ports || [],
               config: savedDevice.config || {
                 deviceName: savedDevice.name || deviceType.name,
                 nodeName: savedDevice.id || `${savedDevice.type}_${Date.now()}`,
@@ -997,6 +999,7 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
             status: (selectedDevice.status as 'okay' | 'disabled') || 'okay',
             properties: []
           }}
+          ports={(selectedDevice as any).ports}
           onSave={handleSaveDeviceConfig}
           onClose={() => {
             setShowConfigModal(false);

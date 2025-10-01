@@ -29,6 +29,7 @@ interface DeviceConfigModalProps {
   deviceType: string;
   deviceModel: string;
   config: DeviceConfig;
+  ports?: any[]; // DTB에서 로드한 원본 ports 정보
   onSave: (config: DeviceConfig) => void;
   onClose: () => void;
 }
@@ -46,6 +47,7 @@ export const DeviceConfigModal: React.FC<DeviceConfigModalProps> = ({
   deviceType,
   deviceModel,
   config: initialConfig,
+  ports,
   onSave,
   onClose
 }) => {
@@ -140,42 +142,68 @@ export const DeviceConfigModal: React.FC<DeviceConfigModalProps> = ({
   };
 
   const generateDtsPreview = () => {
-    let dts = `${config.nodeName}: ${config.deviceName} {\n`;
-    dts += `    compatible = "${config.compatible}";\n`;
-    dts += `    reg = <${config.reg}>;\n`;
+    let dts = `${config.nodeName} {\n`;
     dts += `    status = "${config.status}";\n`;
+    dts += `    compatible = "${config.compatible}";\n`;
+    dts += `    reg = ${config.reg};\n`;
 
-    // Generate port/endpoint structure for connections
-    const hasConnections = config.inEndpoints.some(e => e) || config.outEndpoints.some(e => e);
-
-    if (hasConnections) {
-      dts += `\n    port {\n`;
-
-      // Output endpoints
-      config.outEndpoints.forEach((endpoint, index) => {
-        if (endpoint) {
-          const epLabel = endpoint.replace('&', ''); // Remove & for label definition
-          dts += `        ${config.nodeName}_out${index}: endpoint@${index} {\n`;
-          dts += `            reg = <${index}>;\n`;
-          dts += `            remote-endpoint = <${endpoint}>;\n`;
+    // Use original ports data from DTB if available
+    if (ports && ports.length > 0) {
+      // Check if it's a single port or multiple ports
+      const hasMultiplePorts = ports.some(p => p.portNumber !== undefined);
+      
+      if (hasMultiplePorts) {
+        // Multiple ports (serializer/deserializer)
+        dts += `\n    ports {\n`;
+        
+        // Group ports by port number
+        const portsByNumber = ports.reduce((acc: any, port: any) => {
+          const num = port.portNumber || '0';
+          if (!acc[num]) acc[num] = [];
+          acc[num].push(port);
+          return acc;
+        }, {});
+        
+        Object.keys(portsByNumber).sort().forEach((portNum: string) => {
+          dts += `\n        port@${portNum} {\n`;
+          portsByNumber[portNum].forEach((endpoint: any) => {
+            dts += `\n            endpoint {\n`;
+            if (endpoint.remoteEndpoint) {
+              dts += `                remote-endpoint = ${endpoint.remoteEndpoint};\n`;
+            }
+            if (endpoint.ioDirection) {
+              dts += `                io-direction = "${endpoint.ioDirection}";\n`;
+            }
+            if (endpoint.phandle) {
+              dts += `                phandle = ${endpoint.phandle};\n`;
+            }
+            dts += `            };\n`;
+          });
           dts += `        };\n`;
-        }
-      });
-
-      // Input endpoints
-      config.inEndpoints.forEach((endpoint, index) => {
-        if (endpoint) {
-          const epLabel = endpoint.replace('&', ''); // Remove & for label definition
-          dts += `        ${config.nodeName}_in${index}: endpoint@${index + 10} {\n`;
-          dts += `            reg = <${index + 10}>;\n`;
-          dts += `            remote-endpoint = <${endpoint}>;\n`;
+        });
+        
+        dts += `    };\n`;
+      } else {
+        // Single port (sensor)
+        dts += `\n    port {\n`;
+        ports.forEach((endpoint: any) => {
+          dts += `\n        endpoint {\n`;
+          if (endpoint.remoteEndpoint) {
+            dts += `            remote-endpoint = ${endpoint.remoteEndpoint};\n`;
+          }
+          if (endpoint.ioDirection) {
+            dts += `            io-direction = "${endpoint.ioDirection}";\n`;
+          }
+          if (endpoint.phandle) {
+            dts += `            phandle = ${endpoint.phandle};\n`;
+          }
           dts += `        };\n`;
-        }
-      });
-
-      dts += `    };\n`;
+        });
+        dts += `    };\n`;
+      }
     }
 
+    // Add custom properties
     config.properties.forEach(prop => {
       if (prop.type === 'string') {
         dts += `    ${prop.name} = "${prop.value}";\n`;
