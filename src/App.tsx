@@ -7,13 +7,19 @@ import { loadJSON } from '@/utils/fileLoader';
 import { useCameraStore } from '@/store/cameraStore';
 import { DTSGenerator } from '@/utils/dtsGenerator';
 import { DtsController } from '@/controllers/DtsController';
+import { useDebugToggle } from '@/hooks/useDebugToggle';
 
 export const App: React.FC = () => {
   const { exportConfiguration, loadConfiguration, setOriginalDtsMap, setDebugShowLayoutBorders } = useCameraStore();
   const debugShowDtsMap = useCameraStore((s: any) => s.debugShowDtsMap as boolean);
-  const debugShowLayoutBordersFlag = useCameraStore((s: any) => s.debugShowLayoutBorders as boolean);
   const debugShowResolution = useCameraStore((s: any) => s.debugShowResolution as boolean);
   const debugShowConfigurationSelector = useCameraStore((s: any) => s.debugShowConfigurationSelector as boolean);
+  
+  // Layout Borders feature flag (초기값만 저장, 이후 변경되지 않음)
+  // ⚠️ 주의: store를 구독하면 안 됨! (sync로 인해 false가 되면 feature가 꺼짐)
+  const [layoutBordersFeatureEnabled] = useState<boolean>(() => {
+    return useCameraStore.getState().debugShowLayoutBorders ?? false;
+  });
   const webLoadInputRef = useRef<HTMLInputElement | null>(null);
   const [appVersion, setAppVersion] = useState<string>('');
   // localStorage에서 이전 선택 복원 (새로고침 시 유지)
@@ -37,31 +43,21 @@ export const App: React.FC = () => {
     scale: '100%',
     devicePixelRatio: 1
   });
-  const [dtsMapVisible, setDtsMapVisible] = useState<boolean>(true);  // DTS Map 표시 상태 (초기값 true)
-  const [layoutBordersVisible, setLayoutBordersVisible] = useState<boolean>(true);  // Layout Borders 표시 상태 (초기값 true)
-  // Layout Borders feature flag (초기값만 저장, 변경되지 않음)
-  const [layoutBordersFeatureEnabled] = useState<boolean>(() => {
-    return useCameraStore.getState().debugShowLayoutBorders ?? false;
+
+  // Debug toggles using custom hook
+  const [dtsMapVisible] = useDebugToggle({
+    key: 'D',
+    featureEnabled: debugShowDtsMap,
+    debugName: 'DTS Map'
   });
 
-  // Debug: DTS Map 표시 상태 로그
-  useEffect(() => {
-    console.log('[DTS Map Debug]', {
-      debugShowDtsMap,
-      dtsMapVisible,
-      shouldShow: debugShowDtsMap && dtsMapVisible
-    });
-  }, [debugShowDtsMap, dtsMapVisible]);
-
-  // Debug: Layout Borders 표시 상태 로그
-  useEffect(() => {
-    console.log('[Layout Borders Debug]', {
-      layoutBordersFeatureEnabled,
-      layoutBordersVisible,
-      debugShowLayoutBordersFlag,
-      shouldShow: layoutBordersFeatureEnabled && layoutBordersVisible
-    });
-  }, [layoutBordersFeatureEnabled, layoutBordersVisible, debugShowLayoutBordersFlag]);
+  // Layout Borders toggle (internal state managed by hook, synced to store)
+  useDebugToggle({
+    key: 'L',
+    featureEnabled: layoutBordersFeatureEnabled,  // 초기값만 사용, store 구독 안 함!
+    storeSetter: setDebugShowLayoutBorders,
+    debugName: 'Layout Borders'
+  });
 
   useEffect(() => {
     // Get app version when component mounts
@@ -157,62 +153,6 @@ export const App: React.FC = () => {
       window.removeEventListener('resize', updateBrowserInfo);
     };
   }, []);
-
-  // Keyboard shortcut for DTS Map toggle (Ctrl+Shift+D)
-  // debugShowDtsMap이 true일 때만 토글 가능
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.ctrlKey && event.shiftKey && event.key === 'D') {
-        event.preventDefault();
-        if (debugShowDtsMap) {
-          setDtsMapVisible(prev => !prev);
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [debugShowDtsMap]);
-
-  // Keyboard shortcut for Layout Borders toggle (Ctrl+Shift+L)
-  // layoutBordersFeatureEnabled가 true일 때만 토글 가능
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.ctrlKey && event.shiftKey && event.key === 'L') {
-        event.preventDefault();
-        console.log('[Layout Borders] Ctrl+Shift+L pressed. Feature enabled:', layoutBordersFeatureEnabled);
-        if (layoutBordersFeatureEnabled) {
-          setLayoutBordersVisible(prev => {
-            console.log('[Layout Borders] Toggling from', prev, 'to', !prev);
-            return !prev;
-          });
-        } else {
-          console.log('[Layout Borders] Toggle blocked - feature is disabled');
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [layoutBordersFeatureEnabled]);
-
-  // Sync layoutBordersVisible to store
-  useEffect(() => {
-    if (setDebugShowLayoutBorders && layoutBordersFeatureEnabled) {
-      // feature가 활성화되어 있을 때만 layoutBordersVisible 값을 store에 동기화
-      setDebugShowLayoutBorders(layoutBordersVisible);
-      console.log('[Layout Borders] Synced to store:', layoutBordersVisible);
-    } else if (setDebugShowLayoutBorders && !layoutBordersFeatureEnabled) {
-      // feature가 비활성화되어 있으면 무조건 false
-      setDebugShowLayoutBorders(false);
-    }
-  }, [layoutBordersVisible, layoutBordersFeatureEnabled, setDebugShowLayoutBorders]);
 
   const handleExportDTS = () => {
     const config = exportConfiguration();
