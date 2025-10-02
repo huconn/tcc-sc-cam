@@ -9,8 +9,9 @@ import { DTSGenerator } from '@/utils/dtsGenerator';
 import { DtsController } from '@/controllers/DtsController';
 
 export const App: React.FC = () => {
-  const { exportConfiguration, loadConfiguration, setOriginalDtsMap } = useCameraStore();
+  const { exportConfiguration, loadConfiguration, setOriginalDtsMap, setDebugShowLayoutBorders } = useCameraStore();
   const debugShowDtsMap = useCameraStore((s: any) => s.debugShowDtsMap as boolean);
+  const debugShowLayoutBordersFlag = useCameraStore((s: any) => s.debugShowLayoutBorders as boolean);
   const debugShowResolution = useCameraStore((s: any) => s.debugShowResolution as boolean);
   const debugShowConfigurationSelector = useCameraStore((s: any) => s.debugShowConfigurationSelector as boolean);
   const webLoadInputRef = useRef<HTMLInputElement | null>(null);
@@ -37,6 +38,10 @@ export const App: React.FC = () => {
     devicePixelRatio: 1
   });
   const [dtsMapVisible, setDtsMapVisible] = useState<boolean>(true);  // DTS Map 표시 상태 (초기값 true)
+  // Layout Borders feature flag (초기값 저장, 변경 안 됨)
+  const [layoutBordersFeatureEnabled] = useState<boolean>(() => {
+    return useCameraStore.getState().debugShowLayoutBorders ?? false;
+  });
 
   // Debug: DTS Map 표시 상태 로그
   useEffect(() => {
@@ -46,6 +51,14 @@ export const App: React.FC = () => {
       shouldShow: debugShowDtsMap && dtsMapVisible
     });
   }, [debugShowDtsMap, dtsMapVisible]);
+
+  // Debug: Layout Borders 표시 상태 로그
+  useEffect(() => {
+    console.log('[Layout Borders Debug]', {
+      layoutBordersFeatureEnabled,
+      debugShowLayoutBordersFlag
+    });
+  }, [layoutBordersFeatureEnabled, debugShowLayoutBordersFlag]);
 
   useEffect(() => {
     // Get app version when component mounts
@@ -160,6 +173,28 @@ export const App: React.FC = () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [debugShowDtsMap]);
+
+  // Keyboard shortcut for Layout Borders toggle (Ctrl+Shift+L)
+  // layoutBordersFeatureEnabled이 true일 때만 토글 가능
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.ctrlKey && event.shiftKey && event.key === 'L') {
+        event.preventDefault();
+        if (layoutBordersFeatureEnabled && setDebugShowLayoutBorders) {
+          // Store 값을 직접 토글
+          const currentValue = useCameraStore.getState().debugShowLayoutBorders;
+          setDebugShowLayoutBorders(!currentValue);
+          console.log('[Layout Borders] Toggled:', currentValue, '->', !currentValue);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [layoutBordersFeatureEnabled, setDebugShowLayoutBorders]);
 
   const handleExportDTS = () => {
     const config = exportConfiguration();

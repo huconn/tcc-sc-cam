@@ -561,6 +561,9 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
       //external devices to mipi0, mipi1
       computeExternalToMipi();
 
+      //i2c to external devices
+      computeI2cToExternal();
+
       //isp to cied connections
       computeIspToCied();
 
