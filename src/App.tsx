@@ -8,6 +8,9 @@ import { useCameraStore } from '@/store/cameraStore';
 import { DTSGenerator } from '@/utils/dtsGenerator';
 import { DtsController } from '@/controllers/DtsController';
 import { useDebugToggle } from '@/hooks/useDebugToggle';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useWindowSize } from '@/hooks/useWindowSize';
+import { useElectronAPI } from '@/hooks/useElectronAPI';
 
 export const App: React.FC = () => {
   const { exportConfiguration, loadConfiguration, setOriginalDtsMap, setDebugShowLayoutBorders } = useCameraStore();
@@ -15,34 +18,21 @@ export const App: React.FC = () => {
   const debugShowResolution = useCameraStore((s: any) => s.debugShowResolution as boolean);
   const debugShowConfigurationSelector = useCameraStore((s: any) => s.debugShowConfigurationSelector as boolean);
   
-  // Layout Borders feature flag (초기값만 저장, 이후 변경되지 않음)
-  // ⚠️ 주의: store를 구독하면 안 됨! (sync로 인해 false가 되면 feature가 꺼짐)
+  // Layout Borders feature flag (save initial value only, never changes)
+  // WARNING: Do not subscribe to store! (feature will be disabled if sync makes it false)
   const [layoutBordersFeatureEnabled] = useState<boolean>(() => {
     return useCameraStore.getState().debugShowLayoutBorders ?? false;
   });
+  
   const webLoadInputRef = useRef<HTMLInputElement | null>(null);
-  const [appVersion, setAppVersion] = useState<string>('');
-  // localStorage에서 이전 선택 복원 (새로고침 시 유지)
-  const [currentSoc, setCurrentSoc] = useState<string>(() => {
-    return localStorage.getItem('selectedSoc') || '';
-  });
-  const [currentModule, setCurrentModule] = useState<string>(() => {
-    return localStorage.getItem('selectedModule') || '';
-  });
-  const [showSelector, setShowSelector] = useState<boolean>(false);  // Configuration Selector 표시 (초기값 false)
-  const [isElectronApp, setIsElectronApp] = useState<boolean>(() => {
-    const w: any = window as any;
-    const ua = navigator.userAgent || '';
-    const isElectronUA = ua.includes('Electron');
-    const isElectronProcess = !!w?.process?.versions?.electron;
-    const hasElectronAPI = !!w?.electronAPI?.getAppVersion;
-    return isElectronUA || isElectronProcess || hasElectronAPI;
-  });
-  const [browserInfo, setBrowserInfo] = useState({
-    resolution: '0x0',
-    scale: '100%',
-    devicePixelRatio: 1
-  });
+  
+  // Custom Hooks
+  const [currentSoc, setCurrentSoc] = useLocalStorage('selectedSoc', '');
+  const [currentModule, setCurrentModule] = useLocalStorage('selectedModule', '');
+  const windowSize = useWindowSize();
+  const { isElectron: isElectronApp, version: appVersion } = useElectronAPI();
+  
+  const [showSelector, setShowSelector] = useState<boolean>(false);  // Show Configuration Selector (default: false)
 
   // Debug toggles using custom hook
   const [dtsMapVisible] = useDebugToggle({
@@ -54,39 +44,13 @@ export const App: React.FC = () => {
   // Layout Borders toggle (internal state managed by hook, synced to store)
   useDebugToggle({
     key: 'L',
-    featureEnabled: layoutBordersFeatureEnabled,  // 초기값만 사용, store 구독 안 함!
+    featureEnabled: layoutBordersFeatureEnabled,  // Use initial value only, do not subscribe to store
     storeSetter: setDebugShowLayoutBorders,
     debugName: 'Layout Borders'
   });
 
-  useEffect(() => {
-    // Get app version when component mounts
-    const getVersion = async () => {
-      // Check if we're in Electron environment
-      const electronAPI = (window as any).electronAPI;
-
-      if (electronAPI?.getAppVersion) {
-        try {
-          const version = await electronAPI.getAppVersion();
-          setAppVersion(version);
-          setIsElectronApp(true);
-        } catch (error) {
-          console.error('Failed to get app version:', error);
-          setAppVersion('0.0.0'); // Fallback to base version
-          setIsElectronApp(false);
-        }
-      } else {
-        // Running in browser or electronAPI not available
-        setAppVersion('0.0.0'); // Use base version for dev
-        setIsElectronApp(false);
-      }
-    };
-
-    getVersion();
-  }, []);
-
-  // Electron 환경에서는 main.cjs의 'close' 이벤트에서 localStorage 정리
-  // 브라우저 환경에서는 localStorage 유지 (개발용)
+  // Electron: localStorage is cleared on 'close' event in main.cjs
+  // Browser: localStorage persists (for development)
 
   // Auto-load default SoC/Module if selector is disabled
   useEffect(() => {
@@ -114,9 +78,7 @@ export const App: React.FC = () => {
               console.log(`Auto-loading: ${socKey} / ${moduleKey}`);
               setCurrentSoc(socKey);
               setCurrentModule(moduleKey);
-              // localStorage에도 저장 (세션 유지)
-              localStorage.setItem('selectedSoc', socKey);
-              localStorage.setItem('selectedModule', moduleKey);
+              // useLocalStorage Hook automatically saves to localStorage
             }
           }
         } catch (error) {
@@ -127,32 +89,6 @@ export const App: React.FC = () => {
     
     autoLoadDefault();
   }, [debugShowConfigurationSelector, currentSoc, currentModule]);
-
-  // Update browser info (resolution, scale, device pixel ratio)
-  useEffect(() => {
-    const updateBrowserInfo = () => {
-      const resolution = `${screen.width}x${screen.height}`;
-      const scale = Math.round((window.outerWidth / window.innerWidth) * 100);
-      const devicePixelRatio = window.devicePixelRatio || 1;
-      
-      setBrowserInfo({
-        resolution,
-        scale: `${scale}%`,
-        devicePixelRatio
-      });
-    };
-
-    // Initial update
-    updateBrowserInfo();
-
-    // Listen for resize events
-    window.addEventListener('resize', updateBrowserInfo);
-    
-    // Cleanup
-    return () => {
-      window.removeEventListener('resize', updateBrowserInfo);
-    };
-  }, []);
 
   const handleExportDTS = () => {
     const config = exportConfiguration();
@@ -283,35 +219,25 @@ export const App: React.FC = () => {
     setCurrentSoc(soc);
     setCurrentModule(module);
     setShowSelector(false);
-    
-    // localStorage에 저장 (새로고침 시 유지)
-    localStorage.setItem('selectedSoc', soc);
-    localStorage.setItem('selectedModule', module);
+    // useLocalStorage Hook automatically saves to localStorage
   };
 
-  // 팝업 표시 조건
-  // 1. debugShowConfigurationSelector가 true이고
-  // 2. (localStorage에 저장된 값이 없거나 showSelector가 true일 때)
-  const hasStoredSelection = localStorage.getItem('selectedSoc') && localStorage.getItem('selectedModule');
+  // Popup display conditions
+  // 1. debugShowConfigurationSelector is true, and
+  // 2. (no stored values or showSelector is true)
+  const hasStoredSelection = currentSoc && currentModule;
   const shouldShowSelector = debugShowConfigurationSelector && (!hasStoredSelection || showSelector);
   
-  // 디버깅 로그 및 강제 초기화 (임시)
+  // Debug logging
   useEffect(() => {
     console.log('=== Selector Debug ===');
     console.log('debugShowConfigurationSelector:', debugShowConfigurationSelector);
     console.log('hasStoredSelection:', !!hasStoredSelection);
-    console.log('storedSoc:', localStorage.getItem('selectedSoc'));
-    console.log('storedModule:', localStorage.getItem('selectedModule'));
     console.log('currentSoc:', currentSoc);
     console.log('currentModule:', currentModule);
     console.log('showSelector:', showSelector);
     console.log('shouldShowSelector:', shouldShowSelector);
     console.log('=====================');
-    
-    // 🔥 임시: localStorage 강제 초기화 (테스트용 - 확인 후 다시 주석 처리)
-    // UNCOMMENT BELOW TO TEST FIRST RUN:
-    // localStorage.removeItem('selectedSoc');
-    // localStorage.removeItem('selectedModule');
   }, [debugShowConfigurationSelector, hasStoredSelection, currentSoc, currentModule, showSelector, shouldShowSelector]);
 
   return (
@@ -334,9 +260,7 @@ export const App: React.FC = () => {
                   setShowSelector(true);
                   setCurrentSoc('');
                   setCurrentModule('');
-                  // localStorage 초기화 (재선택 가능하도록)
-                  localStorage.removeItem('selectedSoc');
-                  localStorage.removeItem('selectedModule');
+                  // useLocalStorage Hook automatically updates localStorage
                 }}
                 className="text-xs text-gray-400 hover:text-gray-200 underline"
               >
@@ -437,11 +361,11 @@ export const App: React.FC = () => {
       {/* Browser Info - Bottom Left Corner, always on top when debug flag enabled */}
       {debugShowResolution && (
         <div className="fixed bottom-3 left-3 z-[1000] bg-gray-800/90 backdrop-blur-sm border border-gray-700/50 rounded px-3 py-2 text-[11px] leading-4 text-gray-200 shadow-lg">
-          <span className="text-gray-400">Resolution:</span> {browserInfo.resolution}
+          <span className="text-gray-400">Resolution:</span> {windowSize.resolution}
           <span className="mx-2" />
-          <span className="text-gray-400">Scale:</span> {browserInfo.scale}
+          <span className="text-gray-400">Scale:</span> {windowSize.scale}
           <span className="mx-2" />
-          <span className="text-gray-400">DPR:</span> {browserInfo.devicePixelRatio}
+          <span className="text-gray-400">DPR:</span> {windowSize.dpr}
         </div>
       )}
     </div>

@@ -1,119 +1,48 @@
-# Debug Toggle Hook
+# Custom React Hooks
 
-디버그 기능의 키보드 토글 동작을 간편하게 구현하는 재사용 가능한 Custom Hook입니다.
+This directory contains reusable React Custom Hooks.
 
-## 기능
+## Table of Contents
 
-- ✅ 키보드 단축키로 디버그 기능 토글
-- ✅ Feature flag를 통한 활성화/비활성화 제어
-- ✅ Store 자동 동기화 (선택적)
-- ✅ 커스터마이징 가능한 키 조합 (Ctrl, Shift, Alt)
-- ✅ 자동 디버깅 로그
+- [useDebugToggle](#usedebugtoggle)
+- [useLocalStorage](#uselocalstorage)
+- [useWindowSize](#usewindowsize)
+- [useElectronAPI](#useelectronapi)
 
-## 사용법
+---
 
-### 기본 사용 (표시 상태만 관리)
+## useDebugToggle
+
+A Hook that manages keyboard shortcut-based toggle functionality for debug features.
+
+### Features
+
+- Toggle debug features with keyboard shortcuts
+- Enable/disable control via feature flags
+- Automatic store synchronization (optional)
+- Customizable key combinations (Ctrl, Shift, Alt)
+- Automatic debug logging
+
+### Usage
+
+#### Basic Usage (Display State Only)
 
 ```tsx
 import { useDebugToggle } from '@/hooks/useDebugToggle';
 
 const [visible] = useDebugToggle({
   key: 'D',                          // Ctrl+Shift+D
-  featureEnabled: debugShowDtsMap,   // Store의 feature flag
-  debugName: 'DTS Map'               // 로그에 표시될 이름
+  featureEnabled: debugShowDtsMap,   // Feature flag from store
+  debugName: 'DTS Map'               // Name for logging
 });
 
-// 조건부 렌더링
+// Conditional rendering
 {debugShowDtsMap && visible && <MyComponent />}
 ```
 
-### Store 동기화 (모든 컴포넌트에 적용)
+#### Store Synchronization (Apply to All Components)
 
 ```tsx
-import { useDebugToggle } from '@/hooks/useDebugToggle';
-
-useDebugToggle({
-  key: 'L',                               // Ctrl+Shift+L
-  featureEnabled: debugShowLayoutBorders, // Store의 feature flag
-  storeSetter: setDebugShowLayoutBorders, // Store setter 함수
-  debugName: 'Layout Borders'
-});
-
-// 다른 컴포넌트에서 store 값 사용
-{useCameraStore(s => s.debugShowLayoutBorders) && <Border />}
-```
-
-### 커스텀 키 조합
-
-```tsx
-useDebugToggle({
-  key: 'R',
-  featureEnabled: debugShowResolution,
-  modifiers: {
-    ctrl: true,   // Ctrl 키 필수
-    shift: false, // Shift 키 불필요
-    alt: true     // Alt 키 필수
-  },
-  debugName: 'Resolution Info'
-});
-// 단축키: Ctrl+Alt+R
-```
-
-## API
-
-### `useDebugToggle(config: DebugToggleConfig)`
-
-#### Parameters
-
-| 속성 | 타입 | 필수 | 기본값 | 설명 |
-|------|------|------|--------|------|
-| `key` | `string` | ✅ | - | 키보드 키 (대문자, 예: 'D', 'L') |
-| `featureEnabled` | `boolean` | ✅ | - | Feature flag (store 값) |
-| `storeSetter` | `(value: boolean) => void` | ❌ | - | Store setter 함수 |
-| `modifiers` | `object` | ❌ | `{ctrl: true, shift: true}` | 키 조합 설정 |
-| `debugName` | `string` | ✅ | - | 디버깅용 이름 |
-
-#### Returns
-
-`[visible, setVisible]` - 현재 표시 상태와 setter 함수
-
-## 동작 원리
-
-1. **Feature Flag 체크**: `featureEnabled`가 `false`이면 토글 불가
-2. **키보드 이벤트**: 지정된 키 조합 감지
-3. **Local State 토글**: `visible` 상태 변경
-4. **Store 동기화**: `storeSetter`가 제공된 경우 자동 동기화
-5. **디버그 로그**: 모든 동작을 콘솔에 출력
-
-## 예제
-
-### 예제 1: DTS Map 토글
-
-```tsx
-// App.tsx
-const debugShowDtsMap = useCameraStore(s => s.debugShowDtsMap);
-
-const [dtsMapVisible] = useDebugToggle({
-  key: 'D',
-  featureEnabled: debugShowDtsMap,
-  debugName: 'DTS Map'
-});
-
-// 표시
-{debugShowDtsMap && dtsMapVisible && <DtsMapPanel />}
-```
-
-**동작:**
-- `debugShowDtsMap: false` → Ctrl+Shift+D 눌러도 토글 안 됨 ❌
-- `debugShowDtsMap: true` → Ctrl+Shift+D로 토글 가능 ✅
-
-### 예제 2: Layout Borders 토글 (전역 적용)
-
-```tsx
-// App.tsx
-const debugShowLayoutBorders = useCameraStore(s => s.debugShowLayoutBorders);
-const { setDebugShowLayoutBorders } = useCameraStore();
-
 useDebugToggle({
   key: 'L',
   featureEnabled: debugShowLayoutBorders,
@@ -121,76 +50,393 @@ useDebugToggle({
   debugName: 'Layout Borders'
 });
 
-// 다른 컴포넌트에서
-// MainCoreView.tsx
-const showBorders = useCameraStore(s => s.debugShowLayoutBorders);
-<div className={showBorders ? 'debug-border' : ''}>
+// Use store value in other components
+{useCameraStore(s => s.debugShowLayoutBorders) && <Border />}
 ```
 
-**동작:**
-- `debugShowLayoutBorders: false` → Ctrl+Shift+L 토글 안 됨, 모든 컴포넌트에서 `false`
-- `debugShowLayoutBorders: true` → Ctrl+Shift+L로 토글, 모든 컴포넌트에 자동 반영
-
-### 예제 3: 새로운 디버그 기능 추가
+#### Custom Key Combinations
 
 ```tsx
-// 1. cameraStore.ts에 추가
-export const useCameraStore = create<CameraStore>((set) => ({
-  // ...
-  debugShowPerformance: false,
-  setDebugShowPerformance: (v) => set({ debugShowPerformance: v }),
-}));
+useDebugToggle({
+  key: 'R',
+  featureEnabled: debugShowResolution,
+  modifiers: {
+    ctrl: true,
+    shift: false,
+    alt: true
+  },
+  debugName: 'Resolution Info'
+});
+// Shortcut: Ctrl+Alt+R
+```
 
-// 2. App.tsx에서 사용
-const debugShowPerformance = useCameraStore(s => s.debugShowPerformance);
-const { setDebugShowPerformance } = useCameraStore();
+### API
 
-const [perfVisible] = useDebugToggle({
-  key: 'P',                           // Ctrl+Shift+P
-  featureEnabled: debugShowPerformance,
-  storeSetter: setDebugShowPerformance,
-  debugName: 'Performance Monitor'
+```tsx
+interface DebugToggleConfig {
+  key: string;                    // Keyboard key (uppercase)
+  featureEnabled: boolean;        // Feature flag
+  storeSetter?: (value: boolean) => void;  // Store setter (optional)
+  modifiers?: {
+    ctrl?: boolean;
+    shift?: boolean;
+    alt?: boolean;
+  };
+  debugName: string;              // Name for debugging
+}
+
+function useDebugToggle(config: DebugToggleConfig): [boolean, Dispatch<SetStateAction<boolean>>]
+```
+
+---
+
+## useLocalStorage
+
+A Hook that automatically synchronizes React state with localStorage.
+
+### Features
+
+- Automatic localStorage read/write
+- Synchronization between React state and localStorage
+- Type-safe (TypeScript)
+- Built-in error handling
+
+### Usage
+
+```tsx
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+
+function App() {
+  // Auto-sync with localStorage 'username' key
+  const [name, setName] = useLocalStorage('username', 'Guest');
+  
+  // Calling setName automatically saves to localStorage
+  setName('John');
+  
+  return <div>Hello, {name}</div>;
+}
+```
+
+### API
+
+```tsx
+function useLocalStorage<T>(
+  key: string,
+  initialValue: T
+): [T, (value: T | ((val: T) => T)) => void]
+```
+
+### Examples
+
+#### Save User Settings
+
+```tsx
+const [settings, setSettings] = useLocalStorage('userSettings', {
+  theme: 'dark',
+  language: 'en'
 });
 
-{debugShowPerformance && perfVisible && <PerformanceMonitor />}
+// Automatically saves to localStorage when settings change
+setSettings({ ...settings, theme: 'light' });
 ```
 
-## 장점
+#### Persist Form Data
 
-1. **코드 재사용**: 반복되는 토글 로직을 한 번만 작성
-2. **일관성**: 모든 디버그 기능이 동일한 패턴으로 동작
-3. **확장성**: 새로운 디버그 기능 추가가 매우 쉬움
-4. **유지보수**: 한 곳에서 로직 관리
-5. **타입 안전성**: TypeScript로 작성되어 타입 체크 지원
+```tsx
+const [formData, setFormData] = useLocalStorage('formDraft', {
+  title: '',
+  content: ''
+});
 
-## 콘솔 로그
-
-토글 시 자동으로 다음과 같은 로그가 출력됩니다:
-
-```
-[DTS Map] Shortcut pressed. Feature enabled: true
-[DTS Map] Toggling from true to false
-[DTS Map] Synced to store: false
-[DTS Map Debug] { featureEnabled: true, visible: false, shouldShow: false }
+// Form data persists even after closing the browser
 ```
 
-Feature가 비활성화된 경우:
+---
 
+## useWindowSize
+
+A Hook that tracks browser window size and resolution information in real-time.
+
+### Features
+
+- Automatic detection of window size changes
+- Screen resolution information
+- Scale ratio calculation
+- Device Pixel Ratio information
+
+### Usage
+
+```tsx
+import { useWindowSize } from '@/hooks/useWindowSize';
+
+function App() {
+  const { width, height, resolution, scale, dpr } = useWindowSize();
+  
+  return (
+    <div>
+      <p>Window: {width}x{height}</p>
+      <p>Screen: {resolution}</p>
+      <p>Scale: {scale}</p>
+      <p>DPR: {dpr}</p>
+    </div>
+  );
+}
 ```
-[Layout Borders] Shortcut pressed. Feature enabled: false
-[Layout Borders] Toggle blocked - feature is disabled
+
+### API
+
+```tsx
+interface WindowSize {
+  width: number;        // Browser window width
+  height: number;       // Browser window height
+  resolution: string;   // Screen resolution (e.g., "1920x1080")
+  scale: string;        // Screen scale (e.g., "125%")
+  dpr: number;          // Device Pixel Ratio
+}
+
+function useWindowSize(): WindowSize
 ```
 
-## 주의사항
+### Examples
 
-1. **키 충돌 방지**: 다른 Hook과 동일한 키 조합을 사용하지 않도록 주의
-2. **Feature Flag**: Store의 초기값이 feature를 제어하므로 배포 전 확인 필요
-3. **Store Setter**: 전역 적용이 필요한 경우에만 `storeSetter` 제공
+#### Responsive Layout
 
-## 향후 개선 가능 사항
+```tsx
+const { width } = useWindowSize();
 
-- [ ] 키바인딩 설정 파일로 관리
-- [ ] 키 충돌 감지 및 경고
-- [ ] 런타임에 키바인딩 변경 기능
-- [ ] 키바인딩 목록 표시 UI (Help 화면)
+if (width < 768) {
+  return <MobileLayout />;
+} else {
+  return <DesktopLayout />;
+}
+```
 
+#### Display Debug Information
+
+```tsx
+const { resolution, scale, dpr } = useWindowSize();
+
+return (
+  <div className="debug-info">
+    Resolution: {resolution} | Scale: {scale} | DPR: {dpr}
+  </div>
+);
+```
+
+---
+
+## useElectronAPI
+
+A Hook that detects Electron environment and provides access to Electron API.
+
+### Features
+
+- Automatic Electron environment detection
+- Electron API object access
+- Automatic app version loading
+- Support for both browser and Electron environments
+
+### Usage
+
+```tsx
+import { useElectronAPI } from '@/hooks/useElectronAPI';
+
+function App() {
+  const { isElectron, api, version } = useElectronAPI();
+  
+  if (isElectron) {
+    // Electron-specific features
+    const result = await api.readResourceFile('config.json');
+  } else {
+    // Browser-specific features
+    const response = await fetch('/config.json');
+  }
+  
+  return <div>App Version: {version}</div>;
+}
+```
+
+### API
+
+```tsx
+interface ElectronAPI {
+  getAppVersion?: () => Promise<string>;
+  readResourceFile?: (filePath: string) => Promise<{ content?: string; error?: string }>;
+  // Other Electron API methods as needed
+}
+
+interface UseElectronAPIResult {
+  isElectron: boolean;       // Whether running in Electron
+  api: ElectronAPI | undefined;  // Electron API object
+  version: string;           // App version
+}
+
+function useElectronAPI(): UseElectronAPIResult
+```
+
+### Examples
+
+#### File Reading (Environment-Specific)
+
+```tsx
+const { isElectron, api } = useElectronAPI();
+
+async function loadConfig() {
+  if (isElectron && api?.readResourceFile) {
+    // Electron: Read file via IPC
+    const result = await api.readResourceFile('/config.json');
+    return JSON.parse(result.content || '{}');
+  } else {
+    // Browser: Read file via fetch
+    const response = await fetch('/config.json');
+    return response.json();
+  }
+}
+```
+
+#### Display Version
+
+```tsx
+const { version } = useElectronAPI();
+
+return (
+  <div className="app-version">
+    v{version}
+  </div>
+);
+```
+
+---
+
+## Adding New Hooks
+
+### Step 1: Create Hook File
+
+```tsx
+// src/hooks/useMyHook.ts
+import { useState, useEffect } from 'react';
+
+export function useMyHook() {
+  // Implement hook logic
+  return value;
+}
+```
+
+### Step 2: Add to index.ts
+
+```tsx
+// src/hooks/index.ts
+export { useMyHook } from './useMyHook';
+```
+
+### Step 3: Use in Components
+
+```tsx
+import { useMyHook } from '@/hooks/useMyHook';
+// or
+import { useMyHook } from '@/hooks';
+```
+
+---
+
+## Hook Writing Rules
+
+### Naming
+
+- Always start with `use`
+- Use camelCase
+- Clearly express functionality
+
+### Structure
+
+```tsx
+export function useMyHook(config) {
+  // 1. Declare state
+  const [state, setState] = useState(initialValue);
+  
+  // 2. Handle side effects
+  useEffect(() => {
+    // Subscriptions, event listeners, etc.
+    return () => {
+      // Cleanup function
+    };
+  }, [dependencies]);
+  
+  // 3. Return value or functions
+  return [state, setState];
+}
+```
+
+### Important Notes
+
+1. **Call Hooks at the Top Level Only**
+   - Do not call inside conditions or loops
+   - Do not call from regular functions
+
+2. **Specify Dependencies Accurately**
+   - Prevent missing dependencies in useEffect, useCallback, useMemo
+
+3. **Write Cleanup Functions**
+   - Always cleanup event listeners, timers, subscriptions
+
+4. **Type Safety**
+   - TypeScript type definitions required
+   - Use generics when appropriate
+
+---
+
+## Hooks Used in Project
+
+### App.tsx
+
+```tsx
+// 1. Debug toggles
+const [dtsMapVisible] = useDebugToggle({
+  key: 'D',
+  featureEnabled: debugShowDtsMap,
+  debugName: 'DTS Map'
+});
+
+useDebugToggle({
+  key: 'L',
+  featureEnabled: layoutBordersFeatureEnabled,
+  storeSetter: setDebugShowLayoutBorders,
+  debugName: 'Layout Borders'
+});
+
+// 2. Local storage
+const [currentSoc, setCurrentSoc] = useLocalStorage('selectedSoc', '');
+const [currentModule, setCurrentModule] = useLocalStorage('selectedModule', '');
+
+// 3. Window size
+const windowSize = useWindowSize();
+
+// 4. Electron API
+const { isElectron, version } = useElectronAPI();
+```
+
+---
+
+## Code Improvement Results
+
+### Before Changes
+
+- Direct localStorage usage: 13 locations
+- Browser info tracking: 36 lines
+- Electron checks: 20 lines
+- Total: ~70 lines
+
+### After Changes
+
+- Using Hooks: 4 lines
+- Total: ~4 lines
+
+**Result: 66 lines reduced (94% code reduction)**
+
+---
+
+## References
+
+- [React Hooks Official Documentation](https://react.dev/reference/react)
+- [Custom Hooks Guide](https://react.dev/learn/reusing-logic-with-custom-hooks)
+- [Rules of Hooks](https://react.dev/reference/rules/rules-of-hooks)

@@ -59,6 +59,13 @@ electron/
 │   │   ├── MIPIConfiguration/# MIPI CSI interface configuration
 │   │   ├── Overview/         # System overview visualization
 │   │   └── Preview/          # Camera preview functionality
+│   ├── hooks/                # Custom React Hooks (reusable logic)
+│   │   ├── useDebugToggle.ts # Keyboard shortcut debug toggles
+│   │   ├── useLocalStorage.ts# localStorage state management
+│   │   ├── useWindowSize.ts  # Window size tracking
+│   │   └── useElectronAPI.ts # Electron environment detection
+│   ├── services/             # Business logic services
+│   ├── controllers/          # Application controllers
 │   ├── store/                # State management (Zustand)
 │   ├── types/                # TypeScript type definitions
 │   └── utils/                # Utility functions (DTS generation)
@@ -212,6 +219,50 @@ The installer files will be generated in the `dist` directory:
 - Windows: `Telechips SOC Configuration Tool Setup {version}-{hash}.exe`
 - macOS: `.dmg` and `.zip` files with version-hash
 - Linux: `.AppImage`, `.deb`, and `.rpm` files with version-hash
+
+## Custom React Hooks
+
+The application uses custom React Hooks to encapsulate reusable logic. See [src/hooks/README.md](src/hooks/README.md) for detailed documentation.
+
+### Available Hooks
+
+#### useDebugToggle
+Manages keyboard shortcut-based debug feature toggles (Ctrl+Shift+D, Ctrl+Shift+L).
+
+```tsx
+const [visible] = useDebugToggle({
+  key: 'D',
+  featureEnabled: debugShowDtsMap,
+  debugName: 'DTS Map'
+});
+```
+
+#### useLocalStorage
+Synchronizes React state with localStorage automatically.
+
+```tsx
+const [currentSoc, setCurrentSoc] = useLocalStorage('selectedSoc', '');
+```
+
+#### useWindowSize
+Tracks browser window size and resolution in real-time.
+
+```tsx
+const { width, height, resolution, scale, dpr } = useWindowSize();
+```
+
+#### useElectronAPI
+Detects Electron environment and provides API access.
+
+```tsx
+const { isElectron, api, version } = useElectronAPI();
+```
+
+### Benefits
+- Code reusability: 66 lines reduced (94% reduction)
+- Consistent patterns across the application
+- Type-safe with TypeScript
+- Easy to test and maintain
 
 ## Troubleshooting
 
