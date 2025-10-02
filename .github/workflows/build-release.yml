@@ -72,6 +72,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -83,6 +85,49 @@ jobs:
           echo "Downloaded artifacts:"
           ls -R release-artifacts
 
+      - name: Generate release notes
+        id: generate_notes
+        run: |
+          # Get previous tag
+          PREVIOUS_TAG=$(git tag --sort=-version:refname | grep -v "^${{ github.ref_name }}$" | head -1)
+
+          if [ -z "$PREVIOUS_TAG" ]; then
+            echo "No previous tag found, using all commits"
+            COMMITS=$(git log --pretty=format:"- %s (%h)" --no-merges)
+          else
+            echo "Comparing with previous tag: $PREVIOUS_TAG"
+            COMMITS=$(git log ${PREVIOUS_TAG}..${{ github.ref_name }} --pretty=format:"- %s (%h)" --no-merges)
+          fi
+
+          # Create release notes
+          cat > release_notes.md << 'EOF'
+          ## Telechips SOC Configuration Tool - ${{ github.ref_name }}
+
+          ### What's Changed
+          EOF
+
+          if [ -z "$COMMITS" ]; then
+            echo "- No changes recorded" >> release_notes.md
+          else
+            echo "$COMMITS" >> release_notes.md
+          fi
+
+          cat >> release_notes.md << 'EOF'
+
+          ### Installation
+          - **Windows**: Download and run the `.exe` installer
+          - **macOS**: Download and open the `.dmg` file
+          - **Linux**: Download the `.AppImage` (or `.deb`/`.rpm` for specific distributions)
+
+          ### System Requirements
+          - Windows 10 or later / macOS 10.13+ / Linux (64-bit)
+          - 4GB RAM minimum
+          - 200MB free disk space
+          EOF
+
+          echo "Release notes generated:"
+          cat release_notes.md
+
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -91,24 +136,7 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           release_name: Release ${{ github.ref_name }}
-          body: |
-            ## Telechips SOC Configuration Tool - ${{ github.ref_name }}
-
-            ### What's New
-            - Camera configuration for TCC807x (Dolphin5)
-            - Visual pipeline designer
-            - DTS file generation
-            - Multi-core support
-
-            ### Installation
-            - **Windows**: Download and run the `.exe` installer
-            - **macOS**: Download and open the `.dmg` file
-            - **Linux**: Download the `.AppImage` (or `.deb`/`.rpm` for specific distributions)
-
-            ### System Requirements
-            - Windows 10 or later / macOS 10.13+ / Linux (64-bit)
-            - 4GB RAM minimum
-            - 200MB free disk space
+          body_path: release_notes.md
           draft: false
           prerelease: ${{ contains(github.ref_name, '-beta') || contains(github.ref_name, '-alpha') }}
 
