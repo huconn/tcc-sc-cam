@@ -57,11 +57,18 @@ jobs:
           echo "Finding installer files:"
           find dist -name "*Setup*" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.rpm" 2>/dev/null || true
 
-      - name: Upload Windows artifacts
+      - name: Upload Windows installer
         uses: actions/upload-artifact@v4
         with:
           name: windows-installer
-          path: dist/*.exe
+          path: dist/*Setup*.exe
+          if-no-files-found: error
+
+      - name: Upload Windows portable
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-portable
+          path: dist/*Portable*.exe
           if-no-files-found: error
 
   release:
@@ -140,19 +147,32 @@ jobs:
           draft: false
           prerelease: ${{ contains(github.ref_name, '-beta') || contains(github.ref_name, '-alpha') }}
 
-      - name: Find Windows installer file
-        id: find_installer
+      - name: Find Windows installer files
+        id: find_files
         run: |
-          INSTALLER_FILE=$(find ./release-artifacts/windows-installer -name "*.exe" | head -1)
+          INSTALLER_FILE=$(find ./release-artifacts/windows-installer -name "*Setup*.exe" | head -1)
+          PORTABLE_FILE=$(find ./release-artifacts/windows-portable -name "*Portable*.exe" | head -1)
           echo "installer_path=$INSTALLER_FILE" >> $GITHUB_OUTPUT
+          echo "portable_path=$PORTABLE_FILE" >> $GITHUB_OUTPUT
           echo "Found installer: $INSTALLER_FILE"
+          echo "Found portable: $PORTABLE_FILE"
 
-      - name: Upload Windows Release Asset
+      - name: Upload Windows Installer to Release
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ steps.find_installer.outputs.installer_path }}
-          asset_name: Telechips-SOC-Tool-Setup-${{ github.ref_name }}-win.exe
+          asset_path: ${{ steps.find_files.outputs.installer_path }}
+          asset_name: Telechips-SOC-Tool-Setup-${{ github.ref_name }}.exe
+          asset_content_type: application/octet-stream
+
+      - name: Upload Windows Portable to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.find_files.outputs.portable_path }}
+          asset_name: Telechips-SOC-Tool-Portable-${{ github.ref_name }}.exe
           asset_content_type: application/octet-stream
