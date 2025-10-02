@@ -147,7 +147,7 @@ export const useCameraStore = create<CameraStore>((set) => ({
   debugSelectSubCoreOperations: 2,
 
   // Show Dts Map for debugging
-  debugShowDtsMap: true,
+  debugShowDtsMap:  true,
 
   // Show Configuration Selector popup (SoC/Module selection)
   debugShowConfigurationSelector: true,
