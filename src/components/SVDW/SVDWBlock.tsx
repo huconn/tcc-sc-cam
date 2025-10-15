@@ -21,7 +21,7 @@ export const SVDWBlock: React.FC<SVDWBlockProps> = ({ cameraMuxMappings = {} }) 
     getChannelHex(cameraMuxMappings[3] ?? 3),
   ];
   
-  const grabberText = 'text-gray-200';
+  const grabberText = 'text-purple-400'; // VWDMA0와 동일한 글자 색상
   const grabberBorder = 'border-2 border-gray-500';
 
   // Blender theme color
@@ -54,7 +54,8 @@ export const SVDWBlock: React.FC<SVDWBlockProps> = ({ cameraMuxMappings = {} }) 
         // Grabber 버튼의 오른쪽 끝에서 시작
         const x1 = aRect.left - rootRect.left + aRect.width;
         const y1 = aRect.top - rootRect.top + aRect.height / 2;
-        const x2 = bRect.left - rootRect.left + bRect.width / 2;
+        // Blender 왼쪽 마커 박스의 왼쪽 끝으로 연결
+        const x2 = bRect.left - rootRect.left;
         const y2 = bRect.top - rootRect.top + bRect.height / 2;
         newLines.push({ x1, y1, x2, y2 });
       }
@@ -95,7 +96,6 @@ export const SVDWBlock: React.FC<SVDWBlockProps> = ({ cameraMuxMappings = {} }) 
                 className="relative text-black rounded w-8 h-6 flex items-center justify-center text-[10px] font-semibold border-2 border-white"
                     style={{ backgroundColor: markerHex[idx] }}
                   >
-                    {`CH${idx+1}`}
                   </div>
                 </div>
               ))}
@@ -114,7 +114,6 @@ export const SVDWBlock: React.FC<SVDWBlockProps> = ({ cameraMuxMappings = {} }) 
                 data-connection-point={`svdw-left-${idx}`}
                 
               >
-                {`CH${idx+1}`}
               </div>
 
               {/* Main Grabber block */}
@@ -140,7 +139,7 @@ export const SVDWBlock: React.FC<SVDWBlockProps> = ({ cameraMuxMappings = {} }) 
                 <polygon points="0 0, 5 1.75, 0 3.5" fill="context-stroke" />
               </marker>
             </defs>
-            <g transform="translate(-17,0)">
+            <g>
               {lines.map((l, i) => (
                 <line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke={markerHex[i]} strokeWidth={3} markerEnd="url(#arrowhead)" />
               ))}
