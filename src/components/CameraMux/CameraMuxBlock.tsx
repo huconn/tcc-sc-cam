@@ -27,7 +27,7 @@ export const CameraMuxBlock: React.FC<CameraMuxBlockProps> = ({
 
   return (
     <div
-      className={`relative bg-gray-700 border-2 border-purple-500 rounded-lg w-[200px] p-3 cursor-pointer text-gray-200 transform transition-transform hover:scale-105 hover:border-white hover:ring-1 hover:ring-white focus:outline-none focus:ring-1 focus:ring-primary-500 flex flex-col ${debugShowLayoutBorders ? 'debug' : ''}`}
+      className={`relative bg-gray-700 border-2 border-purple-500 rounded-lg w-[200px] p-2 cursor-pointer text-gray-200 transform transition-transform hover:scale-105 hover:border-white hover:ring-1 hover:ring-white focus:outline-none focus:ring-1 focus:ring-primary-500 flex flex-col ${debugShowLayoutBorders ? 'debug' : ''}`}
       data-connection-point="camera-mux-box"
       onClick={onOpen}
       title="Click to configure Camera Mux"
@@ -38,7 +38,7 @@ export const CameraMuxBlock: React.FC<CameraMuxBlockProps> = ({
       )}
 
       {/* Title - 위로 올림 */}
-      <div className={`text-center font-semibold text-sm mb-2 text-purple-400 relative ${debugShowLayoutBorders ? 'debug-cyan' : ''}`}>
+      <div className={`text-center font-semibold text-sm mb-1 text-purple-400 relative ${debugShowLayoutBorders ? 'debug-cyan' : ''}`}>
         {debugShowLayoutBorders && (
           <span className="absolute -top-2 -left-2 bg-cyan-600 text-white text-[9px] px-1 py-0.5 rounded z-10">TITLE</span>
         )}
@@ -50,19 +50,35 @@ export const CameraMuxBlock: React.FC<CameraMuxBlockProps> = ({
         {debugShowLayoutBorders && (
           <span className="absolute -top-2 -left-2 bg-yellow-600 text-white text-[9px] px-1 py-0.5 rounded z-10">TABLE-WRAPPER</span>
         )}
-        <table className="w-full h-full">
+        <table className={`w-full h-full ${debugShowLayoutBorders ? 'border-2 border-purple-400' : ''}`}>
           <tbody className="h-full flex flex-col">
-            {Array.from({ length: 8 }).map((_, i) => {
+            {Array.from({ length: 16 }).map((_, rowIdx) => {
+              // 실제 채널은 0, 2, 4, 6, 8, 10, 12, 14번 행에만
+              const isChannelRow = rowIdx % 2 === 0;
+              const channelIndex = Math.floor(rowIdx / 2);
+              
+              if (!isChannelRow) {
+                // 빈 행 (spacing)
+                return (
+                  <tr key={rowIdx} className={`flex-1 ${debugShowLayoutBorders ? 'border border-gray-600' : ''}`}>
+                    {debugShowLayoutBorders && (
+                      <td className="w-full text-center text-[8px] text-gray-500">Empty-{rowIdx}</td>
+                    )}
+                  </tr>
+                );
+              }
+              
+              const i = channelIndex;
               const mappedInput = cameraMuxConfig.mappings[i] ?? i;
               return (
-                <tr key={i} className="flex-1 flex items-center">
+                <tr key={rowIdx} className={`flex-1 flex items-center ${debugShowLayoutBorders ? 'border border-purple-300' : ''}`}>
                   {/* Input Channel (왼쪽) */}
-                  <td className={`p-0 flex items-center relative ${debugShowLayoutBorders ? 'debug-green' : ''}`}>
+                  <td className={`p-0 flex items-center relative ${debugShowLayoutBorders ? 'debug-green border border-purple-200' : ''}`}>
                     {debugShowLayoutBorders && (
                       <span className="absolute top-0 left-0 bg-green-500 text-white text-[8px] px-0.5 rounded z-10">IN-{i}</span>
                     )}
                     <div
-                      className="w-10 h-6 rounded-sm border border-gray-500 flex items-center justify-center"
+                      className="w-10 h-8 rounded-sm border border-gray-500 flex items-center justify-center"
                       style={{ backgroundColor: getChannelHex(i) }}
                       data-connection-point={`mux-left-${i}-target`}
                     >
@@ -73,7 +89,7 @@ export const CameraMuxBlock: React.FC<CameraMuxBlockProps> = ({
                   </td>
 
                   {/* Center MIPI Label */}
-                  <td className={`p-0 flex-1 text-center flex items-center justify-center relative ${debugShowLayoutBorders ? 'debug-blue' : ''}`} data-anchor={`mux-ch${i}`}>
+                  <td className={`p-0 flex-1 text-center flex items-center justify-center relative ${debugShowLayoutBorders ? 'debug-blue border border-purple-200' : ''}`} data-anchor={`mux-ch${i}`}>
                     {debugShowLayoutBorders && (
                       <span className="absolute top-0 left-0 bg-blue-500 text-white text-[8px] px-0.5 rounded z-10">MID-{i}</span>
                     )}
@@ -83,12 +99,12 @@ export const CameraMuxBlock: React.FC<CameraMuxBlockProps> = ({
                   </td>
 
                   {/* Output Channel (오른쪽) */}
-                  <td className={`p-0 flex items-center justify-end relative ${debugShowLayoutBorders ? 'debug-pink' : ''}`}>
+                  <td className={`p-0 flex items-center justify-end relative ${debugShowLayoutBorders ? 'debug-pink border border-purple-200' : ''}`}>
                     {debugShowLayoutBorders && (
                       <span className="absolute top-0 right-0 bg-pink-500 text-white text-[8px] px-0.5 rounded z-10">OUT-{i}</span>
                     )}
                     <div
-                      className="w-10 h-6 rounded-sm border border-gray-500 flex items-center justify-center"
+                      className="w-10 h-8 rounded-sm border border-gray-500 flex items-center justify-center"
                       style={{ backgroundColor: getChannelHex(mappedInput) }}
                       data-connection-point={`mux-right-${i}-target`}
                     >

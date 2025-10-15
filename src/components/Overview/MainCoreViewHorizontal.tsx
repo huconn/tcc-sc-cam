@@ -26,6 +26,7 @@ import {
 import { useCameraStore } from '@/store/cameraStore';
 import { ISPConfigModal } from '@/components/ISPConfiguration/ISPConfigModal';
 import { ISPSelector, ChannelMode as SelectorChannelMode } from '@/components/ISPConfiguration/ISPSelector';
+import { ISPBlock } from '@/components/ISP/ISPBlock';
 import { channelHex as CHANNEL_HEX, channelBgClass as CHANNEL_BG, getChannelHex, getChannelBgClass } from '@/utils/channelPalette';
 import { MIPIChannelConfigModal } from './MIPIChannelConfigModal';
 import { CameraMuxConfigModal } from '../CameraMux/CameraMuxConfigModal';
@@ -476,30 +477,33 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
       const isp1Rect = isp1.getBoundingClientRect();
       const ir0Rect = ir0.getBoundingClientRect();
       
-      // Two segments per new request:
-      // 1) Vertical segment (no arrow) going down 20px from ISP1 right-center
+      // IR0의 왼쪽 중앙 좌표
+      const ir0LeftCenterX = ir0Rect.left;
+      const ir0LeftCenterY = ir0Rect.top + ir0Rect.height / 2;
+      
+      // Two segments:
+      // 1) Vertical segment from ISP1 right-center down to IR0's vertical center
       const startX = isp1Rect.left + isp1Rect.width;
       const startY = isp1Rect.top + isp1Rect.height / 2;
-      const midY = startY + 20;
       lines.push({
         x1: startX,
         y1: startY,
         x2: startX,
-        y2: midY,
+        y2: ir0LeftCenterY,
         color: channelColors[1]
       });
       
-      // 2) Horizontal segment (with arrow) from that point to IR0 left
+      // 2) Horizontal segment from that point to IR0 left-center (with arrow)
       lines.push({
         x1: startX,
-        y1: midY,
-        x2: ir0Rect.left,
-        y2: midY,
+        y1: ir0LeftCenterY,
+        x2: ir0LeftCenterX,
+        y2: ir0LeftCenterY,
         color: channelColors[1]
       });
     }
     
-    // ISP3 -> IR1 two-segment connection (vertical 20px then horizontal with arrow)
+    // ISP3 -> IR1 connection
     const isp3 = document.querySelector('[data-anchor-point="isp-right-3-box"]') as HTMLElement | null;
     const ir1 = document.querySelector('[data-connection-point="ir1-box"]') as HTMLElement | null;
     
@@ -507,23 +511,28 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
       const isp3Rect = isp3.getBoundingClientRect();
       const ir1Rect = ir1.getBoundingClientRect();
       
+      // IR1의 왼쪽 중앙 좌표
+      const ir1LeftCenterX = ir1Rect.left;
+      const ir1LeftCenterY = ir1Rect.top + ir1Rect.height / 2;
+      
+      // Two segments:
+      // 1) Vertical segment from ISP3 right-center down to IR1's vertical center
       const startX3 = isp3Rect.left + isp3Rect.width;
       const startY3 = isp3Rect.top + isp3Rect.height / 2;
-      const midY3 = startY3 + 20;
-      // vertical 20px
       lines.push({
         x1: startX3,
         y1: startY3,
         x2: startX3,
-        y2: midY3,
+        y2: ir1LeftCenterY,
         color: channelColors[3]
       });
-      // horizontal to IR1 left with arrow
+      
+      // 2) Horizontal segment from that point to IR1 left-center (with arrow)
       lines.push({
         x1: startX3,
-        y1: midY3,
-        x2: ir1Rect.left,
-        y2: midY3,
+        y1: ir1LeftCenterY,
+        x2: ir1LeftCenterX,
+        y2: ir1LeftCenterY,
         color: channelColors[3]
       });
     }
@@ -1050,145 +1059,21 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
               <div style={{ height: '20%' }} />
             </div>
 
-            {/* Column 3: ISP/Bypass Selectors (positioned on lines) */}
-            <div ref={selectorsRef} className={`relative flex-shrink-0 ${useCameraStore(s => s.debugShowLayoutBorders ? 'debug-yellow' : '')}`} style={{ height: `${selectorsHeight}px`, width: '280px' }}>
+            {/* Column 3: ISP Block */}
+            <div ref={selectorsRef} className={`relative flex-shrink-0 flex flex-col justify-center ${useCameraStore(s => s.debugShowLayoutBorders ? 'debug-yellow' : '')}`} style={{ height: `${selectorsHeight}px` }}>
               {useCameraStore(s => s.debugShowLayoutBorders) && (
-                <span className="absolute -top-3 -left-3 bg-yellow-600 text-white text-[10px] px-1.5 py-0.5 rounded">4</span>
+                <span className="absolute -top-3 -left-3 bg-yellow-600 text-white text-[10px] px-1.5 py-0.5 rounded z-50">4</span>
               )}
               
-              {/* 14 Segment Grid Borders and Numbers */}
-              {useCameraStore(s => s.debugShowLayoutBorders) && Array.from({ length: 14 }).map((_, segmentIndex) => {
-                const segmentHeight = selectorsHeight / 14;
-                const top = segmentHeight * segmentIndex;
-                return (
-                  <div
-                    key={`segment-${segmentIndex}`}
-                    className="absolute border-2 border-blue-400 bg-blue-400/10"
-                    style={{
-                      left: '0px',
-                      top: `${top}px`,
-                      width: '100%',
-                      height: `${segmentHeight}px`,
-                      zIndex: 1
-                    }}
-                  >
-                    <span className="absolute -top-3 -left-3 bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded">
-                      {segmentIndex}
-                    </span>
-                  </div>
-                );
-              })}
-              
-              {/* Connection lines will be drawn here (non-interactive) */}
-              <svg className="absolute inset-0 pointer-events-none" style={{ width: '100%', height: '100%', overflow: 'visible' }}></svg>
-
-              {/* ISP Selectors */}
-              {activeChannels.map((ch, idx) => {
-                // Place ISP0-3 in segments 4-7, Bypass in segments 8-11 (14 equal vertical segments)
-                const segmentHeight = selectorsHeight / 14;
-                const approxHalfSelector = 12; // approximate half of selector height
-                let baseTop: number;
-                if (ch.globalIndex < 4) {
-                  // ISP0-3 in segments 4-7 (index 3-6)
-                  baseTop = (segmentHeight * (3 + ch.index)) + (segmentHeight / 2) - approxHalfSelector;
-                } else {
-                  // Bypass in segments 8-11 (index 7-10)
-                  const localIdx = ch.globalIndex - 4;
-                  baseTop = (segmentHeight * (7 + localIdx)) + (segmentHeight / 2) - approxHalfSelector;
-                }
-                const topPx = `${baseTop}px`;
-                  return (
-                  <div
-                    key={`selector-${idx}`}
-                    className="absolute"
-                    style={{ left: '50%', transform: 'translateX(-50%)', top: topPx, zIndex: 10 }}
-                    data-connection-point={`isp-left-${ch.globalIndex}-box`}
-                  >
-                    {/* Right-edge anchor for ISP box to attach lines from ISP to CAM Mux */}
-                    <div
-                      data-anchor-point={`isp-right-${ch.globalIndex}-box`}
-                      className="absolute right-0 top-1/2 -translate-y-1/2 w-0 h-0"
-                    />
-                    <ISPSelector
-                      value={ch.mode as unknown as SelectorChannelMode}
-                      onChange={(next) => handleChannelChange(ch.mipi as 'mipi0' | 'mipi1', ch.index, next as unknown as ChannelMode)}
-                      color={channelColors[ch.globalIndex]}
-                      options={getAvailableOptions(ch.mipi as 'mipi0' | 'mipi1', ch.index) as unknown as SelectorChannelMode[]}
-                      showConfigButton={String(ch.mode).startsWith('isp')}
-                      onOpenConfig={() => setShowISPConfig(`isp${ch.globalIndex}`)}
-                      // Add hover scale via wrapper to avoid select width jitter
-                    />
-                  </div>
-                  );
-                })}
-
-                {/* IR0 Box - positioned within ISP1 segment (segment 5) with right-bottom alignment */}
-              {activeChannels.map((ch, idx) => {
-                  if (ch.globalIndex === 1) { // ISP1
-                    const segmentHeight = selectorsHeight / 14;
-                    const segmentIndex = 4; // ISP1 is in segment 5 (index 4)
-                    const segmentTop = segmentHeight * segmentIndex;
-                    const segmentBottom = segmentTop + segmentHeight;
-                    
-                    return (
-                      <div 
-                        key={`ir0-${idx}`} 
-                        className="absolute flex justify-end items-end pointer-events-none" 
-                        style={{ 
-                          left: '0px',
-                          right: '0px', 
-                          top: `${segmentTop}px`,
-                          height: `${segmentHeight}px`,
-                          zIndex: 10 
-                        }}
-                      >
-                        <div
-                          className="w-12 h-6 border border-slate-400 rounded flex items-center justify-center cursor-pointer hover:scale-110 transition-transform pointer-events-auto"
-                          style={{ backgroundColor: '#64748b' }} // CIED 8 color
-                          data-connection-point="ir0-box"
-                          onClick={() => openCiedSlot(8)}
-                        >
-                          <span className="text-white text-xs font-bold">IR0</span>
-                        </div>
-                      </div>
-                    );
-                  }
-                  return null;
-                })}
-                
-                {/* IR1 Box - positioned within ISP3 segment (segment 7) with right-bottom alignment */}
-                {activeChannels.map((ch, idx) => {
-                  if (ch.globalIndex === 3) { // ISP3
-                    const segmentHeight = selectorsHeight / 14;
-                    const segmentIndex = 6; // ISP3 is in segment 7 (index 6)
-                    const segmentTop = segmentHeight * segmentIndex;
-                    const segmentBottom = segmentTop + segmentHeight;
-
-                return (
-                  <div
-                        key={`ir1-${idx}`} 
-                        className="absolute flex justify-end items-end pointer-events-none" 
-                    style={{
-                          left: '0px',
-                          right: '0px', 
-                          top: `${segmentTop}px`,
-                          height: `${segmentHeight}px`,
-                      zIndex: 10
-                    }}
-                  >
-                        <div
-                          className="w-12 h-6 border border-amber-600 rounded flex items-center justify-center cursor-pointer hover:scale-110 transition-transform pointer-events-auto"
-                          style={{ backgroundColor: '#92400e' }} // CIED 9 color
-                          data-connection-point="ir1-box"
-                          onClick={() => openCiedSlot(9)}
-                        >
-                          <span className="text-white text-xs font-bold">IR1</span>
-                        </div>
-                  </div>
-                );
-                  }
-                  return null;
-              })}
+              <ISPBlock
+                activeChannels={activeChannels}
+                channelColors={channelColors}
+                onChannelChange={handleChannelChange}
+                getAvailableOptions={getAvailableOptions}
+                onOpenISPConfig={setShowISPConfig}
+                onOpenCiedSlot={openCiedSlot}
+                heightPx={Math.max(0, Math.round((selectorsHeight * 4) / 5))}
+              />
             </div>
 
             {/* Column 4: Camera Mux */}
@@ -1201,7 +1086,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
               cameraMuxConfig={cameraMuxConfig}
               channelColorClasses={channelColorClasses}
               onOpen={() => setShowCameraMuxConfig(true)}
-              heightPx={Math.max(0, Math.round((selectorsHeight * 3) / 5))}
+              heightPx={Math.max(0, Math.round((selectorsHeight * 4) / 5))}
             />
             </div>
           
