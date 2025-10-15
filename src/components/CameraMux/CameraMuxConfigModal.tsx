@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, GitBranch } from 'lucide-react';
+import { X, Settings } from 'lucide-react';
 import { getChannelBgClass, getChannelHex } from '@/utils/channelPalette';
 import { useCameraStore } from '@/store/cameraStore';
 
@@ -52,7 +52,7 @@ export const CameraMuxConfigModal: React.FC<CameraMuxConfigModalProps> = ({
         
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-2">
-            <GitBranch className="w-5 h-5 text-yellow-500" />
+            <Settings className="w-5 h-5 text-yellow-500" />
             <h2 className="text-xl font-bold text-white">Camera Mux Configuration</h2>
           </div>
           <button
