@@ -705,8 +705,38 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
     // Clear existing connections
     setConnections([]);
 
-    // Sort devices by x position (left to right)
-    const sortedDevices = [...devices].sort((a, b) => a.x - b.x);
+    // Define logical order for device types
+    const typeOrder: Record<string, number> = {
+      sensor: 1,
+      serializer: 2,
+      deserializer: 3,
+      converter: 4,
+      soc: 5
+    };
+
+    // Sort devices by logical type order, then by x position
+    const sortedDevices = [...devices].sort((a, b) => {
+      const orderA = typeOrder[a.type] || 99;
+      const orderB = typeOrder[b.type] || 99;
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      return a.x - b.x; // Same type: sort by position
+    });
+
+    // Auto-arrange devices horizontally
+    const startX = 100;
+    const startY = 200;
+    const spacing = 250;
+
+    // Update device positions to horizontal layout
+    const arrangedDevices = sortedDevices.map((device, index) => ({
+      ...device,
+      x: startX + (index * spacing),
+      y: startY
+    }));
+
+    setDevices(arrangedDevices);
 
     const newConnections: Connection[] = [];
 
