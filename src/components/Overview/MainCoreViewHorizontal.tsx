@@ -1309,7 +1309,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
           )}
 
             {/* Right group: CIED + SVDW/VideoPipeline */}
-            <div ref={rightGroupRef} className={`flex items-stretch relative gap-2 flex-1 ${useCameraStore(s => s.debugShowLayoutBorders ? 'debug-blue' : '')}`}>
+            <div ref={rightGroupRef} className={`flex items-stretch relative gap-10 flex-1 ${useCameraStore(s => s.debugShowLayoutBorders ? 'debug-blue' : '')}`}>
               {useCameraStore(s => s.debugShowLayoutBorders) && (
                 <span className="absolute -top-3 -left-3 bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded">6</span>
               )}
