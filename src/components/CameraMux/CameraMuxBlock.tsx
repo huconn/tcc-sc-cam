@@ -31,7 +31,7 @@ export const CameraMuxBlock: React.FC<CameraMuxBlockProps> = ({
       data-connection-point="camera-mux-box"
       onClick={onOpen}
       title="Click to configure Camera Mux"
-      style={{ height: heightPx ? `${heightPx}px` : '560px' }}
+      style={{ height: heightPx ? `${heightPx}px` : '700px' }}
     >
       {debugShowLayoutBorders && (
         <span className="absolute -top-3 -left-3 bg-purple-600 text-white text-[10px] px-1.5 py-0.5 rounded z-10">CAMERA-MUX-BLOCK</span>
