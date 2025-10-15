@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Download, Upload, Save, FolderOpen } from 'lucide-react';
+import { Download, Upload, Save, FolderOpen, Trash2 } from 'lucide-react';
 import { OverviewPage } from '@/components/Overview/OverviewPage';
 import { DtsMapPanel } from '@/components/Tools/DtsMapPanel';
 import { ConfigurationSelector } from '@/components/ConfigurationSelector';
+import { ConfirmDialog } from '@/components/common';
 import { loadJSON } from '@/utils/fileLoader';
 import { useCameraStore } from '@/store/cameraStore';
 import { DTSGenerator } from '@/utils/dtsGenerator';
@@ -33,6 +34,7 @@ export const App: React.FC = () => {
   const { isElectron: isElectronApp, version: appVersion } = useElectronAPI();
   
   const [showSelector, setShowSelector] = useState<boolean>(false);  // Show Configuration Selector (default: false)
+  const [showClearConfirm, setShowClearConfirm] = useState<boolean>(false);
 
   // Debug toggles using custom hook
   const [dtsMapVisible] = useDebugToggle({
@@ -222,6 +224,17 @@ export const App: React.FC = () => {
     // useLocalStorage Hook automatically saves to localStorage
   };
 
+  // Clear all configuration
+  const handleClear = () => {
+    setShowClearConfirm(true);
+  };
+
+  const confirmClear = () => {
+    // Reset camera store to initial state
+    window.location.reload();
+    setShowClearConfirm(false);
+  };
+
   // Popup display conditions
   // 1. debugShowConfigurationSelector is true, and
   // 2. (no stored values or showSelector is true)
@@ -304,6 +317,14 @@ export const App: React.FC = () => {
               />
             </label>
             <button
+              onClick={handleClear}
+              className="btn-secondary flex items-center gap-2 bg-red-600 hover:bg-red-700"
+              title="Clear all configuration"
+            >
+              <Trash2 className="w-4 h-4" />
+              Clear
+            </button>
+            <button
               onClick={handleExportDTS}
               className="btn-primary flex items-center gap-2"
               title="Export DTS Files"
@@ -368,6 +389,18 @@ export const App: React.FC = () => {
           <span className="text-gray-400">DPR:</span> {windowSize.dpr}
         </div>
       )}
+
+      {/* Clear Confirmation Dialog */}
+      <ConfirmDialog
+        open={showClearConfirm}
+        title="Clear All Configuration"
+        message="Are you sure you want to clear all configuration?&#10;This will reload the application and reset all settings.&#10;&#10;Make sure you have saved your work before proceeding."
+        confirmText="Clear"
+        cancelText="Cancel"
+        confirmButtonClass="bg-red-600 hover:bg-red-700"
+        onConfirm={confirmClear}
+        onCancel={() => setShowClearConfirm(false)}
+      />
     </div>
   );
 };
