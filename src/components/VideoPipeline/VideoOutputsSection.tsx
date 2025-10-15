@@ -28,32 +28,26 @@ const OutputRow: React.FC<RowProps> = ({ label, colorTop, colorBottom, onClick, 
         {debugShowLayoutBorders && (
           <span className="absolute -top-2 -left-2 bg-cyan-600 text-white text-[9px] px-1 py-0.5 rounded z-10">MARKER</span>
         )}
-        <table className="border-collapse overflow-hidden">
-          <tbody>
-            {/* Top marker box */}
-            <tr>
-              <td 
-                className={`relative w-8 h-[17px] border-[3px] border-r-0 border-b-0 border-gray-500 rounded-tl ${debugShowLayoutBorders ? 'debug-green' : ''}`}
-                style={{ backgroundColor: colorTop || 'transparent' }}
-              >
-                {debugShowLayoutBorders && (
-                  <span className="absolute top-0 left-0 bg-green-500 text-white text-[8px] px-0.5 rounded z-10">TOP</span>
-                )}
-              </td>
-            </tr>
-            {/* Bottom marker box */}
-            <tr>
-              <td 
-                className={`relative w-8 h-[17px] border-[3px] border-r-0 border-t-0 border-gray-500 rounded-bl ${debugShowLayoutBorders ? 'debug-yellow' : ''}`}
-                style={{ backgroundColor: colorBottom || 'transparent' }}
-              >
-                {debugShowLayoutBorders && (
-                  <span className="absolute bottom-0 left-0 bg-yellow-500 text-white text-[8px] px-0.5 rounded z-10">BTM</span>
-                )}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div className="flex flex-col w-8">
+          {/* Top marker box */}
+          <div 
+            className={`relative h-[17px] border-[3px] border-r-0 border-b-0 border-gray-500 rounded-tl ${debugShowLayoutBorders ? 'debug-green' : ''}`}
+            style={{ backgroundColor: colorTop || 'transparent' }}
+          >
+            {debugShowLayoutBorders && (
+              <span className="absolute top-0 left-0 bg-green-500 text-white text-[8px] px-0.5 rounded z-10">TOP</span>
+            )}
+          </div>
+          {/* Bottom marker box */}
+          <div 
+            className={`relative h-[17px] border-[3px] border-r-0 border-t-0 border-gray-500 rounded-bl ${debugShowLayoutBorders ? 'debug-yellow' : ''}`}
+            style={{ backgroundColor: colorBottom || 'transparent' }}
+          >
+            {debugShowLayoutBorders && (
+              <span className="absolute bottom-0 left-0 bg-yellow-500 text-white text-[8px] px-0.5 rounded z-10">BTM</span>
+            )}
+          </div>
+        </div>
       </div>
       
       {/* Main button */}

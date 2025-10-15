@@ -3,6 +3,7 @@ import { X, Camera, Wifi, Settings, Plus, Edit, Trash2, ArrowRight, GitBranch, F
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { DeviceConfigModal, DeviceConfig, DeviceProperty } from './DeviceConfigModal';
+import { ConfirmDialog } from '@/components/common';
 
 interface SavedDeviceData {
   devices: any[];
@@ -350,6 +351,7 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [showDTSPreview, setShowDTSPreview] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
@@ -761,6 +763,17 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
     setConnections(newConnections);
   };
 
+  // Clear all devices and connections
+  const handleClear = () => {
+    setShowClearConfirm(true);
+  };
+
+  const confirmClear = () => {
+    setDevices([]);
+    setConnections([]);
+    setShowClearConfirm(false);
+  };
+
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -776,6 +789,14 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
               >
                 <GitBranch className="w-4 h-4" />
                 Auto Route
+              </button>
+              <button
+                onClick={handleClear}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+                title="Clear all devices and connections"
+              >
+                <Trash2 className="w-4 h-4" />
+                Clear
               </button>
               <button
                 onClick={() => setShowDTSPreview(true)}
@@ -1010,6 +1031,18 @@ export const ExternalDevicePopup: React.FC<ExternalDevicePopupProps> = ({
           }}
         />
       )}
+
+      {/* Clear Confirmation Modal */}
+      <ConfirmDialog
+        open={showClearConfirm}
+        title="Clear All Devices"
+        message="Are you sure you want to clear all devices and connections?&#10;This action cannot be undone."
+        confirmText="OK"
+        cancelText="Cancel"
+        confirmButtonClass="bg-red-600 hover:bg-red-700"
+        onConfirm={confirmClear}
+        onCancel={() => setShowClearConfirm(false)}
+      />
 
       {/* DTS Preview Modal */}
       {showDTSPreview && (
