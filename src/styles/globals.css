@@ -9,6 +9,8 @@
 .debug-yellow { border: 2px solid rgb(234 179 8); /* yellow-500 */ }
 .debug-purple { border: 2px solid rgb(168 85 247); /* purple-500 */ }
 .debug-blue { border: 2px solid rgb(59 130 246); /* blue-500 */ }
+.debug-cyan { border: 2px solid rgb(6 182 212); /* cyan-500 */ }
+.debug-pink { border: 2px solid rgb(236 72 153); /* pink-500 */ }
 .debug { border: 2px dashed rgba(255,255,255,0.4); }
 
 @layer base {
