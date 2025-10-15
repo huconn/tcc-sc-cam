@@ -1,6 +1,7 @@
 import React from 'react';
 import { VideoSimpleStatusModal } from './VideoSimpleStatusModal';
 import { getChannelHex } from '@/utils/channelPalette';
+import { useCameraStore } from '@/store/cameraStore';
 
 type RowProps = {
   label: string;
@@ -11,24 +12,63 @@ type RowProps = {
 };
 
 const OutputRow: React.FC<RowProps> = ({ label, colorTop, colorBottom, onClick, connectionId }) => {
+  const debugShowLayoutBorders = useCameraStore((s: any) => s.debugShowLayoutBorders ?? false);
+  
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="relative flex items-center bg-gray-700 text-gray-200 border-2 border-gray-500 rounded px-4 py-2 w-[460px] shadow-sm text-xs font-semibold hover:border-white hover:ring-1 hover:ring-white focus:outline-none focus:ring-1 focus:ring-primary-500 transition-colors transform transition-transform hover:scale-105"
-      title={`Configure ${label}`}
-      data-connection-point={connectionId}
-    >
-      {/* Inner left color markers (flush with left edge, full height) */}
-      <div className="absolute left-0 top-0 bottom-0 w-5 flex flex-col overflow-hidden rounded-l">
-        <div className="flex-1" style={{ backgroundColor: colorTop || 'transparent' }} />
-        <div className="flex-1" style={{ backgroundColor: colorBottom || 'transparent' }} />
+    <div className={`relative flex items-center ${debugShowLayoutBorders ? 'debug' : ''}`}>
+      {debugShowLayoutBorders && (
+        <span className="absolute -top-3 -left-3 bg-orange-600 text-white text-[10px] px-1.5 py-0.5 rounded z-10">OUTPUT-ROW</span>
+      )}
+      
+      {/* Left marker box with 2x1 table */}
+      <div 
+        className={`relative ${debugShowLayoutBorders ? 'debug-cyan' : ''}`}
+        data-connection-point={connectionId}
+      >
+        {debugShowLayoutBorders && (
+          <span className="absolute -top-2 -left-2 bg-cyan-600 text-white text-[9px] px-1 py-0.5 rounded z-10">MARKER</span>
+        )}
+        <table className="border-collapse overflow-hidden">
+          <tbody>
+            {/* Top marker box */}
+            <tr>
+              <td 
+                className={`relative w-8 h-[17px] border-[3px] border-r-0 border-b-0 border-gray-500 rounded-tl ${debugShowLayoutBorders ? 'debug-green' : ''}`}
+                style={{ backgroundColor: colorTop || 'transparent' }}
+              >
+                {debugShowLayoutBorders && (
+                  <span className="absolute top-0 left-0 bg-green-500 text-white text-[8px] px-0.5 rounded z-10">TOP</span>
+                )}
+              </td>
+            </tr>
+            {/* Bottom marker box */}
+            <tr>
+              <td 
+                className={`relative w-8 h-[17px] border-[3px] border-r-0 border-t-0 border-gray-500 rounded-bl ${debugShowLayoutBorders ? 'debug-yellow' : ''}`}
+                style={{ backgroundColor: colorBottom || 'transparent' }}
+              >
+                {debugShowLayoutBorders && (
+                  <span className="absolute bottom-0 left-0 bg-yellow-500 text-white text-[8px] px-0.5 rounded z-10">BTM</span>
+                )}
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-      {/* Add left padding to avoid overlap with markers */}
-      <div className="pl-7 w-full">
-        <span className="block text-center text-sm font-semibold text-purple-400">{label}</span>
-      </div>
-    </button>
+      
+      {/* Main button */}
+      <button
+        type="button"
+        onClick={onClick}
+        className={`relative flex items-center justify-center bg-gray-700 text-gray-200 border-[3px] border-l-0 border-gray-500 rounded-tr rounded-br px-4 py-2 w-[440px] shadow-sm text-xs font-semibold hover:border-white hover:ring-1 hover:ring-white focus:outline-none focus:ring-1 focus:ring-primary-500 transition-colors transform transition-transform hover:scale-105 ${debugShowLayoutBorders ? 'debug-blue' : ''}`}
+        title={`Configure ${label}`}
+      >
+        {debugShowLayoutBorders && (
+          <span className="absolute -top-2 -left-2 bg-blue-600 text-white text-[9px] px-1 py-0.5 rounded z-10">BTN</span>
+        )}
+        <span className="block text-center text-sm font-semibold text-purple-400 w-full">{label}</span>
+      </button>
+    </div>
   );
 };
 
@@ -37,6 +77,7 @@ interface VideoOutputsSectionProps {
 }
 
 export const VideoOutputsSection: React.FC<VideoOutputsSectionProps> = ({ cameraMuxMappings = {} }) => {
+  const debugShowLayoutBorders = useCameraStore((s: any) => s.debugShowLayoutBorders ?? false);
   const [openSimple, setOpenSimple] = React.useState(false);
   const [title, setTitle] = React.useState('');
 
@@ -52,11 +93,15 @@ export const VideoOutputsSection: React.FC<VideoOutputsSectionProps> = ({ camera
   const vin1Color = getChannelHex(cameraMuxMappings[7] ?? 7);
 
   return (
-    <div className="flex flex-col items-start gap-9">
-      <OutputRow label="VWDMA0" colorTop={vwdma0Color} onClick={() => handleOpen('VWDMA0')} connectionId="video-out-vwdma0" />
-      <OutputRow label="VWDMA1" colorTop={vwdma1Color} onClick={() => handleOpen('VWDMA1')} connectionId="video-out-vwdma1" />
-      <OutputRow label="VIN0" colorTop={vin0Color} onClick={() => handleOpen('VIN0')} connectionId="video-out-vin0" />
-      <OutputRow label="VIN1" colorTop={vin1Color} onClick={() => handleOpen('VIN1')} connectionId="video-out-vin1" />
+    <div className={`relative flex flex-col items-start gap-9 ${debugShowLayoutBorders ? 'debug' : ''}`}>
+      {debugShowLayoutBorders && (
+        <span className="absolute -top-3 -left-3 bg-purple-600 text-white text-[10px] px-1.5 py-0.5 rounded z-10">VIDEO-OUTPUTS-SECTION</span>
+      )}
+      
+      <OutputRow label="VWDMA0" colorTop={vwdma0Color} colorBottom={vwdma0Color} onClick={() => handleOpen('VWDMA0')} connectionId="video-out-vwdma0" />
+      <OutputRow label="VWDMA1" colorTop={vwdma1Color} colorBottom={vwdma1Color} onClick={() => handleOpen('VWDMA1')} connectionId="video-out-vwdma1" />
+      <OutputRow label="VIN0" colorTop={vin0Color} colorBottom={vin0Color} onClick={() => handleOpen('VIN0')} connectionId="video-out-vin0" />
+      <OutputRow label="VIN1" colorTop={vin1Color} colorBottom={vin1Color} onClick={() => handleOpen('VIN1')} connectionId="video-out-vin1" />
       <OutputRow label="MDW" onClick={() => handleOpen('MDW')} connectionId="video-out-mdw" />
 
       <VideoSimpleStatusModal
