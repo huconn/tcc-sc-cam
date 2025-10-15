@@ -77,7 +77,7 @@ export const CameraMuxBlock: React.FC<CameraMuxBlockProps> = ({
                     {debugShowLayoutBorders && (
                       <span className="absolute top-0 left-0 bg-blue-500 text-white text-[8px] px-0.5 rounded z-10">MID-{i}</span>
                     )}
-                    <span className="text-[10px] font-medium text-gray-200">
+                    <span className="text-sm font-bold text-gray-200">
                       {getInputLabel(mappedInput)}
                     </span>
                   </td>

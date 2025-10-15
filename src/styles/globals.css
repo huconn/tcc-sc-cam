@@ -36,3 +36,21 @@
     @apply bg-gray-800 border border-gray-700 rounded px-3 py-2 text-gray-100 focus:outline-none focus:border-primary-500;
   }
 }
+
+/* Select dropdown option styles */
+select option {
+  background-color: rgb(31, 41, 55); /* gray-800 */
+  color: white;
+  padding: 8px;
+}
+
+select option:hover,
+select option:focus,
+select option:checked {
+  background-color: rgb(59, 130, 246) !important; /* blue-500 */
+  color: white !important;
+}
+
+select option:checked {
+  background: linear-gradient(0deg, rgb(59, 130, 246) 0%, rgb(59, 130, 246) 100%);
+}

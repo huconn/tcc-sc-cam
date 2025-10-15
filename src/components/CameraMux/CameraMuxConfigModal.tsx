@@ -84,6 +84,9 @@ export const CameraMuxConfigModal: React.FC<CameraMuxConfigModalProps> = ({
                   )}
                   MUX MIPI
                 </th>
+                <th className={`text-sm font-bold text-white py-3 px-2 text-center relative border-b-2 border-gray-600 w-12`}>
+                  {/* Arrow column header - empty */}
+                </th>
                 <th className={`text-sm font-bold text-white py-3 px-2 text-center relative border-b-2 border-gray-600 ${debugShowLayoutBorders ? 'debug-green' : ''}`}>
                   {debugShowLayoutBorders && (
                     <span className="absolute -top-2 -left-2 bg-green-600 text-white text-[9px] px-1 py-0.5 rounded z-10">TH-OUTPUT</span>
@@ -122,16 +125,21 @@ export const CameraMuxConfigModal: React.FC<CameraMuxConfigModalProps> = ({
                         <select
                           value={inputCh}
                           onChange={(e) => handleMappingChange(ch, parseInt(e.target.value))}
-                          className="bg-gray-700 border-2 rounded px-3 py-2 text-white text-base"
+                          className="bg-gray-700 border-2 rounded px-3 py-2 text-white text-base font-semibold focus:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
                           style={{ borderColor: getChannelHex(inputCh), width: 'auto', minWidth: '120px' }}
                         >
                           {[0, 1, 2, 3, 4, 5, 6, 7].map(input => (
-                            <option key={input} value={input}>
+                            <option key={input} value={input} className="font-semibold">
                               {getInputLabel(input)}
                             </option>
                           ))}
                         </select>
                       </div>
+                    </td>
+                    
+                    {/* Arrow */}
+                    <td className="py-1.5 px-1 text-center">
+                      <span className="text-white text-xl font-bold">→</span>
                     </td>
                     
                     {/* Output Channel */}

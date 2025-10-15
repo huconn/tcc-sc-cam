@@ -83,7 +83,7 @@ export const SVDWBlock: React.FC<SVDWBlockProps> = ({ cameraMuxMappings = {} }) 
           <button
             type="button"
             onClick={() => setBlenderOpen(true)}
-            className={`relative ${blenderBg} ${blenderText} ${blenderBorder} rounded w-[120px] h-full flex items-center justify-center text-xs font-medium hover:border-white hover:ring-1 hover:ring-white focus:outline-none focus:ring-1 focus:ring-primary-500 transition-colors`}
+            className={`relative ${blenderBg} ${blenderText} ${blenderBorder} rounded w-[120px] h-full flex items-center justify-center text-sm font-semibold hover:border-white hover:ring-1 hover:ring-white focus:outline-none focus:ring-1 focus:ring-primary-500 transition-colors`}
             title="Configure Blender"
           >
             Blender
@@ -121,7 +121,7 @@ export const SVDWBlock: React.FC<SVDWBlockProps> = ({ cameraMuxMappings = {} }) 
                 ref={(el) => { grabberRightRefs.current[idx] = el; }}
                 type="button"
                 onClick={() => { setActiveGrabber(idx); setModalOpen(true); }}
-                className={`${grabberText} ${grabberBorder} rounded px-4 h-10 flex items-center justify-center text-xs font-semibold min-w-[120px] text-center shadow-sm hover:border-white hover:ring-2 hover:ring-white focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors transform transition-transform hover:scale-110`}
+                className={`${grabberText} ${grabberBorder} rounded px-4 h-10 flex items-center justify-center text-sm font-semibold min-w-[120px] text-center shadow-sm hover:border-white hover:ring-2 hover:ring-white focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors transform transition-transform hover:scale-110`}
                 title={`Configure Grabber ${idx}`}
                 style={{ backgroundColor: grabberBg }}
               >
