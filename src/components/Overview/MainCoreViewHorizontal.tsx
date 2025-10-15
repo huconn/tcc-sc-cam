@@ -388,7 +388,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
       }
     }
     
-    // MIPI1 line: from bottom External Devices block
+    // MIPI1 line: from bottom External Devices block to MIPI1 block left center
     if (mipi1Box) {
       const bottomExtDevice = document.querySelector('[data-connection-point="ext-device-bottom"]') as HTMLElement | null;
       if (bottomExtDevice) {
@@ -397,12 +397,14 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
         const extCenterY = extRect.top + extRect.height / 2;
         
         const mipi1Rect = mipi1Box.getBoundingClientRect();
-        // Keep horizontal line - use same Y as External device
+        const mipi1CenterY = mipi1Rect.top + mipi1Rect.height / 2;
+        
+        // Line from External Device to MIPI1 block left center
         lines.push({
           x1: extRightEdge,
           y1: extCenterY,
           x2: mipi1Rect.left,
-          y2: extCenterY, // Keep horizontal - same Y as start point
+          y2: mipi1CenterY, // Connect to MIPI1 left center
           color: '#86efac' // light green
         });
       }
@@ -442,14 +444,16 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
       const bottomExtDevice = document.querySelector('[data-connection-point="ext-device-bottom"]') as HTMLElement | null;
       if (bottomExtDevice) {
         const i2cRect = i2cMipi1Block.getBoundingClientRect();
+        const i2cCenterY = i2cRect.top + i2cRect.height / 2;
         const extRect = bottomExtDevice.getBoundingClientRect();
+        const extCenterY = extRect.top + extRect.height / 2;
         
-        // Line from I2C left edge to External Device right edge
+        // Line from I2C left center to External Device right edge
         lines.push({
           x1: i2cRect.left,
-          y1: i2cRect.top + i2cRect.height / 2,
+          y1: i2cCenterY, // I2C left center Y
           x2: extRect.left + extRect.width,
-          y2: extRect.top + extRect.height / 2,
+          y2: extCenterY, // External Device right center Y
           color: '#10b981' // green
         });
       }
@@ -829,7 +833,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
       {useCameraStore(s => s.debugShowLayoutBorders) && (
         <span className="absolute top-1 left-1 bg-gray-700 text-white text-[10px] px-1.5 py-0.5 rounded">0</span>
       )}
-      <div className={`min-w-[1600px] relative h-full ${useCameraStore(s => s.debugShowLayoutBorders ? 'debug' : '')}`}>
+      <div className={`min-w-[1400px] relative h-full ${useCameraStore(s => s.debugShowLayoutBorders ? 'debug' : '')}`}>
         {useCameraStore(s => s.debugShowLayoutBorders) && (
           <span className="absolute -top-3 -left-3 bg-gray-700 text-white text-[10px] px-1.5 py-0.5 rounded">0-1</span>
         )}
@@ -847,7 +851,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
           {useCameraStore(s => s.debugShowLayoutBorders) && (
             <span className="absolute -top-3 -left-3 bg-gray-700 text-white text-[10px] px-1.5 py-0.5 rounded">0-2</span>
           )}
-          <div ref={group1Ref} className={`flex items-stretch relative h-full ${useCameraStore(s => s.debugShowLayoutBorders ? 'debug-purple' : '')}`} style={{ marginTop: '30px', gap: '100px' }}>
+          <div ref={group1Ref} className={`flex items-stretch relative h-full ${useCameraStore(s => s.debugShowLayoutBorders ? 'debug-purple' : '')}`} style={{ marginTop: '30px', gap: '40px' }}>
             {useCameraStore(s => s.debugShowLayoutBorders) && (
               <span className="absolute -top-3 -left-3 bg-purple-600 text-white text-[10px] px-1.5 py-0.5 rounded">1</span>
             )}
@@ -864,11 +868,11 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                 <span className="absolute -top-3 -left-3 bg-green-600 text-white text-[10px] px-1.5 py-0.5 rounded">2</span>
               )}
               <div style={{ height: '20%' }} />
-              <div className="flex flex-col justify-between flex-1">
+              <div className="flex flex-col gap-4 flex-1">
               {shouldShowMipi0 && (
-                <div className="flex flex-col">
+                <div className="flex flex-col items-center justify-center flex-1">
                   <div
-                    className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 cursor-pointer hover:bg-gray-600 transition-colors w-full mb-4"
+                    className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 cursor-pointer hover:bg-gray-600 transition-colors w-full"
                     onClick={() => onDeviceClick('mipi0')}
                     data-connection-point="ext-device-top"
                   >
@@ -898,7 +902,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
               )}
 
               {shouldShowMipi1 && (
-                <div className="flex flex-col">
+                <div className="flex flex-col items-center justify-center flex-1">
                   <div
                     className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 cursor-pointer hover:bg-gray-600 transition-colors w-full"
                     onClick={() => onDeviceClick('mipi1')}
@@ -934,7 +938,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
             </div>
 
             {/* Container 1-2: MIPI, ISP, Camera Mux, Right Group */}
-            <div className={`flex items-stretch relative h-full rounded-lg flex-1 ${useCameraStore(s => s.debugShowLayoutBorders ? 'border-2 border-pink-500 debug-pink' : '')}`} style={{ padding: '10px', gap: '100px', backgroundColor: 'rgba(209, 213, 219, 0.12)' }}>
+            <div className={`flex items-stretch relative h-full rounded-lg flex-1 ${useCameraStore(s => s.debugShowLayoutBorders ? 'border-2 border-pink-500 debug-pink' : '')}`} style={{ padding: '10px', gap: '40px', backgroundColor: 'rgba(209, 213, 219, 0.12)' }}>
               {useCameraStore(s => s.debugShowLayoutBorders) && (
                 <span className="absolute -top-3 -left-3 bg-pink-600 text-white text-[10px] px-1.5 py-0.5 rounded">1-2</span>
               )}
@@ -965,16 +969,18 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
               
               <div style={{ height: '20%' }} />
               
-              <div className="flex flex-col justify-between flex-1">
+              <div className="flex flex-col gap-4 flex-1">
               {shouldShowMipi0 && (
-                <div className="flex flex-col">
-                  {/* I2C Block for MIPI0 - grouped with MIPI0 */}
+                <div className="flex flex-col flex-1">
+                  {/* I2C Block for MIPI0 */}
                   <I2CPanel 
                     shouldShowMipi0={true}
                     shouldShowMipi1={false}
                   />
                   
-                  <div className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 w-full relative mb-4" id="mipi0-block" style={{ minHeight: '280px' }}>
+                  {/* MIPI0 Block - centered in remaining space */}
+                  <div className="flex flex-col justify-center flex-1">
+                    <div className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 w-full relative" id="mipi0-block" style={{ minHeight: '240px' }}>
                     <div className="flex items-center justify-center mb-4">
                       <input type="checkbox" className="mr-2 w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 focus:ring-2" />
                   <div className="text-center font-semibold text-sm text-purple-400">MIPI0</div>
@@ -1004,18 +1010,21 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                     ))}
                   </div>
                   </div>
+                  </div>
                 </div>
               )}
 
               {shouldShowMipi1 && (
-                <div className="flex flex-col">
-                  {/* I2C Block for MIPI1 - grouped with MIPI1 */}
+                <div className="flex flex-col flex-1">
+                  {/* I2C Block for MIPI1 */}
                   <I2CPanel 
                     shouldShowMipi0={false}
                     shouldShowMipi1={true}
                   />
                   
-                  <div className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 w-full relative" id="mipi1-block" style={{ minHeight: '280px' }}>
+                  {/* MIPI1 Block - centered in remaining space */}
+                  <div className="flex flex-col justify-center flex-1">
+                    <div className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 w-full relative" id="mipi1-block" style={{ minHeight: '240px' }}>
                     <div className="flex items-center justify-center mb-4">
                       <input type="checkbox" className="mr-2 w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 focus:ring-2" />
                   <div className="text-center font-semibold text-sm text-purple-400">MIPI1</div>
@@ -1043,6 +1052,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                         ></div>
                       </div>
                     ))}
+                  </div>
                   </div>
                   </div>
                 </div>
