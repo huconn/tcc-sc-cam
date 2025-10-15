@@ -1386,7 +1386,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
             {activeChannels.map((ch, idx) => (
               <div key={idx} className="flex items-center gap-2">
                 <div className={`w-4 h-4 rounded ${channelColorClasses[ch.globalIndex]}`}></div>
-                <span className="text-xs text-gray-300">{ch.mipi.toUpperCase()}-VC{ch.index}</span>
+                <span className="text-xs text-gray-300">{ch.mipi.toUpperCase()}-CH{ch.index}</span>
               </div>
             ))}
           </div>

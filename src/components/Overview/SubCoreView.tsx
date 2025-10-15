@@ -83,7 +83,7 @@ export const SubCoreView: React.FC<SubCoreViewProps> = ({
                     className="w-3 h-3"
                   />
                 </div>
-                <div className="text-xs text-center">VC0-VC3</div>
+                <div className="text-xs text-center">CH0-CH3</div>
               </div>
 
               {/* MIPI1 Block */}
@@ -97,7 +97,7 @@ export const SubCoreView: React.FC<SubCoreViewProps> = ({
                     className="w-3 h-3"
                   />
                 </div>
-                <div className="text-xs text-center">VC0-VC3</div>
+                <div className="text-xs text-center">CH0-CH3</div>
               </div>
             </div>
           </div>

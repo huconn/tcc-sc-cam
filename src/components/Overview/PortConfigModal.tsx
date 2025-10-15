@@ -21,7 +21,7 @@ export const PortConfigModal: React.FC<PortConfigModalProps> = ({
   const [config, setConfig] = useState({
     enabled: currentConfig?.enabled ?? true,
     dataType: currentConfig?.dataType || 'MIPI-CSI2',
-    virtualChannel: currentConfig?.virtualChannel || 'VC0',
+    virtualChannel: currentConfig?.virtualChannel || 'CH0',
     dataLanes: currentConfig?.dataLanes || 4,
     pixelFormat: currentConfig?.pixelFormat || 'RAW10',
     resolution: currentConfig?.resolution || '1920x1080',
@@ -88,10 +88,10 @@ export const PortConfigModal: React.FC<PortConfigModalProps> = ({
                 onChange={(e) => setConfig({ ...config, virtualChannel: e.target.value })}
                 className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
               >
-                <option value="VC0">VC0</option>
-                <option value="VC1">VC1</option>
-                <option value="VC2">VC2</option>
-                <option value="VC3">VC3</option>
+                <option value="CH0">CH0</option>
+                <option value="CH1">CH1</option>
+                <option value="CH2">CH2</option>
+                <option value="CH3">CH3</option>
               </select>
             </div>
           )}

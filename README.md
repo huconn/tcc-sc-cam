@@ -85,7 +85,7 @@ electron/
 ## Configuration Components
 
 ### MIPI CSI
-- Virtual channel configuration (VC0-VC3)
+- Virtual channel configuration (CH0-CH3)
 - Data lane settings (1-4 lanes)
 - HS settle timing adjustment
 - Interleave mode support
