@@ -3,18 +3,26 @@ import { getChannelHex } from '@/utils/channelPalette';
 import { SVDWGrabberConfigModal, SVDWGrabberStatus } from './SVDWGrabberConfigModal';
 import { SVDWBlenderConfigModal, SVDWBlenderStatus } from './SVDWBlenderConfigModal';
 
-export const SVDWBlock: React.FC = () => {
+interface SVDWBlockProps {
+  cameraMuxMappings?: Record<number, number>;
+}
+
+export const SVDWBlock: React.FC<SVDWBlockProps> = ({ cameraMuxMappings = {} }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Distinct colors per Grabber from shared palette (channels 0..3)
-  const grabberHex: string[] = [
-    getChannelHex(0),
-    getChannelHex(1),
-    getChannelHex(2),
-    getChannelHex(3),
+  // Grabber 버튼 색상 - VWDMA/VIN과 통일 (회색)
+  const grabberBg = '#374151'; // gray-700
+  
+  // 연결 마커용 매핑된 색상
+  const markerHex: string[] = [
+    getChannelHex(cameraMuxMappings[0] ?? 0),
+    getChannelHex(cameraMuxMappings[1] ?? 1),
+    getChannelHex(cameraMuxMappings[2] ?? 2),
+    getChannelHex(cameraMuxMappings[3] ?? 3),
   ];
-  const grabberText = 'text-black';
-  const grabberBorder = 'border-0';
+  
+  const grabberText = 'text-gray-200';
+  const grabberBorder = 'border-2 border-gray-500';
 
   // Blender theme color
   const blenderBg = 'bg-purple-700';
@@ -43,7 +51,8 @@ export const SVDWBlock: React.FC = () => {
         if (!a || !b) continue;
         const aRect = a.getBoundingClientRect();
         const bRect = b.getBoundingClientRect();
-        const x1 = aRect.left - rootRect.left + aRect.width / 2;
+        // Grabber 버튼의 오른쪽 끝에서 시작
+        const x1 = aRect.left - rootRect.left + aRect.width;
         const y1 = aRect.top - rootRect.top + aRect.height / 2;
         const x2 = bRect.left - rootRect.left + bRect.width / 2;
         const y2 = bRect.top - rootRect.top + bRect.height / 2;
@@ -59,7 +68,7 @@ export const SVDWBlock: React.FC = () => {
       ro.disconnect();
       window.removeEventListener('resize', update);
     };
-  }, []);
+  }, [cameraMuxMappings]);
 
   return (
     <div className="bg-gray-700 border-2 border-purple-500 rounded-lg p-4 relative w-full overflow-visible text-gray-200">
@@ -84,7 +93,7 @@ export const SVDWBlock: React.FC = () => {
                   <div
                       ref={(el) => { blenderLeftRefs.current[idx] = el; }}
                 className="relative text-black rounded w-8 h-6 flex items-center justify-center text-[10px] font-semibold border-2 border-white"
-                    style={{ backgroundColor: grabberHex[idx] }}
+                    style={{ backgroundColor: markerHex[idx] }}
                   >
                     {`CH${idx+1}`}
                   </div>
@@ -101,7 +110,7 @@ export const SVDWBlock: React.FC = () => {
               {/* Left number indicator (x-1) */}
               <div
                 className="absolute right-full top-1/2 translate-x-1/2 -translate-y-1/2 z-10 text-black rounded w-8 h-6 flex items-center justify-center text-[10px] font-semibold border border-gray-500"
-                style={{ backgroundColor: grabberHex[idx] }}
+                style={{ backgroundColor: markerHex[idx] }}
                 data-connection-point={`svdw-left-${idx}`}
                 
               >
@@ -110,23 +119,15 @@ export const SVDWBlock: React.FC = () => {
 
               {/* Main Grabber block */}
               <button
+                ref={(el) => { grabberRightRefs.current[idx] = el; }}
                 type="button"
                 onClick={() => { setActiveGrabber(idx); setModalOpen(true); }}
                 className={`${grabberText} ${grabberBorder} rounded px-4 h-10 flex items-center justify-center text-xs font-semibold min-w-[120px] text-center shadow-sm hover:border-white hover:ring-2 hover:ring-white focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors transform transition-transform hover:scale-110`}
                 title={`Configure Grabber ${idx}`}
-                style={{ backgroundColor: grabberHex[idx] }}
+                style={{ backgroundColor: grabberBg }}
               >
                 Grabber
               </button>
-
-              {/* Right number indicator (centered on border, shifted left) */}
-              <div
-                ref={(el) => { grabberRightRefs.current[idx] = el; }}
-                className="absolute top-1/2 -translate-y-1/2 z-10 text-black rounded w-8 h-6 flex items-center justify-center text-[10px] font-semibold"
-                style={{ left: 'calc(100% - 36px)', transform: 'translate(-50%, -50%)', backgroundColor: grabberHex[idx] }}
-              >
-                {``}
-              </div>
             </div>
           ))}
         </div>
@@ -141,7 +142,7 @@ export const SVDWBlock: React.FC = () => {
             </defs>
             <g transform="translate(-17,0)">
               {lines.map((l, i) => (
-                <line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke={grabberHex[i]} strokeWidth={3} markerEnd="url(#arrowhead)" />
+                <line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke={markerHex[i]} strokeWidth={3} markerEnd="url(#arrowhead)" />
               ))}
             </g>
           </svg>

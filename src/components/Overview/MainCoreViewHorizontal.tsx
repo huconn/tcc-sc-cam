@@ -205,8 +205,10 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
           y2 = y1;
         }
         const match = p.from.match(/mux-right-(\d+)/);
-        const idx = match ? parseInt(match[1], 10) : 0;
-        const color = channelColors[idx] || '#93c5fd';
+        const outputIdx = match ? parseInt(match[1], 10) : 0;
+        // 매핑된 Input 채널의 색상 사용
+        const inputIdx = cameraMuxConfig.mappings[outputIdx] ?? outputIdx;
+        const color = channelColors[inputIdx] || '#93c5fd';
         collected.push({ x1, y1, x2, y2, color, arrow: p.arrow });
       }
     });
@@ -266,7 +268,9 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
       const x2 = ciedCenterX; // vertical up to CIED top
       const y2 = b.top;
 
-      lines.push({ x1, y1, x2, y2, color: channelColors[i], hasStartDot: true });
+      // 매핑된 Input 채널의 색상 사용
+      const inputIdx = cameraMuxConfig.mappings[i] ?? i;
+      lines.push({ x1, y1, x2, y2, color: channelColors[inputIdx], hasStartDot: true });
     }
     setCamToCiedLines(lines);
   };
@@ -1338,7 +1342,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                   )}
                   <div ref={svdwRef} className="w-full">
                     <div className="w-full">
-                <SVDWBlock />
+                <SVDWBlock cameraMuxMappings={cameraMuxConfig.mappings} />
                     </div>
                   </div>
                 </div>
@@ -1349,7 +1353,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                   {useCameraStore(s => s.debugShowLayoutBorders) && (
                     <span className="absolute -top-3 -left-3 bg-orange-600 text-white text-[10px] px-1.5 py-0.5 rounded">6-3</span>
                   )}
-                  <VideoOutputsSection />
+                  <VideoOutputsSection cameraMuxMappings={cameraMuxConfig.mappings} />
                 </div>
               </div>
             </div>
@@ -1403,7 +1407,19 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
           currentConfig={cameraMuxConfig}
           onSave={(config) => {
             setCameraMuxConfig(config);
+            // Store에도 매핑 정보 저장
+            const mappingsArray = Object.entries(config.mappings).map(([output, input]) => ({
+              output: `ch${output}`,
+              input: `ch${input}`
+            }));
+            useCameraStore.getState().updateCameraMux({ mappings: mappingsArray });
             setShowCameraMuxConfig(false);
+            
+            // 연결선 색상 업데이트를 위해 재계산
+            setTimeout(() => {
+              computeCamMuxToSvdw();
+              computeCamMuxToCied();
+            }, 100);
           }}
           onClose={() => setShowCameraMuxConfig(false)}
         />

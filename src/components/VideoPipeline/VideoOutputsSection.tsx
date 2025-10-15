@@ -1,5 +1,6 @@
 import React from 'react';
 import { VideoSimpleStatusModal } from './VideoSimpleStatusModal';
+import { getChannelHex } from '@/utils/channelPalette';
 
 type RowProps = {
   label: string;
@@ -31,7 +32,11 @@ const OutputRow: React.FC<RowProps> = ({ label, colorTop, colorBottom, onClick, 
   );
 };
 
-export const VideoOutputsSection: React.FC = () => {
+interface VideoOutputsSectionProps {
+  cameraMuxMappings?: Record<number, number>;
+}
+
+export const VideoOutputsSection: React.FC<VideoOutputsSectionProps> = ({ cameraMuxMappings = {} }) => {
   const [openSimple, setOpenSimple] = React.useState(false);
   const [title, setTitle] = React.useState('');
 
@@ -40,12 +45,18 @@ export const VideoOutputsSection: React.FC = () => {
     setOpenSimple(true);
   };
 
+  // 매핑된 Input 채널의 색상 사용
+  const vwdma0Color = getChannelHex(cameraMuxMappings[4] ?? 4);
+  const vwdma1Color = getChannelHex(cameraMuxMappings[5] ?? 5);
+  const vin0Color = getChannelHex(cameraMuxMappings[6] ?? 6);
+  const vin1Color = getChannelHex(cameraMuxMappings[7] ?? 7);
+
   return (
     <div className="flex flex-col items-start gap-9">
-      <OutputRow label="VWDMA0" colorTop="#6d28d9" colorBottom="#4d7c57" onClick={() => handleOpen('VWDMA0')} connectionId="video-out-vwdma0" />
-      <OutputRow label="VWDMA1" colorTop="#65a30d" colorBottom="#92400e" onClick={() => handleOpen('VWDMA1')} connectionId="video-out-vwdma1" />
-      <OutputRow label="VIN0" colorTop="#2563eb" onClick={() => handleOpen('VIN0')} connectionId="video-out-vin0" />
-      <OutputRow label="VIN1" colorTop="#db2777" onClick={() => handleOpen('VIN1')} connectionId="video-out-vin1" />
+      <OutputRow label="VWDMA0" colorTop={vwdma0Color} onClick={() => handleOpen('VWDMA0')} connectionId="video-out-vwdma0" />
+      <OutputRow label="VWDMA1" colorTop={vwdma1Color} onClick={() => handleOpen('VWDMA1')} connectionId="video-out-vwdma1" />
+      <OutputRow label="VIN0" colorTop={vin0Color} onClick={() => handleOpen('VIN0')} connectionId="video-out-vin0" />
+      <OutputRow label="VIN1" colorTop={vin1Color} onClick={() => handleOpen('VIN1')} connectionId="video-out-vin1" />
       <OutputRow label="MDW" onClick={() => handleOpen('MDW')} connectionId="video-out-mdw" />
 
       <VideoSimpleStatusModal
