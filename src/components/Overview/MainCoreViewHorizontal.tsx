@@ -206,8 +206,8 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
         }
         const match = p.from.match(/mux-right-(\d+)/);
         const outputIdx = match ? parseInt(match[1], 10) : 0;
-        // 매핑된 Input 채널의 색상 사용
-        const inputIdx = cameraMuxConfig.mappings[outputIdx] ?? outputIdx;
+        // 매핑된 Input 채널의 색상 사용 (ref를 통해 최신 값 참조)
+        const inputIdx = cameraMuxConfigRef.current.mappings[outputIdx] ?? outputIdx;
         const color = channelColors[inputIdx] || '#93c5fd';
         collected.push({ x1, y1, x2, y2, color, arrow: p.arrow });
       }
@@ -268,8 +268,8 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
       const x2 = ciedCenterX; // vertical up to CIED top
       const y2 = b.top;
 
-      // 매핑된 Input 채널의 색상 사용
-      const inputIdx = cameraMuxConfig.mappings[i] ?? i;
+      // 매핑된 Input 채널의 색상 사용 (ref를 통해 최신 값 참조)
+      const inputIdx = cameraMuxConfigRef.current.mappings[i] ?? i;
       lines.push({ x1, y1, x2, y2, color: channelColors[inputIdx], hasStartDot: true });
     }
     setCamToCiedLines(lines);
@@ -732,7 +732,23 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
   const [cameraMuxConfig, setCameraMuxConfig] = useState<{ mappings: Record<number, number> }>({
     mappings: { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7 }
   });
+  // cameraMuxConfig의 최신 값을 항상 참조하기 위한 ref
+  const cameraMuxConfigRef = useRef(cameraMuxConfig);
+  useEffect(() => {
+    cameraMuxConfigRef.current = cameraMuxConfig;
+  }, [cameraMuxConfig]);
+  
   const [rightColTopOffset, setRightColTopOffset] = useState<number>(0);
+
+  // Camera Mux 설정 변경 시 연결선 색상 자동 업데이트
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      computeCamMuxToSvdw();
+      computeCamMuxToCied();
+    }, 50);
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cameraMuxConfig]);
 
   // Channel colors - more vibrant and visible
   const channelColors = CHANNEL_HEX;
@@ -1406,20 +1422,30 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
         <CameraMuxConfigModal
           currentConfig={cameraMuxConfig}
           onSave={(config) => {
-            setCameraMuxConfig(config);
             // Store에도 매핑 정보 저장
             const mappingsArray = Object.entries(config.mappings).map(([output, input]) => ({
               output: `ch${output}`,
               input: `ch${input}`
             }));
             useCameraStore.getState().updateCameraMux({ mappings: mappingsArray });
+            
+            // 먼저 config를 업데이트하고 모달을 닫음
+            setCameraMuxConfig(config);
             setShowCameraMuxConfig(false);
             
-            // 연결선 색상 업데이트를 위해 재계산
+            // 연결선 색상 업데이트를 위해 여러 번 재계산 (DOM 업데이트 대기)
             setTimeout(() => {
               computeCamMuxToSvdw();
               computeCamMuxToCied();
-            }, 100);
+            }, 50);
+            setTimeout(() => {
+              computeCamMuxToSvdw();
+              computeCamMuxToCied();
+            }, 150);
+            setTimeout(() => {
+              computeCamMuxToSvdw();
+              computeCamMuxToCied();
+            }, 300);
           }}
           onClose={() => setShowCameraMuxConfig(false)}
         />
