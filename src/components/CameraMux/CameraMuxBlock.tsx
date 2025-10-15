@@ -52,12 +52,12 @@ export const CameraMuxBlock: React.FC<CameraMuxBlockProps> = ({
         )}
         <table className={`w-full h-full ${debugShowLayoutBorders ? 'border-2 border-purple-400' : ''}`}>
           <tbody className="h-full flex flex-col">
-            {Array.from({ length: 16 }).map((_, rowIdx) => {
-              // 실제 채널은 0, 2, 4, 6, 8, 10, 12, 14번 행에만
-              const isChannelRow = rowIdx % 2 === 0;
+            {Array.from({ length: 18 }).map((_, rowIdx) => {
+              // 실제 채널은 0, 2, 4, 6, 8, 10, 12, 14번 행에만, 16, 17번 행은 빈 행
+              const isChannelRow = rowIdx % 2 === 0 && rowIdx < 16;
               const channelIndex = Math.floor(rowIdx / 2);
               
-              if (!isChannelRow) {
+              if (!isChannelRow || channelIndex >= 8) {
                 // 빈 행 (spacing)
                 return (
                   <tr key={rowIdx} className={`flex-1 ${debugShowLayoutBorders ? 'border border-gray-600' : ''}`}>

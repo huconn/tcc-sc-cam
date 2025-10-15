@@ -135,7 +135,7 @@ export const useCameraStore = create<CameraStore>((set) => ({
   debugMainCoreViewHorizontalForceOutputs: false,
 
   // Global debug: show layout guide borders for all components
-  debugShowLayoutBorders: true,  //  ENABLED
+  debugShowLayoutBorders: false,  //  ENABLED
 
   // Show browser resolution and scale info
   debugShowResolution: true,

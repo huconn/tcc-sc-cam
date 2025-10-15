@@ -2,16 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Debug border helpers (toggle via store flag) */
-.debug-orange { border: 2px solid rgb(249 115 22); /* tailwind orange-500 */ }
-.debug-red { border: 2px solid rgb(239 68 68); /* red-500 */ }
-.debug-green { border: 2px solid rgb(34 197 94); /* green-500 */ }
-.debug-yellow { border: 2px solid rgb(234 179 8); /* yellow-500 */ }
-.debug-purple { border: 2px solid rgb(168 85 247); /* purple-500 */ }
-.debug-blue { border: 2px solid rgb(59 130 246); /* blue-500 */ }
-.debug-cyan { border: 2px solid rgb(6 182 212); /* cyan-500 */ }
-.debug-pink { border: 2px solid rgb(236 72 153); /* pink-500 */ }
-.debug { border: 2px dashed rgba(255,255,255,0.4); }
+/* Debug border helpers (toggle via store flag) - using outline to avoid affecting box size */
+.debug-orange { outline: 2px solid rgb(249 115 22); outline-offset: -2px; }
+.debug-red { outline: 2px solid rgb(239 68 68); outline-offset: -2px; }
+.debug-green { outline: 2px solid rgb(34 197 94); outline-offset: -2px; }
+.debug-yellow { outline: 2px solid rgb(234 179 8); outline-offset: -2px; }
+.debug-purple { outline: 2px solid rgb(168 85 247); outline-offset: -2px; }
+.debug-blue { outline: 2px solid rgb(59 130 246); outline-offset: -2px; }
+.debug-cyan { outline: 2px solid rgb(6 182 212); outline-offset: -2px; }
+.debug-pink { outline: 2px solid rgb(236 72 153); outline-offset: -2px; }
+.debug { outline: 2px dashed rgba(255,255,255,0.4); outline-offset: -2px; }
 
 @layer base {
   body {

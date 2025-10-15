@@ -55,12 +55,13 @@ export const ISPBlock: React.FC<ISPBlockProps> = ({
         )}
         <table className={`w-full h-full ${debugShowLayoutBorders ? 'border-2 border-yellow-400' : ''}`}>
           <tbody className="h-full flex flex-col">
-            {Array.from({ length: 16 }).map((_, rowIdx) => {
+            {Array.from({ length: 18 }).map((_, rowIdx) => {
               // rowIdx: 0, 2, 4, 6, 8, 10, 12, 14 → ISP0-7
               // rowIdx: 3 → IR0 (if mipi0 ISP1 is selected)
               // rowIdx: 7 → IR1 (if mipi0 ISP3 is selected)
               // rowIdx: 11 → IR0 (if mipi1 ISP1 is selected)
               // rowIdx: 15 → IR1 (if mipi1 ISP3 is selected)
+              // rowIdx: 16, 17 → 빈 행
               // 나머지 → 빈 행
               
               // ISP1의 mode를 확인
@@ -232,10 +233,24 @@ export const ISPBlock: React.FC<ISPBlockProps> = ({
               }
               
               // ISP 행 (0, 2, 4, 6, 8, 10, 12, 14)
-              const isISPRow = rowIdx % 2 === 0;
+              const isISPRow = rowIdx % 2 === 0 && rowIdx < 16;
               if (isISPRow) {
                 const ispIndex = rowIdx / 2; // 0, 1, 2, 3, 4, 5, 6, 7
                 const ch = activeChannels[ispIndex];
+                
+                // activeChannels가 없으면 빈 행으로 처리
+                if (!ch) {
+                  return (
+                    <tr 
+                      key={`isp-row-${rowIdx}`} 
+                      className={`flex-1 ${debugShowLayoutBorders ? 'border border-gray-600' : ''}`}
+                    >
+                      {debugShowLayoutBorders && (
+                        <td className="w-full text-center text-[8px] text-gray-500">Empty-{rowIdx} (no channel)</td>
+                      )}
+                    </tr>
+                  );
+                }
                 
                 return (
                   <tr 

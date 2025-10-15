@@ -31,8 +31,7 @@ import { channelHex as CHANNEL_HEX, channelBgClass as CHANNEL_BG, getChannelHex,
 import { MIPIChannelConfigModal } from './MIPIChannelConfigModal';
 import { CameraMuxConfigModal } from '../CameraMux/CameraMuxConfigModal';
 import { CameraMuxBlock } from '@/components/CameraMux/CameraMuxBlock';
-import { SVDWBlock } from '@/components/SVDW/SVDWBlock';
-import { VideoOutputsSection } from '@/components/VideoPipeline/VideoOutputsSection';
+import { SVDWVideoBlock } from '@/components/SVDW/SVDWVideoBlock';
 import { CIEDBar } from '@/components/CIED/CIEDBar';
 import { I2CPanel } from '@/components/I2CConfiguration';
 
@@ -468,34 +467,34 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
     
     // mipi0 ISP1 -> IR0 connection (row 3)
     if (mipi0Channels[1] === 'isp1') {
-      const isp1 = document.querySelector('[data-anchor-point="isp-right-1-box"]') as HTMLElement | null;
-      const ir0 = document.querySelector('[data-connection-point="ir0-box"]') as HTMLElement | null;
+    const isp1 = document.querySelector('[data-anchor-point="isp-right-1-box"]') as HTMLElement | null;
+    const ir0 = document.querySelector('[data-connection-point="ir0-box"]') as HTMLElement | null;
+    
+    if (isp1 && ir0) {
+      const isp1Rect = isp1.getBoundingClientRect();
+      const ir0Rect = ir0.getBoundingClientRect();
       
-      if (isp1 && ir0) {
-        const isp1Rect = isp1.getBoundingClientRect();
-        const ir0Rect = ir0.getBoundingClientRect();
-        
         const ir0LeftCenterX = ir0Rect.left;
         const ir0LeftCenterY = ir0Rect.top + ir0Rect.height / 2;
         
-        const startX = isp1Rect.left + isp1Rect.width;
-        const startY = isp1Rect.top + isp1Rect.height / 2;
+      const startX = isp1Rect.left + isp1Rect.width;
+      const startY = isp1Rect.top + isp1Rect.height / 2;
         
-        lines.push({
-          x1: startX,
-          y1: startY,
-          x2: startX,
+      lines.push({
+        x1: startX,
+        y1: startY,
+        x2: startX,
           y2: ir0LeftCenterY,
-          color: channelColors[1]
-        });
-        
-        lines.push({
-          x1: startX,
+        color: channelColors[1]
+      });
+      
+      lines.push({
+        x1: startX,
           y1: ir0LeftCenterY,
           x2: ir0LeftCenterX,
           y2: ir0LeftCenterY,
-          color: channelColors[1]
-        });
+        color: channelColors[1]
+      });
       }
     }
     
@@ -534,34 +533,34 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
     
     // mipi0 ISP3 -> IR1 connection (row 7)
     if (mipi0Channels[3] === 'isp3') {
-      const isp3 = document.querySelector('[data-anchor-point="isp-right-3-box"]') as HTMLElement | null;
-      const ir1 = document.querySelector('[data-connection-point="ir1-box"]') as HTMLElement | null;
-      
-      if (isp3 && ir1) {
-        const isp3Rect = isp3.getBoundingClientRect();
-        const ir1Rect = ir1.getBoundingClientRect();
+    const isp3 = document.querySelector('[data-anchor-point="isp-right-3-box"]') as HTMLElement | null;
+    const ir1 = document.querySelector('[data-connection-point="ir1-box"]') as HTMLElement | null;
+    
+    if (isp3 && ir1) {
+      const isp3Rect = isp3.getBoundingClientRect();
+      const ir1Rect = ir1.getBoundingClientRect();
         
         const ir1LeftCenterX = ir1Rect.left;
         const ir1LeftCenterY = ir1Rect.top + ir1Rect.height / 2;
+      
+      const startX3 = isp3Rect.left + isp3Rect.width;
+      const startY3 = isp3Rect.top + isp3Rect.height / 2;
         
-        const startX3 = isp3Rect.left + isp3Rect.width;
-        const startY3 = isp3Rect.top + isp3Rect.height / 2;
-        
-        lines.push({
-          x1: startX3,
-          y1: startY3,
-          x2: startX3,
+      lines.push({
+        x1: startX3,
+        y1: startY3,
+        x2: startX3,
           y2: ir1LeftCenterY,
-          color: channelColors[3]
-        });
+        color: channelColors[3]
+      });
         
-        lines.push({
-          x1: startX3,
+      lines.push({
+        x1: startX3,
           y1: ir1LeftCenterY,
           x2: ir1LeftCenterX,
           y2: ir1LeftCenterY,
-          color: channelColors[3]
-        });
+        color: channelColors[3]
+      });
       }
     }
     
@@ -628,6 +627,9 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
 
       //isp0,1,2,3,4,5,6,7 to cam mux0,1,2,3
       computeIspToCamMux();
+
+      //isp to cied (IR0, IR1 connections)
+      computeIspToCied();
 
       //cam mux0..7 to cied0..7
       computeCamMuxToCied();
@@ -1319,28 +1321,15 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
                 <CIEDBar />
               </div>
               
-              {/* SVDW/Video Column */}
-              <div ref={rightColRef} className={`flex flex-col flex-1 ${useCameraStore(s => s.debugShowLayoutBorders ? '' : '')}`} style={{ marginTop: `${rightColTopOffset}px`, height: `${selectorsHeight}px` }}>
-                {/* Top half: SVDW bottom-aligned */}
-                <div className={`relative w-full ${useCameraStore(s => s.debugShowLayoutBorders ? 'debug-orange' : '')}`} style={{ height: `${Math.max(0, Math.round(selectorsHeight/2) - 10)}px`, display: 'flex', alignItems: 'flex-end' }}>
-                  {useCameraStore(s => s.debugShowLayoutBorders) && (
-                    <span className="absolute -top-3 -left-3 bg-orange-600 text-white text-[10px] px-1.5 py-0.5 rounded">6-1</span>
-                  )}
-                  <div ref={svdwRef} className="w-full">
-                    <div className="w-full">
-                <SVDWBlock cameraMuxMappings={cameraMuxConfig.mappings} />
-                    </div>
-                  </div>
-                </div>
-                {/* Gap 20px */}
-                <div style={{ height: '20px' }} />
-                {/* Bottom half: Video group top-aligned */}
-                <div ref={videoGroupRef} className={`relative ${useCameraStore(s => s.debugShowLayoutBorders ? 'debug-orange' : '')}`} style={{ height: `${Math.max(0, Math.round(selectorsHeight/2) - 10)}px`, display: 'flex', alignItems: 'flex-start' }}>
-                  {useCameraStore(s => s.debugShowLayoutBorders) && (
-                    <span className="absolute -top-3 -left-3 bg-orange-600 text-white text-[10px] px-1.5 py-0.5 rounded">6-3</span>
-                  )}
-                  <VideoOutputsSection cameraMuxMappings={cameraMuxConfig.mappings} />
-                </div>
+              {/* SVDW/Video Column - Unified 18-row table */}
+              <div ref={rightColRef} className={`flex flex-col flex-1 justify-center ${useCameraStore(s => s.debugShowLayoutBorders ? '' : '')}`} style={{ marginTop: '-6px' }}>
+                {useCameraStore(s => s.debugShowLayoutBorders) && (
+                  <span className="absolute -top-3 -left-3 bg-orange-600 text-white text-[10px] px-1.5 py-0.5 rounded z-10">6-1</span>
+                )}
+                <SVDWVideoBlock 
+                  cameraMuxMappings={cameraMuxConfig.mappings} 
+                  heightPx={Math.max(0, Math.round((selectorsHeight * 4) / 5))}
+                />
               </div>
             </div>
             </div>
