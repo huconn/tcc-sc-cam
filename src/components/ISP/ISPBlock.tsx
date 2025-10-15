@@ -40,12 +40,12 @@ export const ISPBlock: React.FC<ISPBlockProps> = ({
         <span className="absolute -top-3 -left-3 bg-yellow-600 text-white text-[10px] px-1.5 py-0.5 rounded z-10">ISP-BLOCK</span>
       )}
 
-      {/* Title */}
+      {/* Title - invisible but preserves space */}
       <div className={`text-center font-semibold text-sm mb-1 text-yellow-400 relative ${debugShowLayoutBorders ? 'debug-cyan' : ''}`}>
         {debugShowLayoutBorders && (
           <span className="absolute -top-2 -left-2 bg-cyan-600 text-white text-[9px] px-1 py-0.5 rounded z-10">TITLE</span>
         )}
-        ISP BLOCK
+        <span className="invisible">ISP BLOCK</span>
       </div>
 
       {/* 16-row table structure */}
@@ -57,12 +57,36 @@ export const ISPBlock: React.FC<ISPBlockProps> = ({
           <tbody className="h-full flex flex-col">
             {Array.from({ length: 16 }).map((_, rowIdx) => {
               // rowIdx: 0, 2, 4, 6, 8, 10, 12, 14 → ISP0-7
-              // rowIdx: 3 → IR0
-              // rowIdx: 7 → IR1
+              // rowIdx: 3 → IR0 (if mipi0 ISP1 is selected)
+              // rowIdx: 7 → IR1 (if mipi0 ISP3 is selected)
+              // rowIdx: 11 → IR0 (if mipi1 ISP1 is selected)
+              // rowIdx: 15 → IR1 (if mipi1 ISP3 is selected)
               // 나머지 → 빈 행
               
-              // IR0 행 (rowIdx === 3)
+              // ISP1의 mode를 확인
+              const isp1Mode0 = activeChannels[1]?.mode || 'bypass'; // mipi0 ISP1 (globalIndex 1)
+              const isp1Mode1 = activeChannels[5]?.mode || 'bypass'; // mipi1 ISP1 (globalIndex 5)
+              
+              // ISP3의 mode를 확인
+              const isp3Mode0 = activeChannels[3]?.mode || 'bypass'; // mipi0 ISP3 (globalIndex 3)
+              const isp3Mode1 = activeChannels[7]?.mode || 'bypass'; // mipi1 ISP3 (globalIndex 7)
+              
+              // IR0 행 - mipi0 (rowIdx === 3) - mipi0 ISP1이 'isp1'일 때만 표시
               if (rowIdx === 3) {
+                const showIR0 = isp1Mode0 === 'isp1';
+                if (!showIR0) {
+                  return (
+                    <tr 
+                      key={`isp-row-${rowIdx}`} 
+                      className={`flex-1 ${debugShowLayoutBorders ? 'border border-gray-600' : ''}`}
+                    >
+                      {debugShowLayoutBorders && (
+                        <td className="w-full text-center text-[8px] text-gray-500">Empty-{rowIdx} (mipi0 IR0 hidden)</td>
+                      )}
+                    </tr>
+                  );
+                }
+                
                 return (
                   <tr 
                     key={`isp-row-${rowIdx}`} 
@@ -70,7 +94,7 @@ export const ISPBlock: React.FC<ISPBlockProps> = ({
                   >
                     {debugShowLayoutBorders && (
                       <span className="absolute -top-1 -left-1 bg-orange-600 text-white text-[8px] px-1 py-0.5 rounded z-50">
-                        IR0-Row
+                        IR0-mipi0
                       </span>
                     )}
                     <td className={`flex items-center justify-end pr-2 relative w-full ${debugShowLayoutBorders ? 'border border-orange-200' : ''}`}>
@@ -87,8 +111,22 @@ export const ISPBlock: React.FC<ISPBlockProps> = ({
                 );
               }
               
-              // IR1 행 (rowIdx === 7)
+              // IR1 행 - mipi0 (rowIdx === 7) - mipi0 ISP3이 'isp3'일 때만 표시
               if (rowIdx === 7) {
+                const showIR1 = isp3Mode0 === 'isp3';
+                if (!showIR1) {
+                  return (
+                    <tr 
+                      key={`isp-row-${rowIdx}`} 
+                      className={`flex-1 ${debugShowLayoutBorders ? 'border border-gray-600' : ''}`}
+                    >
+                      {debugShowLayoutBorders && (
+                        <td className="w-full text-center text-[8px] text-gray-500">Empty-{rowIdx} (mipi0 IR1 hidden)</td>
+                      )}
+                    </tr>
+                  );
+                }
+                
                 return (
                   <tr 
                     key={`isp-row-${rowIdx}`} 
@@ -96,7 +134,7 @@ export const ISPBlock: React.FC<ISPBlockProps> = ({
                   >
                     {debugShowLayoutBorders && (
                       <span className="absolute -top-1 -left-1 bg-amber-600 text-white text-[8px] px-1 py-0.5 rounded z-50">
-                        IR1-Row
+                        IR1-mipi0
                       </span>
                     )}
                     <td className={`flex items-center justify-end pr-2 relative w-full ${debugShowLayoutBorders ? 'border border-amber-200' : ''}`}>
@@ -104,6 +142,86 @@ export const ISPBlock: React.FC<ISPBlockProps> = ({
                         className="w-12 h-6 border border-amber-600 rounded flex items-center justify-center cursor-pointer hover:scale-110 transition-transform"
                         style={{ backgroundColor: '#92400e' }}
                         data-connection-point="ir1-box"
+                        onClick={() => onOpenCiedSlot(9)}
+                      >
+                        <span className="text-white text-xs font-bold">IR1</span>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              }
+              
+              // IR0 행 - mipi1 (rowIdx === 11) - mipi1 ISP1이 'isp1'일 때만 표시
+              if (rowIdx === 11) {
+                const showIR0 = isp1Mode1 === 'isp1';
+                if (!showIR0) {
+                  return (
+                    <tr 
+                      key={`isp-row-${rowIdx}`} 
+                      className={`flex-1 ${debugShowLayoutBorders ? 'border border-gray-600' : ''}`}
+                    >
+                      {debugShowLayoutBorders && (
+                        <td className="w-full text-center text-[8px] text-gray-500">Empty-{rowIdx} (mipi1 IR0 hidden)</td>
+                      )}
+                    </tr>
+                  );
+                }
+                
+                return (
+                  <tr 
+                    key={`isp-row-${rowIdx}`} 
+                    className={`flex-1 flex items-center justify-end relative ${debugShowLayoutBorders ? 'border border-orange-300' : ''}`}
+                  >
+                    {debugShowLayoutBorders && (
+                      <span className="absolute -top-1 -left-1 bg-orange-600 text-white text-[8px] px-1 py-0.5 rounded z-50">
+                        IR0-mipi1
+                      </span>
+                    )}
+                    <td className={`flex items-center justify-end pr-2 relative w-full ${debugShowLayoutBorders ? 'border border-orange-200' : ''}`}>
+                      <div
+                        className="w-12 h-6 border border-slate-400 rounded flex items-center justify-center cursor-pointer hover:scale-110 transition-transform"
+                        style={{ backgroundColor: '#64748b' }}
+                        data-connection-point="ir0-box-mipi1"
+                        onClick={() => onOpenCiedSlot(8)}
+                      >
+                        <span className="text-white text-xs font-bold">IR0</span>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              }
+              
+              // IR1 행 - mipi1 (rowIdx === 15) - mipi1 ISP3이 'isp3'일 때만 표시
+              if (rowIdx === 15) {
+                const showIR1 = isp3Mode1 === 'isp3';
+                if (!showIR1) {
+                  return (
+                    <tr 
+                      key={`isp-row-${rowIdx}`} 
+                      className={`flex-1 ${debugShowLayoutBorders ? 'border border-gray-600' : ''}`}
+                    >
+                      {debugShowLayoutBorders && (
+                        <td className="w-full text-center text-[8px] text-gray-500">Empty-{rowIdx} (mipi1 IR1 hidden)</td>
+                      )}
+                    </tr>
+                  );
+                }
+                
+                return (
+                  <tr 
+                    key={`isp-row-${rowIdx}`} 
+                    className={`flex-1 flex items-center justify-end relative ${debugShowLayoutBorders ? 'border border-amber-300' : ''}`}
+                  >
+                    {debugShowLayoutBorders && (
+                      <span className="absolute -top-1 -left-1 bg-amber-600 text-white text-[8px] px-1 py-0.5 rounded z-50">
+                        IR1-mipi1
+                      </span>
+                    )}
+                    <td className={`flex items-center justify-end pr-2 relative w-full ${debugShowLayoutBorders ? 'border border-amber-200' : ''}`}>
+                      <div
+                        className="w-12 h-6 border border-amber-600 rounded flex items-center justify-center cursor-pointer hover:scale-110 transition-transform"
+                        style={{ backgroundColor: '#92400e' }}
+                        data-connection-point="ir1-box-mipi1"
                         onClick={() => onOpenCiedSlot(9)}
                       >
                         <span className="text-white text-xs font-bold">IR1</span>

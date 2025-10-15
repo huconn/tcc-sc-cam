@@ -466,75 +466,136 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
   const computeIspToCied = () => {
     const lines: Array<{x1:number;y1:number;x2:number;y2:number;color:string}> = [];
     
-    // ISP1 -> IR0 connection
-    const isp1 = document.querySelector('[data-anchor-point="isp-right-1-box"]') as HTMLElement | null;
-    const ir0 = document.querySelector('[data-connection-point="ir0-box"]') as HTMLElement | null;
-    
-    console.log('ISP1 element:', isp1);
-    console.log('IR0 element:', ir0);
-    
-    if (isp1 && ir0) {
-      const isp1Rect = isp1.getBoundingClientRect();
-      const ir0Rect = ir0.getBoundingClientRect();
+    // mipi0 ISP1 -> IR0 connection (row 3)
+    if (mipi0Channels[1] === 'isp1') {
+      const isp1 = document.querySelector('[data-anchor-point="isp-right-1-box"]') as HTMLElement | null;
+      const ir0 = document.querySelector('[data-connection-point="ir0-box"]') as HTMLElement | null;
       
-      // IR0의 왼쪽 중앙 좌표
-      const ir0LeftCenterX = ir0Rect.left;
-      const ir0LeftCenterY = ir0Rect.top + ir0Rect.height / 2;
-      
-      // Two segments:
-      // 1) Vertical segment from ISP1 right-center down to IR0's vertical center
-      const startX = isp1Rect.left + isp1Rect.width;
-      const startY = isp1Rect.top + isp1Rect.height / 2;
-      lines.push({
-        x1: startX,
-        y1: startY,
-        x2: startX,
-        y2: ir0LeftCenterY,
-        color: channelColors[1]
-      });
-      
-      // 2) Horizontal segment from that point to IR0 left-center (with arrow)
-      lines.push({
-        x1: startX,
-        y1: ir0LeftCenterY,
-        x2: ir0LeftCenterX,
-        y2: ir0LeftCenterY,
-        color: channelColors[1]
-      });
+      if (isp1 && ir0) {
+        const isp1Rect = isp1.getBoundingClientRect();
+        const ir0Rect = ir0.getBoundingClientRect();
+        
+        const ir0LeftCenterX = ir0Rect.left;
+        const ir0LeftCenterY = ir0Rect.top + ir0Rect.height / 2;
+        
+        const startX = isp1Rect.left + isp1Rect.width;
+        const startY = isp1Rect.top + isp1Rect.height / 2;
+        
+        lines.push({
+          x1: startX,
+          y1: startY,
+          x2: startX,
+          y2: ir0LeftCenterY,
+          color: channelColors[1]
+        });
+        
+        lines.push({
+          x1: startX,
+          y1: ir0LeftCenterY,
+          x2: ir0LeftCenterX,
+          y2: ir0LeftCenterY,
+          color: channelColors[1]
+        });
+      }
     }
     
-    // ISP3 -> IR1 connection
-    const isp3 = document.querySelector('[data-anchor-point="isp-right-3-box"]') as HTMLElement | null;
-    const ir1 = document.querySelector('[data-connection-point="ir1-box"]') as HTMLElement | null;
+    // mipi1 ISP1 (ISP5) -> IR0 connection (row 11)
+    if (mipi1Channels[1] === 'isp1') {
+      const isp5 = document.querySelector('[data-anchor-point="isp-right-5-box"]') as HTMLElement | null;
+      const ir0Mipi1 = document.querySelector('[data-connection-point="ir0-box-mipi1"]') as HTMLElement | null;
+      
+      if (isp5 && ir0Mipi1) {
+        const isp5Rect = isp5.getBoundingClientRect();
+        const ir0Rect = ir0Mipi1.getBoundingClientRect();
+        
+        const ir0LeftCenterX = ir0Rect.left;
+        const ir0LeftCenterY = ir0Rect.top + ir0Rect.height / 2;
+        
+        const startX = isp5Rect.left + isp5Rect.width;
+        const startY = isp5Rect.top + isp5Rect.height / 2;
+        
+        lines.push({
+          x1: startX,
+          y1: startY,
+          x2: startX,
+          y2: ir0LeftCenterY,
+          color: channelColors[5]
+        });
+        
+        lines.push({
+          x1: startX,
+          y1: ir0LeftCenterY,
+          x2: ir0LeftCenterX,
+          y2: ir0LeftCenterY,
+          color: channelColors[5]
+        });
+      }
+    }
     
-    if (isp3 && ir1) {
-      const isp3Rect = isp3.getBoundingClientRect();
-      const ir1Rect = ir1.getBoundingClientRect();
+    // mipi0 ISP3 -> IR1 connection (row 7)
+    if (mipi0Channels[3] === 'isp3') {
+      const isp3 = document.querySelector('[data-anchor-point="isp-right-3-box"]') as HTMLElement | null;
+      const ir1 = document.querySelector('[data-connection-point="ir1-box"]') as HTMLElement | null;
       
-      // IR1의 왼쪽 중앙 좌표
-      const ir1LeftCenterX = ir1Rect.left;
-      const ir1LeftCenterY = ir1Rect.top + ir1Rect.height / 2;
+      if (isp3 && ir1) {
+        const isp3Rect = isp3.getBoundingClientRect();
+        const ir1Rect = ir1.getBoundingClientRect();
+        
+        const ir1LeftCenterX = ir1Rect.left;
+        const ir1LeftCenterY = ir1Rect.top + ir1Rect.height / 2;
+        
+        const startX3 = isp3Rect.left + isp3Rect.width;
+        const startY3 = isp3Rect.top + isp3Rect.height / 2;
+        
+        lines.push({
+          x1: startX3,
+          y1: startY3,
+          x2: startX3,
+          y2: ir1LeftCenterY,
+          color: channelColors[3]
+        });
+        
+        lines.push({
+          x1: startX3,
+          y1: ir1LeftCenterY,
+          x2: ir1LeftCenterX,
+          y2: ir1LeftCenterY,
+          color: channelColors[3]
+        });
+      }
+    }
+    
+    // mipi1 ISP3 (ISP7) -> IR1 connection (row 15)
+    if (mipi1Channels[3] === 'isp3') {
+      const isp7 = document.querySelector('[data-anchor-point="isp-right-7-box"]') as HTMLElement | null;
+      const ir1Mipi1 = document.querySelector('[data-connection-point="ir1-box-mipi1"]') as HTMLElement | null;
       
-      // Two segments:
-      // 1) Vertical segment from ISP3 right-center down to IR1's vertical center
-      const startX3 = isp3Rect.left + isp3Rect.width;
-      const startY3 = isp3Rect.top + isp3Rect.height / 2;
-      lines.push({
-        x1: startX3,
-        y1: startY3,
-        x2: startX3,
-        y2: ir1LeftCenterY,
-        color: channelColors[3]
-      });
-      
-      // 2) Horizontal segment from that point to IR1 left-center (with arrow)
-      lines.push({
-        x1: startX3,
-        y1: ir1LeftCenterY,
-        x2: ir1LeftCenterX,
-        y2: ir1LeftCenterY,
-        color: channelColors[3]
-      });
+      if (isp7 && ir1Mipi1) {
+        const isp7Rect = isp7.getBoundingClientRect();
+        const ir1Rect = ir1Mipi1.getBoundingClientRect();
+        
+        const ir1LeftCenterX = ir1Rect.left;
+        const ir1LeftCenterY = ir1Rect.top + ir1Rect.height / 2;
+        
+        const startX7 = isp7Rect.left + isp7Rect.width;
+        const startY7 = isp7Rect.top + isp7Rect.height / 2;
+        
+        lines.push({
+          x1: startX7,
+          y1: startY7,
+          x2: startX7,
+          y2: ir1LeftCenterY,
+          color: channelColors[7]
+        });
+        
+        lines.push({
+          x1: startX7,
+          y1: ir1LeftCenterY,
+          x2: ir1LeftCenterX,
+          y2: ir1LeftCenterY,
+          color: channelColors[7]
+        });
+      }
     }
     
     
@@ -577,8 +638,8 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
       //i2c to external devices
       computeI2cToExternal();
 
-      //isp to cied connections
-      computeIspToCied();
+      // Note: computeIspToCied() is called separately when ISP modes change
+      // to avoid flickering when IR boxes are conditionally rendered
 
       // Align ISP0 selector center with Camera Mux IN-0 (mux-left-0) center
       try {
@@ -690,6 +751,7 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
     computeCamMuxToCied();
     computeExternalToMipi();
     computeI2cToExternal();
+    computeIspToCied();
     const t1 = setTimeout(computeCamMuxToSvdw, 100);
     const t2 = setTimeout(computeCamMuxToSvdw, 300);
     const t3 = setTimeout(computeCamMuxToSvdw, 600);
@@ -708,13 +770,34 @@ export const MainCoreViewHorizontal: React.FC<MainCoreViewHorizontalProps> = ({
     const y1 = setTimeout(computeI2cToExternal, 100);
     const y2 = setTimeout(computeI2cToExternal, 300);
     const y3 = setTimeout(computeI2cToExternal, 600);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(u1); clearTimeout(u2); clearTimeout(u3); clearTimeout(v1); clearTimeout(v2); clearTimeout(v3); clearTimeout(w1); clearTimeout(w2); clearTimeout(w3); clearTimeout(x1); clearTimeout(x2); clearTimeout(x3); clearTimeout(y1); clearTimeout(y2); clearTimeout(y3); };
+    const z1 = setTimeout(computeIspToCied, 100);
+    const z2 = setTimeout(computeIspToCied, 300);
+    const z3 = setTimeout(computeIspToCied, 600);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(u1); clearTimeout(u2); clearTimeout(u3); clearTimeout(v1); clearTimeout(v2); clearTimeout(v3); clearTimeout(w1); clearTimeout(w2); clearTimeout(w3); clearTimeout(x1); clearTimeout(x2); clearTimeout(x3); clearTimeout(y1); clearTimeout(y2); clearTimeout(y3); clearTimeout(z1); clearTimeout(z2); clearTimeout(z3); };
   }, []);
 
   // Channel configurations for each MIPI
   // Defaults: mipi0 -> isp0..isp3, mipi1 -> bypass; pairs still share same ISP index
   const [mipi0Channels, setMipi0Channels] = useState<ChannelMode[]>(['isp0', 'isp1', 'isp2', 'isp3']);
   const [mipi1Channels, setMipi1Channels] = useState<ChannelMode[]>(['bypass', 'bypass', 'bypass', 'bypass']);
+
+  // Update ISP to IR connections when ISP modes change
+  useEffect(() => {
+    // Wait for DOM to settle, then redraw lines
+    let rafId: number;
+    const redrawLines = () => {
+      rafId = requestAnimationFrame(() => {
+        computeIspToCied();
+      });
+    };
+    
+    const timer = setTimeout(redrawLines, 100);
+    
+    return () => {
+      clearTimeout(timer);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, [mipi0Channels, mipi1Channels]);
 
   // ISP configurations
   const [ispConfigs, setIspConfigs] = useState<Record<string, ISPConfig>>({
