@@ -67,11 +67,11 @@ export const OverviewPage: React.FC = () => {
         <span className="absolute -top-3 -left-3 bg-gray-600 text-white text-[10px] px-1.5 py-0.5 rounded">OVERVIEW</span>
       )}
       {/* Header */}
-      <div className={`bg-gray-800 border-b border-gray-700 p-4 relative ${debugShowLayoutBorders ? 'debug' : ''}`}>
+      <div className={`bg-gray-800 border-b border-gray-700 relative ${debugShowLayoutBorders ? 'debug' : ''}`}>
         {debugShowLayoutBorders && (
           <span className="absolute -top-3 -left-3 bg-gray-700 text-white text-[10px] px-1.5 py-0.5 rounded">OVR-HDR</span>
         )}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-4">
             <Camera className="w-6 h-6 text-primary-500" />
             <h1 className="text-xl font-bold text-gray-100">Camera Path Overview</h1>

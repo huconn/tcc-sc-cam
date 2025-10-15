@@ -5,6 +5,31 @@ const fs = require('node:fs')
 let mainWindow = null
 const isDev = process.env.NODE_ENV === 'development'
 
+// Zoom level persistence
+const ZOOM_CONFIG_FILE = path.join(app.getPath('userData'), 'zoom-config.json')
+
+function loadZoomLevel() {
+  try {
+    if (fs.existsSync(ZOOM_CONFIG_FILE)) {
+      const data = fs.readFileSync(ZOOM_CONFIG_FILE, 'utf-8')
+      const config = JSON.parse(data)
+      return config.zoomFactor || 1.0
+    }
+  } catch (e) {
+    console.error('Failed to load zoom level:', e)
+  }
+  return 1.0 // Default 100%
+}
+
+function saveZoomLevel(zoomFactor) {
+  try {
+    const config = { zoomFactor }
+    fs.writeFileSync(ZOOM_CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8')
+  } catch (e) {
+    console.error('Failed to save zoom level:', e)
+  }
+}
+
 const createWindow = () => {
   const devTools = true;           // 최상위 조건: DevTools 기능 활성화 여부 (F12, Ctrl+Shift+I)
   const enableDevTools = false;     // 하위 조건: 로딩 시 콘솔 자동 열기 여부
@@ -31,10 +56,22 @@ const createWindow = () => {
     try { mainWindow.maximize() } catch {}
     mainWindow.show()
     
+    // Load and apply saved zoom level
+    const savedZoomLevel = loadZoomLevel()
+    mainWindow.webContents.setZoomFactor(savedZoomLevel)
+    console.log(`Zoom level restored: ${Math.round(savedZoomLevel * 100)}%`)
+    
     // devTools가 true이고 enableDevTools가 true면 자동으로 DevTools 열기
     if (devTools && enableDevTools) {
       mainWindow.webContents.openDevTools()
     }
+  })
+  
+  // Listen for zoom changes and save automatically
+  mainWindow.webContents.on('zoom-changed', (event, zoomDirection) => {
+    const currentZoomFactor = mainWindow.webContents.getZoomFactor()
+    saveZoomLevel(currentZoomFactor)
+    console.log(`Zoom level saved: ${Math.round(currentZoomFactor * 100)}%`)
   })
 
   // In development, load from Vite dev server
@@ -217,6 +254,16 @@ ipcMain.handle('read-resource-file', async (_evt, filePath) => {
     
     const content = fs.readFileSync(fullPath, 'utf-8')
     return { content }
+  } catch (e) {
+    return { error: String(e.message || e) }
+  }
+})
+
+// Save zoom level from renderer
+ipcMain.handle('save-zoom-level', async (_evt, zoomFactor) => {
+  try {
+    saveZoomLevel(zoomFactor)
+    return { success: true }
   } catch (e) {
     return { error: String(e.message || e) }
   }

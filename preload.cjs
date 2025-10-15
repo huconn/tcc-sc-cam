@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron')
+const { contextBridge, ipcRenderer, webFrame } = require('electron')
 
 contextBridge.exposeInMainWorld('electronAPI', {
   platform: process.platform,
@@ -20,5 +20,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Log to server (main process)
   logToServer: (level, message, data) => ipcRenderer.invoke('log-to-server', level, message, data),
   // Read file from app resources
-  readResourceFile: (filePath) => ipcRenderer.invoke('read-resource-file', filePath)
+  readResourceFile: (filePath) => ipcRenderer.invoke('read-resource-file', filePath),
+  // Get/Set zoom level
+  getZoomFactor: () => webFrame.getZoomFactor(),
+  setZoomFactor: (factor) => webFrame.setZoomFactor(factor),
+  getZoomLevel: () => webFrame.getZoomLevel(),
+  // Save zoom level to persistent storage
+  saveZoomLevel: (zoomFactor) => ipcRenderer.invoke('save-zoom-level', zoomFactor)
 })

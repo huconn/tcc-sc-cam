@@ -381,12 +381,19 @@ export const App: React.FC = () => {
 
       {/* Browser Info - Bottom Left Corner, always on top when debug flag enabled */}
       {debugShowResolution && (
-        <div className="fixed bottom-3 left-3 z-[1000] bg-gray-800/90 backdrop-blur-sm border border-gray-700/50 rounded px-3 py-2 text-[11px] leading-4 text-gray-200 shadow-lg">
-          <span className="text-gray-400">Resolution:</span> {windowSize.resolution}
-          <span className="mx-2" />
-          <span className="text-gray-400">Scale:</span> {windowSize.scale}
-          <span className="mx-2" />
-          <span className="text-gray-400">DPR:</span> {windowSize.dpr}
+        <div className="fixed bottom-3 left-3 z-[1000] bg-gray-800/90 backdrop-blur-sm border border-gray-700/50 rounded px-3 py-2 text-[11px] leading-5 text-gray-200 shadow-lg">
+          <div>
+            <span className="text-gray-400">Physical:</span> {windowSize.resolution}
+            <span className="mx-2" />
+            <span className="text-gray-400">Logical:</span> {windowSize.logicalResolution}
+          </div>
+          <div>
+            <span className="text-gray-400">OS Scale:</span> {windowSize.scale}
+            <span className="mx-2" />
+            <span className="text-gray-400">Zoom:</span> {windowSize.zoom}
+            <span className="mx-2" />
+            <span className="text-gray-400">DPR:</span> {windowSize.dpr}
+          </div>
         </div>
       )}
 

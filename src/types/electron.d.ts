@@ -11,6 +11,11 @@ export interface ElectronAPI {
   convertDTB: (inPath?: string) => Promise<{ canceled?: boolean; inputPath?: string; outPath?: string; jsonText?: string; error?: string }>;
   saveDtsDtb: (dtsText: string) => Promise<{ canceled?: boolean; dtsPath?: string; dtbPath?: string; error?: string }>;
   getAppVersion: () => Promise<string>;
+  readResourceFile: (filePath: string) => Promise<{ content?: string; error?: string }>;
+  getZoomFactor: () => number;
+  setZoomFactor: (factor: number) => void;
+  getZoomLevel: () => number;
+  saveZoomLevel: (zoomFactor: number) => Promise<{ success?: boolean; error?: string }>;
 }
 
 declare global {
